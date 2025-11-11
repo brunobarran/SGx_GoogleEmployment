@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__archon__rag_get_available_sources",
+      "mcp__archon__rag_search_knowledge_base",
+      "mcp__archon__rag_search_code_examples",
+      "mcp__archon__rag_read_full_page",
+      "mcp__archon__rag_list_pages_for_source",
+      "mcp__archon__manage_project",
+      "mcp__archon__manage_document",
+      "WebSearch",
+      "Bash(claude mcp add chrome-devtools npx chrome-devtools-mcp@latest)",
+      "mcp__archon__find_tasks",
+      "mcp__archon__manage_task"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
