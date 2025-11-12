@@ -262,19 +262,19 @@ describe('GoLValidator - File validation', () => {
 
 describe('GoLValidator - Integration with example games', () => {
   test('dino-runner.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('examples/dino-runner.js')
+    const result = await GoLValidator.validateFile('../../games/dino-runner.js')
 
     expect(result.valid).toBe(true)
   })
 
   test('space-invaders-ca.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('examples/space-invaders-ca.js')
+    const result = await GoLValidator.validateFile('../../games/space-invaders.js')
 
     expect(result.valid).toBe(true)
   })
 
   test('breakout.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('games/breakout.js')
+    const result = await GoLValidator.validateFile('../../games/breakout.js')
 
     expect(result.valid).toBe(true)
   })

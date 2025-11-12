@@ -8,7 +8,7 @@
  * @license ISC
  */
 
-import { CELL_STATES } from './utils/Config.js'
+import { CELL_STATES } from '../utils/Config.js'
 
 const { ALIVE } = CELL_STATES
 

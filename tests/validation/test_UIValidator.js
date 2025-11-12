@@ -258,19 +258,19 @@ describe('UIValidator - File validation', () => {
 
 describe('UIValidator - Integration with example games', () => {
   test('dino-runner.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('examples/dino-runner.js')
+    const result = await UIValidator.validateFile('../../games/dino-runner.js')
 
     expect(result.valid).toBe(true)
   })
 
   test('space-invaders-ca.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('examples/space-invaders-ca.js')
+    const result = await UIValidator.validateFile('../../games/space-invaders.js')
 
     expect(result.valid).toBe(true)
   })
 
   test('breakout.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('games/breakout.js')
+    const result = await UIValidator.validateFile('../../games/breakout.js')
 
     expect(result.valid).toBe(true)
   })

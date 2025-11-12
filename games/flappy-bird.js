@@ -12,8 +12,8 @@
 // ============================================
 // IMPORTS - Standard imports for all games
 // ============================================
-import { GoLEngine } from '../src/GoLEngine.js'
-import { SimpleGradientRenderer } from '../src/SimpleGradientRenderer.js'
+import { GoLEngine } from '../src/core/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
 import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
 import { Collision } from '../src/utils/Collision.js'
 import { Patterns } from '../src/utils/Patterns.js'
