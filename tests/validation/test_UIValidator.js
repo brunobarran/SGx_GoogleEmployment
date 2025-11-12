@@ -269,8 +269,8 @@ describe('UIValidator - Integration with example games', () => {
     expect(result.valid).toBe(true)
   })
 
-  test('breakout-gol.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('examples/breakout-gol.js')
+  test('breakout.js should pass UI validation', async () => {
+    const result = await UIValidator.validateFile('games/breakout.js')
 
     expect(result.valid).toBe(true)
   })

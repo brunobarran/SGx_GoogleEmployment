@@ -273,8 +273,8 @@ describe('GoLValidator - Integration with example games', () => {
     expect(result.valid).toBe(true)
   })
 
-  test('breakout-gol.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('examples/breakout-gol.js')
+  test('breakout.js should pass validation', async () => {
+    const result = await GoLValidator.validateFile('games/breakout.js')
 
     expect(result.valid).toBe(true)
   })

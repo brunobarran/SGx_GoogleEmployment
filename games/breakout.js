@@ -10,11 +10,14 @@
  * @license ISC
  */
 
-import { GoLEngine } from '../src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
+import { GoLEngine } from '../src/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/SimpleGradientRenderer.js'
 import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
 import { Collision } from '../src/utils/Collision.js'
 import { Patterns } from '../src/utils/Patterns.js'
+import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
+import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
+import { renderGameUI, renderGameOver, renderWin } from '../src/utils/UIHelpers.js'
 
 // ============================================
 // CONFIGURATION
@@ -211,9 +214,9 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver()
+    renderGameOver(width, height, state.score)
   } else if (state.phase === 'WIN') {
-    renderWin()
+    renderWin(width, height, state.score)
   }
 }
 
@@ -232,15 +235,7 @@ function updateGame() {
   })
 
   // Update particles (Pure GoL for explosion effect)
-  particles.forEach(p => {
-    p.gol.updateThrottled(state.frameCount)
-    p.x += p.vx
-    p.y += p.vy
-    p.alpha -= 4
-    if (p.alpha <= 0) p.dead = true
-  })
-
-  particles = particles.filter(p => !p.dead)
+  particles = updateParticles(particles, state.frameCount)
 
   // Check collisions
   checkCollisions()
@@ -412,68 +407,6 @@ function spawnExplosion(x, y, brickGradient) {
   }
 }
 
-function applyLifeForce(entity) {
-  if (!entity.gol) return
-
-  const engine = entity.gol
-  const totalCells = engine.cols * engine.rows
-  const aliveCount = engine.countAliveCells()
-  const density = aliveCount / totalCells
-
-  // Maintain at least 35% density
-  if (density < 0.35) {
-    const cellsToInject = Math.floor(totalCells * 0.15)  // Inject 15%
-    for (let i = 0; i < cellsToInject; i++) {
-      const x = Math.floor(Math.random() * engine.cols)
-      const y = Math.floor(Math.random() * engine.rows)
-      engine.setCell(x, y, 1)
-    }
-  }
-}
-
-function maintainDensity(entity, targetDensity = 0.6) {
-  if (!entity.gol) return
-
-  const engine = entity.gol
-  const totalCells = engine.cols * engine.rows
-  const aliveCount = engine.countAliveCells()
-  const currentDensity = aliveCount / totalCells
-
-  // If density too low, revive random cells
-  if (currentDensity < targetDensity) {
-    const cellsToRevive = Math.floor(totalCells * (targetDensity - currentDensity))
-    for (let i = 0; i < cellsToRevive; i++) {
-      const x = Math.floor(Math.random() * engine.cols)
-      const y = Math.floor(Math.random() * engine.rows)
-      engine.setCell(x, y, 1)
-    }
-  }
-}
-
-/**
- * Seed GoL grid with radial density gradient.
- * Creates organic, irregular edges by placing more cells in center, fewer at edges.
- */
-function seedRadialDensity(engine, centerDensity = 0.7, edgeDensity = 0.1) {
-  const centerX = engine.cols / 2
-  const centerY = engine.rows / 2
-  const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY)
-
-  for (let x = 0; x < engine.cols; x++) {
-    for (let y = 0; y < engine.rows; y++) {
-      const dx = x - centerX
-      const dy = y - centerY
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const normalizedDistance = distance / maxDistance
-      const density = centerDensity + (edgeDensity - centerDensity) * normalizedDistance
-
-      if (Math.random() < density) {
-        engine.setCell(x, y, 1)
-      }
-    }
-  }
-}
-
 // ============================================
 // RENDERING
 // ============================================
@@ -508,74 +441,14 @@ function renderGame() {
   })
 
   // Render particles with gradients and alpha
-  particles.forEach(p => {
-    if (p.alpha > 0) {
-      push()
-      drawingContext.globalAlpha = p.alpha / 255
-      maskedRenderer.renderMaskedGrid(
-        p.gol,
-        p.x,
-        p.y,
-        p.cellSize,
-        p.gradient
-      )
-      pop()
-    }
-  })
+  renderParticles(particles, maskedRenderer)
 }
 
 function renderUI() {
-  fill(CONFIG.ui.textColor)
-  noStroke()
-  textFont(CONFIG.ui.font)
-  textStyle(NORMAL)
-  textSize(CONFIG.ui.fontSize)
-  textAlign(LEFT, TOP)
-
-  text(`SCORE: ${state.score}`, 20, 20)
-
-  // Instructions
-  textAlign(RIGHT, TOP)
-  text('← → or A/D: Move', CONFIG.width - 20, 20)
-  text('SPACE: Launch', CONFIG.width - 20, 45)
-}
-
-function renderGameOver() {
-  fill(0, 0, 0, 180)
-  noStroke()
-  rect(0, 0, width, height)
-
-  fill(255)
-  noStroke()
-  textStyle(NORMAL)
-  textAlign(CENTER, CENTER)
-  textSize(48)
-  text('GAME OVER', width/2, height/2 - 40)
-
-  textSize(24)
-  text(`Final Score: ${state.score}`, width/2, height/2 + 40)
-
-  textSize(16)
-  text('Press SPACE to restart', width/2, height/2 + 100)
-}
-
-function renderWin() {
-  fill(0, 0, 0, 180)
-  noStroke()
-  rect(0, 0, width, height)
-
-  fill(255)
-  noStroke()
-  textStyle(NORMAL)
-  textAlign(CENTER, CENTER)
-  textSize(48)
-  text('YOU WIN!', width/2, height/2 - 40)
-
-  textSize(24)
-  text(`Final Score: ${state.score}`, width/2, height/2 + 40)
-
-  textSize(16)
-  text('Press SPACE to restart', width/2, height/2 + 100)
+  renderGameUI(CONFIG, state, [
+    '← → or A/D: Move',
+    'SPACE: Launch'
+  ])
 }
 
 // ============================================

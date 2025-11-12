@@ -6,11 +6,14 @@
  * @license ISC
  */
 
-import { GoLEngine } from '../src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
+import { GoLEngine } from '../src/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/SimpleGradientRenderer.js'
 import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
 import { Collision } from '../src/utils/Collision.js'
 import { Patterns } from '../src/utils/Patterns.js'
+import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
+import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
+import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
 // ============================================
 // GAME CONFIGURATION
@@ -203,7 +206,7 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver()
+    renderGameOver(width, height, state.score)
   }
 }
 
@@ -211,7 +214,7 @@ function updateGame() {
   updatePlayer()
   updateInvaders()
   updateBullets()
-  updateParticles()
+  updateParticlesLocal()
   checkCollisions()
   checkWinLose()
 }
@@ -277,16 +280,8 @@ function updateBullets() {
   bullets = bullets.filter(b => !b.dead)
 }
 
-function updateParticles() {
-  particles.forEach(p => {
-    p.gol.updateThrottled(state.frameCount)
-    p.x += p.vx
-    p.y += p.vy
-    p.alpha -= 4
-    if (p.alpha <= 0) p.dead = true
-  })
-
-  particles = particles.filter(p => !p.dead)
+function updateParticlesLocal() {
+  particles = updateParticles(particles, state.frameCount)
 }
 
 function moveInvaders() {
@@ -422,127 +417,19 @@ function renderGame() {
   })
 
   // Render particles with masked gradients
-  particles.forEach(particle => {
-    if (particle.alpha > 0) {
-      push()
-      // Apply alpha to entire particle
-      drawingContext.globalAlpha = particle.alpha / 255
-      maskedRenderer.renderMaskedGrid(
-        particle.gol,
-        particle.x,
-        particle.y,
-        particle.cellSize,
-        particle.gradient
-      )
-      pop()
-    }
-  })
+  renderParticles(particles, maskedRenderer)
 }
 
 function renderUI() {
-  fill(CONFIG.ui.textColor)
-  noStroke()
-  textFont(CONFIG.ui.font)
-  textStyle(NORMAL)
-  textSize(CONFIG.ui.fontSize)
-  textAlign(LEFT, TOP)
-
-  text(`SCORE: ${state.score}`, 20, 20)
-
-  // Instructions
-  textAlign(RIGHT, TOP)
-  text('← → or A/D: Move', CONFIG.width - 20, 20)
-  text('SPACE or Z: Shoot', CONFIG.width - 20, 45)
-}
-
-function renderGameOver() {
-  fill(0, 0, 0, 180)
-  noStroke()
-  rect(0, 0, width, height)
-
-  fill(255)
-  noStroke()
-  textStyle(NORMAL)
-  textAlign(CENTER, CENTER)
-  textSize(48)
-  text('GAME OVER', width/2, height/2 - 40)
-
-  textSize(24)
-  text(`Final Score: ${state.score}`, width/2, height/2 + 40)
-
-  textSize(16)
-  text('Press SPACE to restart', width/2, height/2 + 100)
+  renderGameUI(CONFIG, state, [
+    '← → or A/D: Move',
+    'SPACE or Z: Shoot'
+  ])
 }
 
 // ============================================
-// UTILITY FUNCTIONS
+// GAME-SPECIFIC FUNCTIONS
 // ============================================
-
-/**
- * Seed GoL grid with radial density gradient.
- * Creates organic, irregular edges by placing more cells in center, fewer at edges.
- *
- * @param {GoLEngine} engine - GoL engine to seed
- * @param {number} centerDensity - Probability at center (0.0-1.0, e.g., 0.8 = 80% alive)
- * @param {number} edgeDensity - Probability at edges (0.0-1.0, e.g., 0.1 = 10% alive)
- */
-function seedRadialDensity(engine, centerDensity = 0.7, edgeDensity = 0.1) {
-  const centerX = engine.cols / 2
-  const centerY = engine.rows / 2
-  const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY)
-
-  for (let x = 0; x < engine.cols; x++) {
-    for (let y = 0; y < engine.rows; y++) {
-      // Calculate distance from center
-      const dx = x - centerX
-      const dy = y - centerY
-      const distance = Math.sqrt(dx * dx + dy * dy)
-
-      // Normalize distance (0 = center, 1 = edge)
-      const normalizedDistance = distance / maxDistance
-
-      // Interpolate density: high at center, low at edges
-      const density = centerDensity + (edgeDensity - centerDensity) * normalizedDistance
-
-      // Seed cell with probability based on distance
-      if (Math.random() < density) {
-        engine.setCell(x, y, 1)
-      }
-    }
-  }
-}
-
-function applyLifeForce(entity) {
-  const engine = entity.gol
-  const totalCells = engine.cols * engine.rows
-  const aliveCount = engine.countAliveCells()
-  const density = aliveCount / totalCells
-
-  if (density < 0.35) {
-    const cellsToInject = Math.floor(totalCells * 0.15)
-    for (let i = 0; i < cellsToInject; i++) {
-      const x = Math.floor(Math.random() * engine.cols)
-      const y = Math.floor(Math.random() * engine.rows)
-      engine.setCell(x, y, 1)
-    }
-  }
-}
-
-function maintainDensity(entity, targetDensity = 0.6) {
-  const engine = entity.gol
-  const totalCells = engine.cols * engine.rows
-  const aliveCount = engine.countAliveCells()
-  const currentDensity = aliveCount / totalCells
-
-  if (currentDensity < targetDensity) {
-    const cellsToRevive = Math.floor(totalCells * (targetDensity - currentDensity))
-    for (let i = 0; i < cellsToRevive; i++) {
-      const x = Math.floor(Math.random() * engine.cols)
-      const y = Math.floor(Math.random() * engine.rows)
-      engine.setCell(x, y, 1)
-    }
-  }
-}
 
 function spawnExplosion(x, y) {
   for (let i = 0; i < 3; i++) {
