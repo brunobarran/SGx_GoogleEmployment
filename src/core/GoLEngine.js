@@ -276,4 +276,107 @@ class GoLEngine {
   }
 }
 
-export { GoLEngine, ALIVE, DEAD }
+/**
+ * DESIGN DECISION: Circular Mask with Interval for Organic Shapes
+ *
+ * PROBLEM: Rectangular grids (10x10) look too square/geometric
+ * SOLUTION: Kill cells outside circular boundary, but allow free evolution between applications
+ *
+ * IMPLEMENTATION:
+ * - Mask applied every N generations (default: 6 frames)
+ * - Between applications, GoL evolves freely → organic, irregular edges
+ * - On mask application, shape "snaps back" to circular boundary
+ * - Radius = 80% of grid size (allows edge variation)
+ * - Center = (cols/2, rows/2)
+ *
+ * CRITICAL: Mask is applied every maskInterval generations, NOT every frame
+ *
+ * WHY INTERVAL? Allows GoL patterns to evolve naturally between mask applications
+ * - Frames 1-5: Irregular, organic edges as GoL evolves freely
+ * - Frame 6: Mask applied → pruned back to circular boundary
+ * - Creates "breathing" effect with organic edges
+ *
+ * TRADE-OFFS:
+ * + Very organic, irregular shapes (less geometric)
+ * + Authentic GoL evolution between masks
+ * + Patterns can complete partial cycles
+ * - More complex conceptually (two interacting systems)
+ * - Shape fluctuates between applications
+ * - Requires tuning interval for visual stability
+ *
+ * PARAMETERS:
+ * - gridSize: Inherited from GoLEngine (typically 10x10)
+ * - maskRadius: Auto-calculated as 80% of grid radius
+ * - maskInterval: How often to apply mask (default: 6 generations)
+ *
+ * TO MODIFY:
+ * - Larger sprites: Increase grid size → radius scales automatically
+ * - More organic edges:
+ *   • Increase maskInterval (e.g., 10) for more wild growth
+ *   • Reduce maskRadiusFactor (e.g., 0.75) for tighter pruning
+ * - More stable/circular:
+ *   • Decrease maskInterval (e.g., 3) for frequent pruning
+ *   • Increase maskRadiusFactor (e.g., 0.85) for looser bounds
+ *
+ * TUNING GUIDE:
+ * - Interval 3-5: Subtle organic variation, mostly circular
+ * - Interval 6-8: Balanced organic/stable (RECOMMENDED)
+ * - Interval 10+: Very organic but can look unstable
+ *
+ * @extends GoLEngine
+ */
+class CircularMaskedGoL extends GoLEngine {
+  /**
+   * Create a new GoL engine with interval-based circular masking.
+   *
+   * @param {number} cols - Number of columns in the grid
+   * @param {number} rows - Number of rows in the grid
+   * @param {number} updateRateFPS - Target update rate in frames per second
+   * @param {number} maskRadiusFactor - Radius as percentage of grid (default: 0.8)
+   * @param {number} maskInterval - Apply mask every N generations (default: 6)
+   */
+  constructor(cols, rows, updateRateFPS = 10, maskRadiusFactor = 0.8, maskInterval = 6) {
+    super(cols, rows, updateRateFPS)
+
+    // Calculate circular mask parameters
+    this.centerX = cols / 2
+    this.centerY = rows / 2
+    this.maskRadius = (Math.min(cols, rows) / 2) * maskRadiusFactor
+    this.maskInterval = maskInterval
+  }
+
+  /**
+   * Apply circular mask: kill all cells outside the circular boundary.
+   * Called every maskInterval generations (not every frame).
+   */
+  applyCircularMask() {
+    for (let x = 0; x < this.cols; x++) {
+      for (let y = 0; y < this.rows; y++) {
+        // Calculate distance from center
+        const dx = x - this.centerX
+        const dy = y - this.centerY
+        const distance = Math.sqrt(dx * dx + dy * dy)
+
+        // Kill cells outside radius
+        if (distance > this.maskRadius) {
+          this.current[x][y] = DEAD
+        }
+      }
+    }
+  }
+
+  /**
+   * Update GoL and conditionally apply circular mask.
+   * Overrides parent update() to add interval-based masking.
+   */
+  update() {
+    super.update()  // Standard GoL update with B3/S23 rules
+
+    // Apply mask every N generations (not every frame)
+    if (this.generation % this.maskInterval === 0) {
+      this.applyCircularMask()
+    }
+  }
+}
+
+export { GoLEngine, CircularMaskedGoL, ALIVE, DEAD }

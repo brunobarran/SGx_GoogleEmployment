@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradient Demo - OPTIMIZED (60fps Target)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Google Sans', Arial, sans-serif;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #fff;
+      background: rgba(0,0,0,0.7);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      max-width: 400px;
+    }
+    #info h3 {
+      margin: 0 0 10px 0;
+      color: #4a90e2;
+    }
+    #info p {
+      margin: 5px 0;
+      line-height: 1.4;
+    }
+    #info kbd {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    #info .highlight {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h3>🚀 OPTIMIZED Gradient Demo</h3>
+    <p class="highlight">Target: 60fps (vs 20fps original)</p>
+    <p><strong>Optimizations:</strong></p>
+    <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">
+      <li>Native Canvas linearGradient API</li>
+      <li>globalCompositeOperation masking</li>
+      <li>No loadPixels/updatePixels overhead</li>
+      <li>Hardware-accelerated rendering</li>
+    </ul>
+    <p><kbd>1-9</kbd> Cambiar preset de gradiente</p>
+    <p><kbd>SPACE</kbd> Reseed GoL background</p>
+    <p><kbd>P</kbd> Pausar/reanudar</p>
+    <p><kbd>R</kbd> Reset FPS stats</p>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
+  <script type="module" src="/gradient-demo-optimized.js"></script>
+</body>
+</html>

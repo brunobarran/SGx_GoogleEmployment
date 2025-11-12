@@ -59,6 +59,40 @@ export const Patterns = {
   ],
 
   /**
+   * TUB - 3x3 still life (circular shape)
+   * Source: https://conwaylife.com/wiki/Tub
+   * Period: Stable (still life)
+   */
+  TUB: [
+    [0, 1, 0],
+    [1, 0, 1],
+    [0, 1, 0]
+  ],
+
+  /**
+   * POND - 4x4 still life (square with hole)
+   * Source: https://conwaylife.com/wiki/Pond
+   * Period: Stable (still life)
+   */
+  POND: [
+    [0, 1, 1, 0],
+    [1, 0, 0, 1],
+    [1, 0, 0, 1],
+    [0, 1, 1, 0]
+  ],
+
+  /**
+   * SHIP - 3x3 still life (boat-like asymmetric)
+   * Source: https://conwaylife.com/wiki/Ship
+   * Period: Stable (still life)
+   */
+  SHIP: [
+    [1, 1, 0],
+    [1, 0, 1],
+    [0, 1, 1]
+  ],
+
+  /**
    * BLINKER - 3x1 oscillator (vertical orientation)
    * Source: https://conwaylife.com/wiki/Blinker
    * Period: 2 (oscillates between vertical and horizontal)

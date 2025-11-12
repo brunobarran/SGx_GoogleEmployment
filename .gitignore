@@ -52,6 +52,12 @@ coverage/
 # (No sensitive files needed for this project - it's a public installation)
 # Keep all game assets and patterns in version control
 
+# LLM-generated games (not curated yet)
+generated/
+
+# Archive is TRACKED - historical documents
+# !archive/
+
 # Optional npm cache directory
 .npm
 
