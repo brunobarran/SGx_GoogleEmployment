@@ -9,21 +9,21 @@
  * Visual configuration for rendering.
  */
 export const VISUAL_CONFIG = {
-  // Canvas dimensions (1920x1080 for Mac Mini M4)
-  CANVAS_WIDTH: 1920,
-  CANVAS_HEIGHT: 1080,
+  // Canvas dimensions (1200×1920 portrait for physical installation)
+  CANVAS_WIDTH: 1200,
+  CANVAS_HEIGHT: 1920,
 
   // Cell size and spacing
-  CELL_SIZE: 10,  // Size of each cell in pixels
+  CELL_SIZE: 30,  // Size of each cell in pixels (1200/40 = 30)
   CELL_SPACING: 0,  // Spacing between cells (0 for solid grid)
 
-  // Grid dimensions (based on cell size)
-  GRID_COLS: 60,  // 60 columns for background
-  GRID_ROWS: 40,  // 40 rows for background
+  // Grid dimensions (portrait 40×64 grid)
+  GRID_COLS: 40,  // 40 columns (1200 / 30 = 40)
+  GRID_ROWS: 64,  // 64 rows (1920 / 30 = 64)
 
-  // Colors (monochrome for now, to be decided later)
-  BACKGROUND_COLOR: '#000000',  // Black
-  CELL_COLOR: '#FFFFFF',  // White
+  // Colors (monochrome base, gradients applied via renderer)
+  BACKGROUND_COLOR: '#FFFFFF',  // White background
+  CELL_COLOR: '#FFFFFF',  // White cells (gradients override this)
   CELL_ALPHA: 255,  // Full opacity
 
   // Rendering mode

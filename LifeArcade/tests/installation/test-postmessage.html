@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>postMessage Test Harness - LifeArcade</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      font-family: 'Google Sans', Arial, sans-serif;
+      color: #202124;
+    }
+
+    h1 {
+      color: #1a73e8;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #5f6368;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .game-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .game-card h2 {
+      color: #202124;
+      margin: 0 0 15px 0;
+      font-size: 18px;
+    }
+
+    .game-card button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .game-card button:hover {
+      background: #1765cc;
+    }
+
+    .game-card button:disabled {
+      background: #dadce0;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .status.waiting {
+      background: #fef7e0;
+      color: #885200;
+    }
+
+    .status.success {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .status.error {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+
+    .score-display {
+      font-weight: bold;
+      color: #1a73e8;
+    }
+
+    .iframe-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1200px;
+      height: 1920px;
+      max-width: 90vw;
+      max-height: 90vh;
+      background: black;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+      z-index: 1000;
+    }
+
+    .iframe-container.active {
+      display: block;
+    }
+
+    .iframe-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      color: #202124;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      z-index: 1001;
+    }
+
+    .console-log {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .console-log h2 {
+      margin: 0 0 15px 0;
+      color: #202124;
+    }
+
+    .log-entry {
+      padding: 8px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .log-entry.info {
+      background: #e8f0fe;
+      color: #1967d2;
+    }
+
+    .log-entry.success {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .log-entry.error {
+      background: #fce8e6;
+      color: #c5221f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>postMessage Test Harness</h1>
+    <p class="subtitle">Phase 1: Game Modifications - Testing postMessage communication from all 4 games</p>
+
+    <div class="game-grid">
+      <div class="game-card">
+        <h2>🚀 Space Invaders</h2>
+        <button onclick="loadGame('space-invaders')">Load Game</button>
+        <div class="status waiting" id="status-space-invaders">Waiting for test...</div>
+      </div>
+
+      <div class="game-card">
+        <h2>🦖 Dino Runner</h2>
+        <button onclick="loadGame('dino-runner')">Load Game</button>
+        <div class="status waiting" id="status-dino-runner">Waiting for test...</div>
+      </div>
+
+      <div class="game-card">
+        <h2>🧱 Breakout</h2>
+        <button onclick="loadGame('breakout')">Load Game</button>
+        <div class="status waiting" id="status-breakout">Waiting for test...</div>
+      </div>
+
+      <div class="game-card">
+        <h2>🐦 Flappy Bird</h2>
+        <button onclick="loadGame('flappy-bird')">Load Game</button>
+        <div class="status waiting" id="status-flappy-bird">Waiting for test...</div>
+      </div>
+    </div>
+
+    <div class="console-log">
+      <h2>📋 Console Log</h2>
+      <div id="console"></div>
+    </div>
+  </div>
+
+  <div class="iframe-container" id="iframe-container">
+    <button class="close-btn" onclick="closeGame()">Close Game</button>
+    <iframe id="game-iframe" src=""></iframe>
+  </div>
+
+  <script>
+    let currentGame = null;
+    const consoleLogDiv = document.getElementById('console');
+
+    // Listen for postMessage from games
+    window.addEventListener('message', (event) => {
+      const { type, payload } = event.data;
+
+      if (type === 'gameOver') {
+        logMessage(`✅ postMessage received from ${currentGame}`, 'success');
+        logMessage(`Score: ${payload.score}`, 'info');
+
+        // Update status
+        const statusDiv = document.getElementById(`status-${currentGame}`);
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = `✅ PASS - Score: <span class="score-display">${payload.score}</span>`;
+
+        // Auto-close after 2 seconds
+        setTimeout(() => {
+          closeGame();
+        }, 2000);
+      }
+    });
+
+    function loadGame(gameName) {
+      currentGame = gameName;
+      const iframe = document.getElementById('game-iframe');
+      const container = document.getElementById('iframe-container');
+
+      logMessage(`Loading ${gameName}...`, 'info');
+
+      iframe.src = `/games/${gameName}.html`;
+      container.classList.add('active');
+
+      // Update status to waiting
+      const statusDiv = document.getElementById(`status-${gameName}`);
+      statusDiv.className = 'status waiting';
+      statusDiv.textContent = '⏳ Playing... waiting for Game Over';
+    }
+
+    function closeGame() {
+      const iframe = document.getElementById('game-iframe');
+      const container = document.getElementById('iframe-container');
+
+      iframe.src = '';
+      container.classList.remove('active');
+      currentGame = null;
+
+      logMessage('Game closed', 'info');
+    }
+
+    function logMessage(message, type = 'info') {
+      const logEntry = document.createElement('div');
+      logEntry.className = `log-entry ${type}`;
+      logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      consoleLogDiv.appendChild(logEntry);
+
+      // Auto-scroll to bottom
+      consoleLogDiv.scrollTop = consoleLogDiv.scrollHeight;
+
+      // Also log to browser console
+      console.log(message);
+    }
+
+    // Initial log
+    logMessage('Test harness loaded. Click a game button to start testing.', 'info');
+  </script>
+</body>
+</html>

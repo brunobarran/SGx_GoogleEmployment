@@ -20,11 +20,15 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver, renderWin } from '../src/utils/UIHelpers.js'
 
 // ============================================
-// CONFIGURATION
+// CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
 
   ui: {
     backgroundColor: '#FFFFFF',
@@ -35,28 +39,33 @@ const CONFIG = {
   },
 
   paddle: {
-    width: 100,   // Wider paddle for better gameplay
-    height: 20,   // 2 cells * 10 cellSize
-    speed: 8,
-    y: 560
+    width: 150,
+    height: 25,
+    speed: 10,
+    y: 1850
   },
 
   ball: {
-    radius: 30,   // 3x3 grid with cellSize 10 (same as bullet in Space Invaders)
-    speed: 5,
-    maxAngle: Math.PI / 3  // Max bounce angle (60 degrees)
+    radius: 40,
+    speed: 6,
+    maxAngle: Math.PI / 3
   },
 
   brick: {
-    rows: 3,      // Reduced from 6
-    cols: 6,      // Reduced from 10
-    width: 60,    // Same as invaders in Space Invaders
-    height: 60,   // Same as invaders (square like them)
-    padding: 30,  // More horizontal spacing
-    offsetX: 145, // Centered: (800 - (6*60 + 5*30)) / 2
-    offsetY: 80
+    rows: 8,
+    cols: 6,
+    width: 80,
+    height: 80,
+    padding: 40,
+    offsetX: 180,
+    offsetY: 150
   }
 }
+
+// Store scale factor for rendering (don't modify CONFIG values)
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
 
 // Google Brand Colors
 const GOOGLE_COLORS = {
@@ -96,10 +105,32 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
+// RESPONSIVE CANVAS HELPERS
+// ============================================
+function calculateResponsiveSize() {
+  const canvasHeight = windowHeight
+  const canvasWidth = canvasHeight * ASPECT_RATIO
+  return { width: canvasWidth, height: canvasHeight }
+}
+
+function updateConfigScale() {
+  // Only update scaleFactor based on canvas size, don't modify CONFIG values
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
 // p5.js SETUP
 // ============================================
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  // Calculate responsive canvas size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+
+  // Update scale factor (CONFIG values stay at base resolution)
+  updateConfigScale()
+
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
   // Create gradient renderer
@@ -213,10 +244,15 @@ function draw() {
   // Update gradient animation
   maskedRenderer.updateAnimation()
 
+  // Only show Game Over/Win screen in standalone mode
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   } else if (state.phase === 'WIN') {
-    renderWin(width, height, state.score)
+    if (window.parent === window) {
+      renderWin(width, height, state.score)
+    }
   }
 }
 
@@ -243,10 +279,26 @@ function updateGame() {
   // Check win/lose
   if (bricks.length === 0) {
     state.phase = 'WIN'
+
+    // Send postMessage to parent if in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
+    }
   }
 
-  if (state.lives <= 0) {
+  if (state.lives <= 0 && state.phase !== 'GAMEOVER') {
     state.phase = 'GAMEOVER'
+
+    // Send postMessage to parent if in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
+    }
   }
 }
 
@@ -411,6 +463,9 @@ function spawnExplosion(x, y, brickGradient) {
 // RENDERING
 // ============================================
 function renderGame() {
+  push()
+  scale(scaleFactor)
+
   // Render paddle with gradient
   maskedRenderer.renderMaskedGrid(
     paddle.gol,
@@ -442,13 +497,20 @@ function renderGame() {
 
   // Render particles with gradients and alpha
   renderParticles(particles, maskedRenderer)
+
+  pop()
 }
 
 function renderUI() {
+  push()
+  scale(scaleFactor)
+
   renderGameUI(CONFIG, state, [
     '← → or A/D: Move',
     'SPACE: Launch'
   ])
+
+  pop()
 }
 
 // ============================================
@@ -460,7 +522,21 @@ function keyPressed() {
   }
 }
 
+// ============================================
+// WINDOW RESIZE HANDLER
+// ============================================
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
+
+  // No need to modify entity values - scaling happens in rendering
+}
+
 // Export for p5.js
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized

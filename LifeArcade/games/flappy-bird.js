@@ -22,13 +22,16 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
 // ============================================
-// CONFIGURATION
+// CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
-const CONFIG = {
-  width: 800,
-  height: 600,
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
 
-  // Standard UI config (DO NOT MODIFY)
+const CONFIG = {
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
+
   ui: {
     backgroundColor: '#FFFFFF',
     textColor: '#5f6368',
@@ -37,28 +40,32 @@ const CONFIG = {
     fontSize: 16
   },
 
-  // Game-specific config
   player: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     cellSize: 10,
-    x: 150,  // Fixed X position
-    startY: 300
+    x: 300,
+    startY: 960
   },
 
-  gravity: 0.6,
-  jumpForce: -12,
-  groundY: 550,
-  ceilingY: 50,
+  gravity: 0.7,
+  jumpForce: -14,
+  groundY: 1850,
+  ceilingY: 70,
 
   pipe: {
-    width: 80,
-    gap: 220,  // Gap between top and bottom pipes
-    speed: -4,
-    spawnInterval: 90,  // frames
+    width: 120,
+    gap: 280,
+    speed: -5,
+    spawnInterval: 100,
     cellSize: 10
   }
 }
+
+// Store scale factor for rendering (don't modify CONFIG values)
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
 
 // ============================================
 // GAME STATE
@@ -82,10 +89,32 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
+// RESPONSIVE CANVAS HELPERS
+// ============================================
+function calculateResponsiveSize() {
+  const canvasHeight = windowHeight
+  const canvasWidth = canvasHeight * ASPECT_RATIO
+  return { width: canvasWidth, height: canvasHeight }
+}
+
+function updateConfigScale() {
+  // Only update scaleFactor based on canvas size
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
 // p5.js SETUP
 // ============================================
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  // Calculate responsive canvas size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+
+  // Update scale factor (CONFIG values stay at base resolution)
+  updateConfigScale()
+
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
   maskedRenderer = new SimpleGradientRenderer(this)
   initGame()
@@ -146,8 +175,11 @@ function draw() {
   renderUI()
   maskedRenderer.updateAnimation()
 
+  // Only show Game Over screen in standalone mode
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
 }
 
@@ -175,9 +207,17 @@ function updatePlayer() {
     player.vy = 0
   }
 
-  if (player.y > CONFIG.groundY - player.height) {
+  if (player.y > CONFIG.groundY - player.height && state.phase !== 'GAMEOVER') {
     state.phase = 'GAMEOVER'
     spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
+
+    // Send postMessage to parent if in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
+    }
   }
 
   // Update GoL (Modified GoL with life force)
@@ -198,7 +238,7 @@ function spawnPipes() {
 
     // Top pipe
     const topPipe = {
-      x: CONFIG.width,
+      x: BASE_WIDTH,
       y: CONFIG.ceilingY,
       width: CONFIG.pipe.width,
       height: gapTop - CONFIG.ceilingY,
@@ -216,7 +256,7 @@ function spawnPipes() {
 
     // Bottom pipe
     const bottomPipe = {
-      x: CONFIG.width,
+      x: BASE_WIDTH,
       y: gapTop + CONFIG.pipe.gap,
       width: CONFIG.pipe.width,
       height: CONFIG.groundY - (gapTop + CONFIG.pipe.gap),
@@ -270,8 +310,18 @@ function checkCollisions() {
       player.x, player.y, player.width, player.height,
       pipe.x, pipe.y, pipe.width, pipe.height
     )) {
-      state.phase = 'GAMEOVER'
-      spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
+      if (state.phase !== 'GAMEOVER') {
+        state.phase = 'GAMEOVER'
+        spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
+
+        // Send postMessage to parent if in installation
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'gameOver',
+            payload: { score: state.score }
+          }, '*')
+        }
+      }
     }
   })
 }
@@ -301,11 +351,14 @@ function spawnExplosion(x, y) {
 // RENDERING
 // ============================================
 function renderGame() {
+  push()
+  scale(scaleFactor)
+
   // Draw ceiling and ground lines
   stroke(CONFIG.ui.textColor)
   strokeWeight(2)
-  line(0, CONFIG.ceilingY, CONFIG.width, CONFIG.ceilingY)
-  line(0, CONFIG.groundY, CONFIG.width, CONFIG.groundY)
+  line(0, CONFIG.ceilingY, BASE_WIDTH, CONFIG.ceilingY)
+  line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
 
   // Render player with gradient (hide during game over)
   if (state.phase !== 'GAMEOVER') {
@@ -331,12 +384,19 @@ function renderGame() {
 
   // Render particles with gradients and alpha
   renderParticles(particles, maskedRenderer)
+
+  pop()
 }
 
 function renderUI() {
+  push()
+  scale(scaleFactor)
+
   renderGameUI(CONFIG, state, [
     'SPACE or ↑ or W: Jump'
   ])
+
+  pop()
 }
 
 // ============================================
@@ -349,8 +409,22 @@ function keyPressed() {
 }
 
 // ============================================
+// WINDOW RESIZE HANDLER
+// ============================================
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
+
+  // No need to modify entity values - scaling happens in rendering
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized

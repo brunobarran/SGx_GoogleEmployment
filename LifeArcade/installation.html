@@ -13,354 +13,134 @@
     }
 
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #000000;
-      color: #00FF00;
+      font-family: 'Google Sans', Arial, sans-serif;
+      background-color: #FFFFFF;
+      color: #202124;
       overflow: hidden;
       width: 100vw;
       height: 100vh;
     }
 
+    /* ===== GLOBAL ANIMATIONS ===== */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
     /* ===== SCREEN CONTAINER ===== */
-    .screen {
-      display: none;
+    #app-container {
       width: 100%;
       height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-
-    .screen.active {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    /* ===== ATTRACT SCREEN ===== */
-    #attract-screen {
-      background: radial-gradient(circle at center, #001a00 0%, #000000 100%);
-      animation: pulse 4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.8; }
-      50% { opacity: 1; }
-    }
-
-    .attract-title {
-      font-size: 5rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 2rem;
-      text-shadow: 0 0 20px #00FF00, 0 0 40px #00FF00;
-      letter-spacing: 0.2em;
-    }
-
-    .attract-subtitle {
-      font-size: 2rem;
-      text-align: center;
-      margin-bottom: 4rem;
-      color: #00CC00;
-    }
-
-    .attract-prompt {
-      font-size: 1.5rem;
-      animation: blink 1.5s step-start infinite;
-    }
-
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-
-    /* ===== GALLERY SCREEN ===== */
-    #gallery-screen {
-      background-color: #000000;
-    }
-
-    .gallery-container {
-      width: 90%;
-      max-width: 1200px;
-    }
-
-    .gallery-title {
-      font-size: 3rem;
-      text-align: center;
-      margin-bottom: 3rem;
-      text-shadow: 0 0 10px #00FF00;
-    }
-
-    .game-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .game-card {
-      background-color: #001a00;
-      border: 2px solid #00FF00;
-      padding: 2rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
       position: relative;
-    }
-
-    .game-card:hover,
-    .game-card.selected {
-      background-color: #003300;
-      border-color: #00FF00;
-      box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
-      transform: scale(1.05);
-    }
-
-    .game-card h3 {
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .game-card .game-number {
-      position: absolute;
-      top: 10px;
-      left: 15px;
-      font-size: 1.2rem;
-      color: #00CC00;
-    }
-
-    .gallery-instructions {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #00CC00;
-    }
-
-    /* ===== CODE ANIMATION SCREEN ===== */
-    #code-screen {
-      background-color: #000000;
-      justify-content: flex-start;
-      padding: 2rem;
-    }
-
-    .code-header {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      text-align: center;
-      width: 100%;
-    }
-
-    .code-display {
-      font-family: 'Courier New', monospace;
-      font-size: 1.2rem;
-      line-height: 1.6;
-      white-space: pre;
-      overflow-y: auto;
-      max-height: 80vh;
-      width: 90%;
-      max-width: 1200px;
-      padding: 2rem;
-      background-color: #001100;
-      border: 1px solid #00FF00;
-    }
-
-    .cursor {
-      animation: blink 0.7s step-start infinite;
-    }
-
-    /* ===== GAME SCREEN ===== */
-    #game-screen {
-      background-color: #000000;
-      padding: 0;
-    }
-
-    #game-iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* ===== SCORE ENTRY SCREEN ===== */
-    #score-entry-screen {
-      background: radial-gradient(circle at center, #001a00 0%, #000000 100%);
-    }
-
-    .score-container {
-      text-align: center;
-    }
-
-    .game-over-title {
-      font-size: 4rem;
-      margin-bottom: 2rem;
-      color: #FF0000;
-      text-shadow: 0 0 20px #FF0000;
-    }
-
-    .final-score {
-      font-size: 3rem;
-      margin-bottom: 3rem;
-      color: #00FF00;
-    }
-
-    .name-input-container {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .letter-box {
-      width: 100px;
-      height: 120px;
-      border: 3px solid #00FF00;
-      background-color: #001100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 4rem;
-      font-weight: bold;
-    }
-
-    .letter-box.active {
-      border-color: #00FF00;
-      background-color: #003300;
-      box-shadow: 0 0 30px rgba(0, 255, 0, 0.7);
-    }
-
-    .score-instructions {
-      font-size: 1.5rem;
-      color: #00CC00;
-    }
-
-    /* ===== LEADERBOARD SCREEN ===== */
-    #leaderboard-screen {
-      background: linear-gradient(180deg, #000000 0%, #001a00 50%, #000000 100%);
-    }
-
-    .leaderboard-container {
-      width: 80%;
-      max-width: 800px;
-    }
-
-    .leaderboard-title {
-      font-size: 4rem;
-      text-align: center;
-      margin-bottom: 3rem;
-      text-shadow: 0 0 20px #00FF00;
-    }
-
-    .leaderboard-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 3rem;
-    }
-
-    .leaderboard-table th,
-    .leaderboard-table td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #003300;
-      font-size: 1.5rem;
-    }
-
-    .leaderboard-table th {
-      color: #00FF00;
-      border-bottom: 2px solid #00FF00;
-    }
-
-    .leaderboard-table tr.highlight {
-      background-color: #003300;
-      border: 2px solid #00FF00;
-    }
-
-    .leaderboard-rank {
-      width: 80px;
-      text-align: center !important;
-    }
-
-    .leaderboard-name {
-      width: 150px;
-    }
-
-    .leaderboard-score {
-      text-align: right !important;
-    }
-
-    .leaderboard-return {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #00CC00;
-      animation: blink 1.5s step-start infinite;
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
-  <!-- SCREEN 1: ATTRACT SCREEN -->
-  <div id="attract-screen" class="screen active">
-    <div class="attract-title">GAME OF LIFE<br>ARCADE</div>
-    <div class="attract-subtitle">Conway's Cellular Automaton Games</div>
-    <div class="attract-prompt">PRESS SPACE TO START</div>
-  </div>
+  <!-- Main app container - screens will be injected here -->
+  <div id="app-container"></div>
 
-  <!-- SCREEN 2: GALLERY (GAME SELECTION) -->
-  <div id="gallery-screen" class="screen">
-    <div class="gallery-container">
-      <h2 class="gallery-title">SELECT YOUR GAME</h2>
-      <div class="game-grid" id="game-grid">
-        <!-- Games will be populated by JavaScript -->
-      </div>
-      <div class="gallery-instructions">
-        Use NUMBER KEYS (1-7) or ARROW KEYS + SPACE to select
-      </div>
-    </div>
-  </div>
+  <!-- p5.js for IdleScreen GoL animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
 
-  <!-- SCREEN 3: CODE ANIMATION -->
-  <div id="code-screen" class="screen">
-    <div class="code-header">GENERATING: <span id="code-game-name"></span></div>
-    <div class="code-display" id="code-display"></div>
-  </div>
+  <!-- Main initialization script -->
+  <script type="module">
+    // ===== IMPORT MANAGERS =====
+    import { AppState } from './src/installation/AppState.js'
+    import { StorageManager } from './src/installation/StorageManager.js'
+    import { InputManager } from './src/installation/InputManager.js'
+    import { IframeComm } from './src/installation/IframeComm.js'
 
-  <!-- SCREEN 4: GAME -->
-  <div id="game-screen" class="screen">
-    <iframe id="game-iframe" src=""></iframe>
-  </div>
+    // ===== IMPORT SCREENS =====
+    import { IdleScreen } from './src/screens/IdleScreen.js'
+    import { WelcomeScreen } from './src/screens/WelcomeScreen.js'
+    import { GalleryScreen } from './src/screens/GalleryScreen.js'
+    import { CodeAnimationScreen } from './src/screens/CodeAnimationScreen.js'
+    import { GameScreen } from './src/screens/GameScreen.js'
+    import { ScoreEntryScreen } from './src/screens/ScoreEntryScreen.js'
+    import { LeaderboardScreen } from './src/screens/LeaderboardScreen.js'
+    import { QRCodeScreen } from './src/screens/QRCodeScreen.js'
 
-  <!-- SCREEN 5: SCORE ENTRY -->
-  <div id="score-entry-screen" class="screen">
-    <div class="score-container">
-      <div class="game-over-title">GAME OVER</div>
-      <div class="final-score">YOUR SCORE: <span id="final-score">0</span></div>
-      <div class="name-input-container">
-        <div class="letter-box active" data-letter="0">A</div>
-        <div class="letter-box" data-letter="1">A</div>
-        <div class="letter-box" data-letter="2">A</div>
-      </div>
-      <div class="score-instructions">
-        ↑↓: CHANGE LETTER | ←→: MOVE CURSOR | SPACE: CONFIRM
-      </div>
-    </div>
-  </div>
+    console.log('=== GAME OF LIFE ARCADE - Physical Installation ===')
+    console.log('Initializing...')
 
-  <!-- SCREEN 6: LEADERBOARD -->
-  <div id="leaderboard-screen" class="screen">
-    <div class="leaderboard-container">
-      <h2 class="leaderboard-title">HIGH SCORES</h2>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th class="leaderboard-rank">RANK</th>
-            <th class="leaderboard-name">NAME</th>
-            <th class="leaderboard-score">SCORE</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          <!-- Leaderboard entries populated by JavaScript -->
-        </tbody>
-      </table>
-      <div class="leaderboard-return">PRESS SPACE TO RETURN</div>
-    </div>
-  </div>
+    // ===== INITIALIZE MANAGERS =====
+    const appState = new AppState()
+    const storageManager = new StorageManager()
+    const inputManager = new InputManager()
+    const iframeComm = new IframeComm()
 
-  <script src="./src/installation/InstallationManager.js" type="module"></script>
+    console.log('✓ Managers initialized')
+
+    // ===== CREATE SCREEN INSTANCES =====
+    const screens = {
+      idle: new IdleScreen(appState, inputManager),
+      welcome: new WelcomeScreen(appState, inputManager),
+      gallery: new GalleryScreen(appState, inputManager),
+      code: new CodeAnimationScreen(appState, inputManager),
+      game: new GameScreen(appState, inputManager, iframeComm),
+      score: new ScoreEntryScreen(appState, inputManager, storageManager),
+      leaderboard: new LeaderboardScreen(appState, inputManager, storageManager),
+      qr: new QRCodeScreen(appState, inputManager)
+    }
+
+    console.log('✓ Screen instances created')
+
+    // ===== CURRENT SCREEN TRACKING =====
+    let currentScreenName = null
+
+    // ===== SCREEN TRANSITION HANDLER =====
+    function handleScreenChange(newScreenName) {
+      console.log(`Screen transition: ${currentScreenName} → ${newScreenName}`)
+
+      // Hide current screen
+      if (currentScreenName && screens[currentScreenName]) {
+        console.log(`Hiding ${currentScreenName}`)
+        screens[currentScreenName].hide()
+      }
+
+      // Show new screen
+      if (screens[newScreenName]) {
+        console.log(`Showing ${newScreenName}`)
+        screens[newScreenName].show()
+        currentScreenName = newScreenName
+      } else {
+        console.error(`Screen "${newScreenName}" not found!`)
+      }
+    }
+
+    // ===== REGISTER APPSTATE OBSERVER =====
+    appState.subscribe((state) => {
+      console.log('AppState changed:', state)
+
+      // Check if screen changed
+      if (state.currentScreen !== currentScreenName) {
+        handleScreenChange(state.currentScreen)
+      }
+    })
+
+    console.log('✓ AppState observer registered')
+
+    // ===== START WITH IDLE SCREEN =====
+    console.log('Starting with IdleScreen...')
+    handleScreenChange('idle')
+
+    // ===== EXPOSE FOR DEBUGGING (optional) =====
+    window.arcade = {
+      appState,
+      storageManager,
+      inputManager,
+      iframeComm,
+      screens
+    }
+
+    console.log('✓ Installation ready')
+    console.log('Press SPACE to begin')
+  </script>
 </body>
 </html>

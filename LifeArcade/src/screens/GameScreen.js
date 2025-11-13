@@ -1,0 +1,234 @@
+/**
+ * GameScreen - Fullscreen iframe container for game
+ *
+ * Loads selected game in iframe
+ * Listens for postMessage (Game Over)
+ * Handles Escape key to exit early
+ *
+ * @author Game of Life Arcade
+ * @license ISC
+ */
+
+export class GameScreen {
+  /**
+   * Maximum game time (30 minutes) before timeout
+   */
+  static MAX_GAME_TIME = 30 * 60 * 1000  // 30 minutes
+
+  constructor(appState, inputManager, iframeComm) {
+    this.appState = appState
+    this.inputManager = inputManager
+    this.iframeComm = iframeComm
+
+    // DOM elements
+    this.element = null
+    this.iframe = null
+
+    // Timeout handle
+    this.gameTimeoutHandle = null
+
+    // Escape handler
+    this.escapeHandler = null
+
+    // Bind methods
+    this.handleKeyPress = this.handleKeyPress.bind(this)
+    this.handleGameOver = this.handleGameOver.bind(this)
+  }
+
+  /**
+   * Show screen - Create iframe and load game
+   */
+  show() {
+    console.log('GameScreen: Show')
+
+    // Get selected game
+    const game = this.appState.getState().selectedGame
+    if (!game) {
+      console.error('No game selected')
+      this.appState.reset()
+      return
+    }
+
+    // Create screen element
+    this.element = document.createElement('div')
+    this.element.id = 'game-screen'
+
+    // Create iframe
+    this.iframe = document.createElement('iframe')
+    this.iframe.src = game.path
+    this.iframe.tabIndex = 0  // Make iframe focusable
+    this.iframe.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1200px;
+      height: 1920px;
+      max-width: 100vw;
+      max-height: 100vh;
+      aspect-ratio: auto 1200 / 1920;
+      border: none;
+      object-fit: contain;
+      z-index: 100;
+    `
+
+    // Auto-focus iframe when loaded so keyboard events work immediately
+    this.iframe.onload = () => {
+      try {
+        // Give iframe focus after a short delay (ensures it's fully loaded)
+        setTimeout(() => {
+          this.iframe.focus()
+
+          // Also focus the content window for better compatibility
+          if (this.iframe.contentWindow) {
+            this.iframe.contentWindow.focus()
+          }
+
+          // Simulate a click on the iframe to ensure it gets focus
+          this.iframe.click()
+
+          console.log('GameScreen: Iframe focused - keyboard events ready')
+          console.log('GameScreen: Active element:', document.activeElement)
+        }, 100)
+      } catch (error) {
+        console.warn('GameScreen: Could not auto-focus iframe:', error)
+      }
+    }
+
+    // Also focus on click
+    this.iframe.addEventListener('click', () => {
+      this.iframe.focus()
+      if (this.iframe.contentWindow) {
+        this.iframe.contentWindow.focus()
+      }
+    })
+
+    // Add iframe to element
+    this.element.appendChild(this.iframe)
+
+    // Add element styles
+    this.element.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #FFFFFF;
+      z-index: 99;
+      overflow: hidden;
+    `
+
+    // Add to DOM
+    document.body.appendChild(this.element)
+
+    // Start listening for postMessage
+    this.iframeComm.onGameOver(this.handleGameOver)
+    this.iframeComm.startListening(GameScreen.MAX_GAME_TIME)
+
+    // IMPORTANT: Stop InputManager from intercepting keys while game is active
+    // This allows iframe to receive all keyboard events directly
+    this.inputManager.stopListening()
+    console.log('GameScreen: InputManager disabled - iframe has full keyboard control')
+
+    // Listen for Escape key only (using native event listener)
+    this.escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        console.log('GameScreen: Escape pressed - exiting to Idle')
+        this.exitToIdle()
+      }
+    }
+    window.addEventListener('keydown', this.escapeHandler)
+
+    // Set game timeout
+    this.gameTimeoutHandle = setTimeout(() => {
+      console.warn('GameScreen: Game timeout reached (30 min)')
+      this.exitToIdle()
+    }, GameScreen.MAX_GAME_TIME)
+
+    console.log(`GameScreen: Loading ${game.name}`)
+  }
+
+  /**
+   * Hide screen - Clean up iframe and listeners
+   */
+  hide() {
+    console.log('GameScreen: Hide')
+
+    // Stop listening for postMessage
+    this.iframeComm.stopListening()
+    this.iframeComm.offGameOver(this.handleGameOver)
+
+    // Re-enable InputManager for other screens
+    this.inputManager.startListening()
+    console.log('GameScreen: InputManager re-enabled')
+
+    // Remove native Escape listener
+    if (this.escapeHandler) {
+      window.removeEventListener('keydown', this.escapeHandler)
+      this.escapeHandler = null
+    }
+
+    // Clear timeout
+    if (this.gameTimeoutHandle) {
+      clearTimeout(this.gameTimeoutHandle)
+      this.gameTimeoutHandle = null
+    }
+
+    // Remove element
+    if (this.element) {
+      this.element.remove()
+      this.element = null
+      this.iframe = null
+    }
+
+    console.log('GameScreen: Cleaned up')
+  }
+
+  /**
+   * Handle Game Over postMessage
+   * @param {number|null} score - Final score (null if timeout)
+   */
+  handleGameOver(score) {
+    console.log('GameScreen: Game Over received, score:', score)
+
+    // If score is null (timeout), exit to idle
+    if (score === null) {
+      console.warn('GameScreen: No score received (timeout)')
+      this.exitToIdle()
+      return
+    }
+
+    // Validate score
+    if (typeof score !== 'number' || score < 0) {
+      console.error('GameScreen: Invalid score:', score)
+      this.exitToIdle()
+      return
+    }
+
+    // Store score in AppState
+    this.appState.setScore(score)
+
+    // Advance to Score Entry screen
+    this.appState.transition('score')
+  }
+
+  /**
+   * Handle key press
+   * @param {string} key - Pressed key
+   */
+  handleKeyPress(key) {
+    // Escape exits to Idle (no score)
+    if (key === 'Escape') {
+      console.log('GameScreen: Escape pressed - exiting to Idle')
+      this.exitToIdle()
+    }
+  }
+
+  /**
+   * Exit to Idle (no score saved)
+   */
+  exitToIdle() {
+    console.log('GameScreen: Exiting to Idle')
+    this.appState.reset()
+  }
+}

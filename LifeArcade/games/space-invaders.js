@@ -16,11 +16,16 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
 // ============================================
-// GAME CONFIGURATION
+// GAME CONFIGURATION - BASE REFERENCE (10:16 ratio)
+// All values are proportional to 1200×1920 reference resolution
 // ============================================
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
 
   ui: {
     backgroundColor: '#FFFFFF',
@@ -31,38 +36,43 @@ const CONFIG = {
   },
 
   invader: {
-    cols: 7,      // Reduced to fit screen
-    rows: 3,      // Reduced to fit screen
-    width: 60,    // Reduced size
-    height: 60,
-    spacing: 80,  // Adjusted spacing
-    startX: 50,
-    startY: 80,
+    cols: 8,
+    rows: 5,
+    width: 80,
+    height: 80,
+    spacing: 120,
+    startX: 80,
+    startY: 150,
     moveInterval: 30,
-    speed: 15,
-    cellSize: 10
+    speed: 20,
+    cellSize: 13
   },
 
   player: {
-    width: 60,    // Reduced size
-    height: 60,
-    cellSize: 10,
-    speed: 6,
+    width: 80,
+    height: 80,
+    cellSize: 13,
+    speed: 8,
     shootCooldown: 15
   },
 
   bullet: {
-    width: 30,    // Proportionally reduced
-    height: 30,
-    cellSize: 10
+    width: 40,
+    height: 40,
+    cellSize: 13
   },
 
   explosion: {
-    width: 60,    // Same size as invaders
-    height: 60,
-    cellSize: 10
+    width: 80,
+    height: 80,
+    cellSize: 13
   }
 }
+
+// Store scale factor for rendering (don't modify CONFIG values)
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
 
 // ============================================
 // GAME STATE
@@ -90,10 +100,33 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
+// RESPONSIVE CANVAS HELPERS
+// ============================================
+function calculateResponsiveSize() {
+  // Use window height as reference, calculate width maintaining 10:16 aspect ratio
+  const canvasHeight = windowHeight
+  const canvasWidth = canvasHeight * ASPECT_RATIO
+  return { width: canvasWidth, height: canvasHeight }
+}
+
+function updateConfigScale() {
+  // Only update scaleFactor based on canvas size, don't modify CONFIG values
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
 // p5.js SETUP
 // ============================================
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  // Calculate responsive canvas size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+
+  // Update scale factor (CONFIG values stay at base resolution)
+  updateConfigScale()
+
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
   // Create simple gradient renderer (KISS)
@@ -119,13 +152,13 @@ function initGame() {
 function setupPlayer() {
   player = {
     x: CONFIG.width / 2 - CONFIG.player.width / 2,
-    y: CONFIG.height - 120,
+    y: CONFIG.height - 200,  // Adjusted for portrait
     width: CONFIG.player.width,
     height: CONFIG.player.height,
     vx: 0,
     cellSize: CONFIG.player.cellSize,
 
-    // GoL engine - 6x6 grid for 60x60 visual size
+    // GoL engine - 6x6 grid for 80x80 visual size
     gol: new GoLEngine(6, 6, 12),
 
     // Gradient configuration
@@ -206,7 +239,10 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    // Only show Game Over screen in standalone mode
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
 }
 
@@ -271,8 +307,8 @@ function updateBullets() {
       maintainDensity(bullet, 0.75)
     }
 
-    // Off screen
-    if (bullet.y < 0 || bullet.y > height) {
+    // Off screen - use CONFIG.height (base coordinates) not canvas height
+    if (bullet.y < 0 || bullet.y > CONFIG.height) {
       bullet.dead = true
     }
   })
@@ -351,8 +387,16 @@ function checkWinLose() {
     setupInvaders()
   }
 
-  if (state.lives <= 0) {
+  if (state.lives <= 0 && state.phase !== 'GAMEOVER') {
     state.phase = 'GAMEOVER'
+
+    // Send postMessage to parent if in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
+    }
   }
 }
 
@@ -360,15 +404,8 @@ function checkWinLose() {
 // RENDERING WITH MASKED GRADIENTS
 // ============================================
 function renderGame() {
-  // Debug: Check if entities exist
-  if (frameCount % 60 === 0) {
-    console.log('Rendering:', {
-      player: !!player,
-      invaders: invaders.length,
-      bullets: bullets.length,
-      maskedRenderer: !!maskedRenderer
-    })
-  }
+  push()
+  scale(scaleFactor)
 
   // DEBUG: Test if rendering works with simple rectangles
   if (keyIsDown(68)) { // Press 'D' for debug mode
@@ -380,6 +417,7 @@ function renderGame() {
       fill(0, 255, 0, 100)
       rect(inv.x, inv.y, inv.width, inv.height)
     })
+    pop()
     return // Skip gradient rendering in debug mode
   }
 
@@ -418,13 +456,20 @@ function renderGame() {
 
   // Render particles with masked gradients
   renderParticles(particles, maskedRenderer)
+
+  pop()
 }
 
 function renderUI() {
+  push()
+  scale(scaleFactor)
+
   renderGameUI(CONFIG, state, [
     '← → or A/D: Move',
     'SPACE or Z: Shoot'
   ])
+
+  pop()
 }
 
 // ============================================
@@ -466,12 +511,30 @@ function spawnExplosion(x, y) {
 // ============================================
 function keyPressed() {
   if (key === ' ' && state.phase === 'GAMEOVER') {
-    initGame()
-    state.phase = 'PLAYING'
+    // Only allow restart in standalone mode
+    if (window.parent === window) {
+      initGame()
+      state.phase = 'PLAYING'
+    }
   }
+}
+
+// ============================================
+// WINDOW RESIZE HANDLER
+// ============================================
+function windowResized() {
+  // Recalculate canvas size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
+
+  // No need to modify entity values - scaling happens in rendering
 }
 
 // Make functions global for p5.js
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized

@@ -19,11 +19,15 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
 // ============================================
-// CONFIGURATION
+// CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
 
   ui: {
     backgroundColor: '#FFFFFF',
@@ -34,16 +38,21 @@ const CONFIG = {
   },
 
   gravity: 0.8,
-  groundY: 500,
-  jumpForce: -16,
+  groundY: 1800,
+  jumpForce: -18,
 
   obstacle: {
-    spawnInterval: 90,  // frames
+    spawnInterval: 90,
     minInterval: 30,
-    speed: -7,
+    speed: -9,
     speedIncrease: 0.001
   }
 }
+
+// Store scale factor for rendering (don't modify CONFIG values)
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
 
 // Google Brand Colors
 const GOOGLE_COLORS = {
@@ -75,10 +84,32 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
+// RESPONSIVE CANVAS HELPERS
+// ============================================
+function calculateResponsiveSize() {
+  const canvasHeight = windowHeight
+  const canvasWidth = canvasHeight * ASPECT_RATIO
+  return { width: canvasWidth, height: canvasHeight }
+}
+
+function updateConfigScale() {
+  // Only update scaleFactor based on canvas size
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
 // p5.js SETUP
 // ============================================
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  // Calculate responsive canvas size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+
+  // Update scale factor (CONFIG values stay at base resolution)
+  updateConfigScale()
+
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
   // Create gradient renderer
@@ -101,15 +132,15 @@ function initGame() {
 
 function setupPlayer() {
   player = {
-    x: 100,
-    y: CONFIG.groundY - 60,
-    width: 60,    // Same as Space Invaders player
-    height: 60,   // Same as Space Invaders player
+    x: 200,  // Adjusted for wider canvas (portrait)
+    y: CONFIG.groundY - 100,
+    width: 100,    // Larger for 1200px width
+    height: 100,   // Larger for better visibility in portrait
     vx: 0,
     vy: 0,
     onGround: true,
-    gol: new GoLEngine(6, 6, 12),  // Same as Space Invaders
-    cellSize: 10,  // Same as Space Invaders
+    gol: new GoLEngine(8, 8, 12),  // Larger grid for bigger player
+    cellSize: 13,
     gradient: GRADIENT_PRESETS.PLAYER
   }
 
@@ -117,7 +148,7 @@ function setupPlayer() {
   seedRadialDensity(player.gol, 0.85, 0.0)
 
   // Add accent pattern
-  player.gol.setPattern(Patterns.BLINKER, 2, 2)
+  player.gol.setPattern(Patterns.BLINKER, 3, 3)
 }
 
 // ============================================
@@ -142,7 +173,10 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    // Only show Game Over screen in standalone mode
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
 }
 
@@ -246,7 +280,7 @@ function spawnObstacle() {
   const typeInfo = random(types)
 
   const obstacle = {
-    x: CONFIG.width,
+    x: BASE_WIDTH,
     y: CONFIG.groundY - typeInfo.height,
     width: typeInfo.width,
     height: typeInfo.height,
@@ -278,10 +312,20 @@ function checkCollisions() {
       obs.x, obs.y, obs.width, obs.height
     )) {
       // Game over
-      state.phase = 'GAMEOVER'
+      if (state.phase !== 'GAMEOVER') {
+        state.phase = 'GAMEOVER'
 
-      // Spawn explosion
-      spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
+        // Spawn explosion
+        spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
+
+        // Send postMessage to parent if in installation
+        if (window.parent !== window) {
+          window.parent.postMessage({
+            type: 'gameOver',
+            payload: { score: state.score }
+          }, '*')
+        }
+      }
     }
   })
 }
@@ -313,10 +357,13 @@ function spawnExplosion(x, y) {
 // RENDERING
 // ============================================
 function renderGame() {
+  push()
+  scale(scaleFactor)
+
   // Ground line
   stroke(CONFIG.ui.textColor)
   strokeWeight(2)
-  line(0, CONFIG.groundY, CONFIG.width, CONFIG.groundY)
+  line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
 
   // Render player with gradient (hide during game over)
   if (state.phase !== 'GAMEOVER') {
@@ -342,12 +389,19 @@ function renderGame() {
 
   // Render particles with gradients and alpha
   renderParticles(particles, maskedRenderer)
+
+  pop()
 }
 
 function renderUI() {
+  push()
+  scale(scaleFactor)
+
   renderGameUI(CONFIG, state, [
     'SPACE or ↑: Jump'
   ])
+
+  pop()
 }
 
 // ============================================
@@ -355,11 +409,28 @@ function renderUI() {
 // ============================================
 function keyPressed() {
   if (key === ' ' && state.phase === 'GAMEOVER') {
-    initGame()
+    // Only allow restart in standalone mode
+    if (window.parent === window) {
+      initGame()
+    }
   }
+}
+
+// ============================================
+// WINDOW RESIZE HANDLER
+// ============================================
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
+
+  // No need to modify entity values - scaling happens in rendering
 }
 
 // Export for p5.js
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized
