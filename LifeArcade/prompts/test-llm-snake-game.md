@@ -1,3 +1,62 @@
+# LLM Test Prompt - Snake Game with Conway's Game of Life
+
+## Your Task
+
+Create a complete Snake game using the Game of Life Arcade framework. Follow the framework pattern documentation below EXACTLY.
+
+---
+
+## Game Request
+
+**Game:** Classic Snake with cellular automaton aesthetic
+
+**Mechanics:**
+- Player controls a snake that grows when eating food
+- Snake starts with 3 segments at center of screen
+- Food appears randomly on screen as a pulsing GoL oscillator
+- Snake moves continuously in current direction
+- Player changes direction with arrow keys (or WASD)
+- Snake grows by 1 segment when eating food
+- Score increases by 10 points per food eaten
+- Game ends if snake hits wall or itself
+- Single life (no continues)
+
+**Visual Design:**
+- Snake head: 60×60 blue gradient, Modified GoL (life force)
+- Snake body segments: 60×60 blue gradient, Visual Only (maintain density)
+- Food: 60×60 yellow gradient, Pure GoL oscillator (Pulsar pattern, 15fps)
+- Background: White (#FFFFFF)
+- UI: Google brand colors
+
+**Controls:**
+- Arrow keys OR WASD: Change direction
+- Space: Restart after game over
+
+**Specific Requirements:**
+1. Snake moves at constant speed (4 pixels per frame)
+2. Food respawns immediately when eaten
+3. No collisions between body segments during growth
+4. Display score and snake length in UI
+5. Show controls at bottom: "← → ↑ ↓ or WASD: Move | SPACE: Restart"
+6. Explosion particles when snake dies
+7. Hide all snake segments during game over (show only explosion)
+
+**Technical Specs:**
+- Canvas: 800×600
+- Snake segment size: 60×60 (standard entity size)
+- Food size: 60×60
+- Snake speed: 4 pixels/frame (60fps = 240 pixels/second)
+- Food pattern: Patterns.PULSAR (period 3 oscillator)
+- Explosion: 6 particles, 30×30 each, fast evolution (30fps)
+
+---
+
+## Framework Documentation
+
+Use this documentation to implement the game. Follow it EXACTLY.
+
+---
+
 # Game of Life Arcade - Framework Pattern
 
 ## Purpose
@@ -71,8 +130,8 @@ Every game MUST follow this exact structure:
 
 ```javascript
 // ===== IMPORTS (Standard - DO NOT MODIFY) =====
-import { GoLEngine } from '../src/GoLEngine.js'
-import { SimpleGradientRenderer } from '../src/SimpleGradientRenderer.js'
+import { GoLEngine } from '../src/core/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
 import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
 import { Collision } from '../src/utils/Collision.js'
 import { Patterns } from '../src/utils/Patterns.js'
@@ -398,7 +457,7 @@ Every game MUST use this exact HTML structure:
 </head>
 <body>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
-  <script type="module" src="/examples/your-game.js"></script>
+  <script type="module" src="/games/your-game.js"></script>
 </body>
 </html>
 ```
@@ -641,8 +700,8 @@ state.lives = 1  // ALWAYS 1
 - **Template**: `src/game-template.js`
 - **Games**: `games/your-game.js`
 - **HTML**: `games/your-game.html`
-- **Core**: `src/GoLEngine.js`
-- **Rendering**: `src/SimpleGradientRenderer.js`
+- **Core**: `src/core/GoLEngine.js`
+- **Rendering**: `src/rendering/SimpleGradientRenderer.js`
 - **Presets**: `src/utils/GradientPresets.js`
 
 ---
@@ -659,3 +718,88 @@ If unsure about any pattern:
 1. Check `src/game-template.js`
 2. Check existing games: `games/space-invaders.js`, `games/dino-runner.js`, `games/breakout.js`, `games/asteroids.js`, `games/flappy-bird.js`
 3. All games follow this exact pattern
+
+---
+
+## Output Instructions
+
+Generate ONLY the JavaScript game file. The HTML wrapper will be created automatically.
+
+**IMPORTANT:** Do NOT generate HTML. Only generate the complete JavaScript code.
+
+### Output: games/snake.js
+
+Create the complete Snake game JavaScript file. Include:
+- All standard imports
+- CONFIG with snake-specific settings (speed, segment size, etc.)
+- Snake state (head position, body segments array, direction, length)
+- Food state (position, GoL engine)
+- Setup functions for snake head, body segments, and food
+- Movement logic (continuous movement, direction changes)
+- Collision detection (walls, self-collision, food eating)
+- Growth logic when eating food
+- Score tracking (+10 per food)
+- Game over with explosion
+- Proper use of all helper functions
+
+**CRITICAL REQUIREMENTS:**
+- Snake head: 60×60, Modified GoL with life force
+- Snake body: 60×60, Visual Only (maintainDensity)
+- Food: 60×60, Pure GoL Pulsar pattern (15fps evolution)
+- Use GRADIENT_PRESETS.PLAYER for snake
+- Use GRADIENT_PRESETS.BULLET for food
+- Movement speed: 4 pixels per frame
+- Food respawns immediately when eaten
+- Display "SCORE: X | LENGTH: Y" in UI
+- Controls: "← → ↑ ↓ or WASD: Move | SPACE: Restart"
+
+**Note:** The HTML file will be generated automatically with the correct title and script reference, so you don't need to create it.
+
+---
+
+## Validation Checklist
+
+Before submitting, verify your code has:
+
+- ✅ All imports match framework pattern exactly
+- ✅ CONFIG.ui identical to template (not modified)
+- ✅ state.lives = 1 (not 3)
+- ✅ Snake segments are 60×60, cellSize 10
+- ✅ Food uses Patterns.PULSAR
+- ✅ seedRadialDensity() used for all entities
+- ✅ applyLifeForce() used for snake head
+- ✅ maintainDensity() used for body segments
+- ✅ renderGameUI() and renderGameOver() used
+- ✅ Snake hidden during GAMEOVER
+- ✅ Particles continue during GAMEOVER
+- ✅ NO use of 'this' with helper functions
+- ✅ NO use of 'this.' prefix for p5.js functions
+- ✅ Collision.clamp() used for boundaries
+- ✅ window.setup, window.draw, window.keyPressed exported
+
+---
+
+## Output Format
+
+Return ONLY the JavaScript code. No explanations, no markdown formatting, no HTML.
+
+Start directly with the imports and end with the exports:
+
+```javascript
+// ===== IMPORTS (Standard - DO NOT MODIFY) =====
+import { GoLEngine } from '../src/core/GoLEngine.js'
+...
+
+[YOUR COMPLETE GAME CODE]
+
+...
+// ===== EXPORTS =====
+window.setup = setup
+window.draw = draw
+window.keyPressed = keyPressed
+```
+
+---
+
+**BEGIN YOUR RESPONSE NOW. Generate the complete JavaScript file.**
+
