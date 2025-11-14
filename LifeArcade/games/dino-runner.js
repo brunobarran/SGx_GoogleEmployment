@@ -37,14 +37,14 @@ const CONFIG = {
     fontSize: 16
   },
 
-  gravity: 0.8,
-  groundY: 1800,
-  jumpForce: -18,
+  gravity: 2.4,   // 0.8 × 3 = 2.4 (scaled for larger player)
+  groundY: 1800,  // Keep same (relative to canvas height)
+  jumpForce: -54, // -18 × 3 = -54 (scaled for larger player)
 
   obstacle: {
     spawnInterval: 90,
     minInterval: 30,
-    speed: -9,
+    speed: -27,  // -9 × 3 = -27 (scaled)
     speedIncrease: 0.001
   }
 }
@@ -63,6 +63,14 @@ const GOOGLE_COLORS = {
 }
 
 // ============================================
+// GAME OVER CONFIGURATION
+// ============================================
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
+  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
+}
+
+// ============================================
 // GAME STATE
 // ============================================
 const state = {
@@ -70,7 +78,8 @@ const state = {
   phase: 'PLAYING',
   frameCount: 0,
   spawnTimer: 0,
-  gameSpeed: 1
+  gameSpeed: 1,
+  dyingTimer: 0
 }
 
 // ============================================
@@ -132,15 +141,15 @@ function initGame() {
 
 function setupPlayer() {
   player = {
-    x: 200,  // Adjusted for wider canvas (portrait)
-    y: CONFIG.groundY - 100,
-    width: 100,    // Larger for 1200px width
-    height: 100,   // Larger for better visibility in portrait
+    x: 200,  // Keep same (relative positioning)
+    y: CONFIG.groundY - 240,  // 80 × 3 = 240 (scaled height)
+    width: 240,    // 8 cells × 30px (scaled 3x from 80px)
+    height: 240,   // 8 cells × 30px
     vx: 0,
     vy: 0,
     onGround: true,
-    gol: new GoLEngine(8, 8, 12),  // Larger grid for bigger player
-    cellSize: 13,
+    gol: new GoLEngine(8, 8, 12),  // 8×8 grid maintained
+    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
     gradient: GRADIENT_PRESETS.PLAYER
   }
 
@@ -161,9 +170,27 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
-  } else if (state.phase === 'GAMEOVER') {
-    // Continue updating particles during game over for explosion effect
+  } else if (state.phase === 'DYING') {
+    // Continue updating particles during death animation
+    state.dyingTimer++
     updateParticlesOnly()
+
+    // Transition to GAMEOVER when particles done or timeout reached
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   }
 
   renderGame()
@@ -205,7 +232,7 @@ function updateGame() {
       maintainDensity(obs, 0.65)
     }
 
-    if (obs.x < -50) {
+    if (obs.x < -150) {  // Scaled: -50 × 3 = -150
       obs.dead = true
       state.score += 10
     }
@@ -256,25 +283,25 @@ function updatePlayer() {
 }
 
 function spawnObstacle() {
-  // Diverse obstacle types with different sizes and forms
+  // Diverse obstacle types with different sizes and forms (all scaled 3x)
   const types = [
-    // Small cactus (similar to bullet size)
-    { name: 'small', width: 30, height: 40, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },
+    // Small cactus
+    { name: 'small', width: 90, height: 120, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },  // 30×40 × 3
 
-    // Medium cactus (same as player/invader)
-    { name: 'medium', width: 60, height: 60, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.75 },
+    // Medium cactus
+    { name: 'medium', width: 180, height: 180, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.75 },  // 60×60 × 3
 
     // Tall thin cactus
-    { name: 'tall', width: 40, height: 80, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.7 },
+    { name: 'tall', width: 120, height: 240, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.7 },  // 40×80 × 3
 
     // Wide short cactus
-    { name: 'wide', width: 80, height: 40, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },
+    { name: 'wide', width: 240, height: 120, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },  // 80×40 × 3
 
     // Double cactus
-    { name: 'double', width: 50, height: 70, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.65 },
+    { name: 'double', width: 150, height: 210, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.65 },  // 50×70 × 3
 
     // Tiny obstacle
-    { name: 'tiny', width: 20, height: 30, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.85 }
+    { name: 'tiny', width: 60, height: 90, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.85 }  // 20×30 × 3
   ]
 
   const typeInfo = random(types)
@@ -286,11 +313,11 @@ function spawnObstacle() {
     height: typeInfo.height,
     vx: CONFIG.obstacle.speed,
     gol: new GoLEngine(
-      Math.floor(typeInfo.width / 10),   // cellSize 10 for consistency
-      Math.floor(typeInfo.height / 10),
+      Math.floor(typeInfo.width / 30),   // cellSize 30 (scaled from 10)
+      Math.floor(typeInfo.height / 30),
       15
     ),
-    cellSize: 10,  // Same as player and Space Invaders
+    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
     gradient: typeInfo.gradient,
     dead: false
   }
@@ -312,19 +339,14 @@ function checkCollisions() {
       obs.x, obs.y, obs.width, obs.height
     )) {
       // Game over
-      if (state.phase !== 'GAMEOVER') {
-        state.phase = 'GAMEOVER'
+      if (state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+        state.phase = 'DYING'
+        state.dyingTimer = 0
 
         // Spawn explosion
         spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
 
-        // Send postMessage to parent if in installation
-        if (window.parent !== window) {
-          window.parent.postMessage({
-            type: 'gameOver',
-            payload: { score: state.score }
-          }, '*')
-        }
+        // Note: postMessage will be sent after particle animation completes
       }
     }
   })
@@ -333,15 +355,15 @@ function checkCollisions() {
 function spawnExplosion(x, y) {
   for (let i = 0; i < 8; i++) {
     const particle = {
-      x: x + random(-10, 10),
-      y: y + random(-10, 10),
-      vx: random(-3, 3),
-      vy: random(-3, 3),
+      x: x + random(-30, 30),  // Scaled: -10 to 10 × 3
+      y: y + random(-30, 30),
+      vx: random(-9, 9),       // Scaled: -3 to 3 × 3
+      vy: random(-9, 9),
       alpha: 255,
-      width: 60,   // Same as Space Invaders explosions
-      height: 60,  // Same as Space Invaders explosions
-      gol: new GoLEngine(6, 6, 30),  // Same as Space Invaders
-      cellSize: 10,  // Same as Space Invaders
+      width: 180,   // 60 × 3 = 180 (scaled)
+      height: 180,  // 60 × 3 = 180
+      gol: new GoLEngine(6, 6, 30),  // 6×6 grid maintained
+      cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
       gradient: GRADIENT_PRESETS.EXPLOSION,
       dead: false
     }
@@ -365,8 +387,8 @@ function renderGame() {
   strokeWeight(2)
   line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
 
-  // Render player with gradient (hide during game over)
-  if (state.phase !== 'GAMEOVER') {
+  // Render player with gradient (hide during DYING and GAMEOVER)
+  if (state.phase === 'PLAYING') {
     maskedRenderer.renderMaskedGrid(
       player.gol,
       player.x,

@@ -31,6 +31,19 @@ export const VISUAL_CONFIG = {
 }
 
 /**
+ * Game cell scaling configuration.
+ * All games normalized to 10px baseline, then scaled 3x to match IdleScreen's 30px.
+ *
+ * Strategy: Adjust layout (reduce enemies, modify spacing) to fit scaled elements.
+ * Grid sizes (6×6, 8×8, etc.) are maintained - only cellSize changes.
+ */
+export const GAME_SCALE = {
+  OLD_CELL_SIZE: 10,   // Baseline cell size (normalized across all games)
+  NEW_CELL_SIZE: 30,   // Target cell size (matches IdleScreen for visual consistency)
+  SCALE_FACTOR: 3.0    // Multiplier: 30 / 10 = 3.0
+}
+
+/**
  * Performance configuration for update rates and frame budgets.
  */
 export const PERFORMANCE_CONFIG = {

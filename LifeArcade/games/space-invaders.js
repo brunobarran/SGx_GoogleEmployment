@@ -36,36 +36,36 @@ const CONFIG = {
   },
 
   invader: {
-    cols: 8,
-    rows: 5,
-    width: 80,
-    height: 80,
-    spacing: 120,
-    startX: 80,
-    startY: 150,
+    cols: 4,      // 4 columns for balanced grid layout
+    rows: 4,      // 4 rows
+    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
+    height: 180,  // 6 cells × 30px
+    spacing: 60,  // Unified spacing: 60px (same as Breakout padding)
+    startX: 180,  // Same as Breakout offsetX for visual consistency
+    startY: 200,  // Same as Breakout offsetY - unified starting position
     moveInterval: 30,
-    speed: 20,
-    cellSize: 13
+    speed: 45,    // 15 × 3 = 45
+    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
   },
 
   player: {
-    width: 80,
-    height: 80,
-    cellSize: 13,
-    speed: 8,
+    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
+    height: 180,  // 6 cells × 30px
+    cellSize: 30, // Scaled to 30px (3x from 10px baseline)
+    speed: 18,    // 6 × 3 = 18
     shootCooldown: 15
   },
 
   bullet: {
-    width: 40,
-    height: 40,
-    cellSize: 13
+    width: 90,    // 3 cells × 30px (scaled 3x from 30px)
+    height: 90,   // 3 cells × 30px
+    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
   },
 
   explosion: {
-    width: 80,
-    height: 80,
-    cellSize: 13
+    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
+    height: 180,  // 6 cells × 30px
+    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
   }
 }
 
@@ -73,6 +73,14 @@ const CONFIG = {
 let scaleFactor = 1
 let canvasWidth = BASE_WIDTH
 let canvasHeight = BASE_HEIGHT
+
+// ============================================
+// GAME OVER CONFIGURATION
+// ============================================
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
+  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
+}
 
 // ============================================
 // GAME STATE
@@ -85,7 +93,8 @@ const state = {
   frameCount: 0,
   invaderDirection: 1,
   invaderMoveTimer: 0,
-  playerShootCooldown: 0
+  playerShootCooldown: 0,
+  dyingTimer: 0
 }
 
 // ============================================
@@ -190,8 +199,8 @@ function setupInvaders() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const invader = {
-        x: startX + col * spacing,
-        y: startY + row * spacing,
+        x: startX + col * (width + spacing),
+        y: startY + row * (height + spacing),
         width,
         height,
         cellSize,
@@ -230,6 +239,27 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    // Continue updating particles during death animation
+    state.dyingTimer++
+    updateParticlesLocal()
+
+    // Transition to GAMEOVER when particles done or timeout reached
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   }
 
   renderGame()
@@ -322,15 +352,15 @@ function updateParticlesLocal() {
 
 function moveInvaders() {
   const hitEdge = invaders.some(inv =>
-    (state.invaderDirection > 0 && inv.x > CONFIG.width - 80) ||
-    (state.invaderDirection < 0 && inv.x < 50)
+    (state.invaderDirection > 0 && inv.x > CONFIG.width - 240) ||  // Scaled: 80 × 3 = 240
+    (state.invaderDirection < 0 && inv.x < 150)  // Scaled: 50 × 3 = 150
   )
 
   if (hitEdge) {
-    invaders.forEach(inv => inv.y += 20)
+    invaders.forEach(inv => inv.y += 60)  // Scaled: 20 × 3 = 60
     state.invaderDirection *= -1
 
-    if (invaders.some(inv => inv.y > CONFIG.height - 150)) {
+    if (invaders.some(inv => inv.y > CONFIG.height - 450)) {  // Scaled: 150 × 3 = 450
       state.lives = 0
     }
   } else {
@@ -387,16 +417,10 @@ function checkWinLose() {
     setupInvaders()
   }
 
-  if (state.lives <= 0 && state.phase !== 'GAMEOVER') {
-    state.phase = 'GAMEOVER'
-
-    // Send postMessage to parent if in installation
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'gameOver',
-        payload: { score: state.score }
-      }, '*')
-    }
+  if (state.lives <= 0 && state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+    state.phase = 'DYING'
+    state.dyingTimer = 0
+    // Note: postMessage will be sent after particle animation completes
   }
 }
 
@@ -421,8 +445,8 @@ function renderGame() {
     return // Skip gradient rendering in debug mode
   }
 
-  // Render player with masked gradient
-  if (player) {
+  // Render player with masked gradient (hide during DYING and GAMEOVER)
+  if (player && state.phase === 'PLAYING') {
     maskedRenderer.renderMaskedGrid(
       player.gol,
       player.x,

@@ -41,24 +41,24 @@ const CONFIG = {
   },
 
   player: {
-    width: 80,
-    height: 80,
-    cellSize: 10,
-    x: 300,
-    startY: 960
+    width: 240,    // 80 × 3 = 240
+    height: 240,   // 80 × 3 = 240
+    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
+    x: 300,        // Keep same (relative positioning)
+    startY: 960    // Keep same (relative to canvas height)
   },
 
-  gravity: 0.7,
-  jumpForce: -14,
-  groundY: 1850,
-  ceilingY: 70,
+  gravity: 2.1,    // 0.7 × 3 = 2.1 (scaled for larger player)
+  jumpForce: -42,  // -14 × 3 = -42 (scaled for larger player)
+  groundY: 1850,   // Keep same (relative to canvas height)
+  ceilingY: 70,    // Keep same (relative to canvas height)
 
   pipe: {
-    width: 120,
-    gap: 280,
-    speed: -5,
+    width: 360,      // 120 × 3 = 360
+    gap: 600,        // Increased from 280×3=840 to 600 for better playability with scaled player
+    speed: -15,      // -5 × 3 = -15
     spawnInterval: 100,
-    cellSize: 10
+    cellSize: 30     // Scaled to 30px (3x from 10px baseline)
   }
 }
 
@@ -68,6 +68,14 @@ let canvasWidth = BASE_WIDTH
 let canvasHeight = BASE_HEIGHT
 
 // ============================================
+// GAME OVER CONFIGURATION
+// ============================================
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
+  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
+}
+
+// ============================================
 // GAME STATE
 // ============================================
 const state = {
@@ -75,7 +83,8 @@ const state = {
   lives: 1,
   phase: 'PLAYING',
   frameCount: 0,
-  spawnTimer: 0
+  spawnTimer: 0,
+  dyingTimer: 0
 }
 
 // ============================================
@@ -166,9 +175,27 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
-  } else if (state.phase === 'GAMEOVER') {
-    // Continue updating particles during game over for explosion effect
+  } else if (state.phase === 'DYING') {
+    // Continue updating particles during death animation
+    state.dyingTimer++
     particles = updateParticles(particles, state.frameCount)
+
+    // Transition to GAMEOVER when particles done or timeout reached
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   }
 
   renderGame()
@@ -207,17 +234,12 @@ function updatePlayer() {
     player.vy = 0
   }
 
-  if (player.y > CONFIG.groundY - player.height && state.phase !== 'GAMEOVER') {
-    state.phase = 'GAMEOVER'
+  if (player.y > CONFIG.groundY - player.height && state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+    state.phase = 'DYING'
+    state.dyingTimer = 0
     spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
 
-    // Send postMessage to parent if in installation
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'gameOver',
-        payload: { score: state.score }
-      }, '*')
-    }
+    // Note: postMessage will be sent after particle animation completes
   }
 
   // Update GoL (Modified GoL with life force)
@@ -232,8 +254,8 @@ function spawnPipes() {
     state.spawnTimer = 0
 
     // Random gap position (between ceiling and ground)
-    const minGapTop = CONFIG.ceilingY + 80
-    const maxGapTop = CONFIG.groundY - CONFIG.pipe.gap - 80
+    const minGapTop = CONFIG.ceilingY + 240  // 80 × 3 = 240
+    const maxGapTop = CONFIG.groundY - CONFIG.pipe.gap - 240
     const gapTop = random(minGapTop, maxGapTop)
 
     // Top pipe
@@ -246,8 +268,8 @@ function spawnPipes() {
       vx: CONFIG.pipe.speed,
       scored: false,
       gol: new GoLEngine(
-        Math.floor(CONFIG.pipe.width / 10),
-        Math.floor((gapTop - CONFIG.ceilingY) / 10),
+        Math.floor(CONFIG.pipe.width / 30),  // cellSize 30 (scaled from 10)
+        Math.floor((gapTop - CONFIG.ceilingY) / 30),
         0  // Visual Only (no evolution)
       ),
       gradient: GRADIENT_PRESETS.ENEMY_HOT,
@@ -264,8 +286,8 @@ function spawnPipes() {
       vx: CONFIG.pipe.speed,
       scored: false,
       gol: new GoLEngine(
-        Math.floor(CONFIG.pipe.width / 10),
-        Math.floor((CONFIG.groundY - (gapTop + CONFIG.pipe.gap)) / 10),
+        Math.floor(CONFIG.pipe.width / 30),  // cellSize 30 (scaled from 10)
+        Math.floor((CONFIG.groundY - (gapTop + CONFIG.pipe.gap)) / 30),
         0  // Visual Only (no evolution)
       ),
       gradient: GRADIENT_PRESETS.ENEMY_COLD,
@@ -310,17 +332,12 @@ function checkCollisions() {
       player.x, player.y, player.width, player.height,
       pipe.x, pipe.y, pipe.width, pipe.height
     )) {
-      if (state.phase !== 'GAMEOVER') {
-        state.phase = 'GAMEOVER'
+      if (state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+        state.phase = 'DYING'
+        state.dyingTimer = 0
         spawnExplosion(player.x + player.width / 2, player.y + player.height / 2)
 
-        // Send postMessage to parent if in installation
-        if (window.parent !== window) {
-          window.parent.postMessage({
-            type: 'gameOver',
-            payload: { score: state.score }
-          }, '*')
-        }
+        // Note: postMessage will be sent after particle animation completes
       }
     }
   })
@@ -329,15 +346,15 @@ function checkCollisions() {
 function spawnExplosion(x, y) {
   for (let i = 0; i < 8; i++) {
     const particle = {
-      x: x + random(-10, 10),
-      y: y + random(-10, 10),
-      vx: random(-3, 3),
-      vy: random(-3, 3),
+      x: x + random(-30, 30),  // -10 to 10 × 3
+      y: y + random(-30, 30),
+      vx: random(-9, 9),       // -3 to 3 × 3
+      vy: random(-9, 9),
       alpha: 255,
-      width: 60,
-      height: 60,
-      gol: new GoLEngine(6, 6, 30),  // Fast evolution (30fps)
-      cellSize: 10,
+      width: 180,   // 60 × 3 = 180
+      height: 180,  // 60 × 3 = 180
+      gol: new GoLEngine(6, 6, 30),  // 6×6 grid maintained, fast evolution (30fps)
+      cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
       gradient: GRADIENT_PRESETS.EXPLOSION,
       dead: false
     }
@@ -360,8 +377,8 @@ function renderGame() {
   line(0, CONFIG.ceilingY, BASE_WIDTH, CONFIG.ceilingY)
   line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
 
-  // Render player with gradient (hide during game over)
-  if (state.phase !== 'GAMEOVER') {
+  // Render player with gradient (hide during DYING and GAMEOVER)
+  if (state.phase === 'PLAYING') {
     maskedRenderer.renderMaskedGrid(
       player.gol,
       player.x,

@@ -39,26 +39,26 @@ const CONFIG = {
   },
 
   paddle: {
-    width: 150,
-    height: 25,
-    speed: 10,
+    width: 450,   // 150 × 3 = 450
+    height: 75,   // 25 × 3 = 75
+    speed: 30,    // 10 × 3 = 30
     y: 1850
   },
 
   ball: {
-    radius: 40,
-    speed: 6,
+    radius: 120,  // 40 × 3 = 120
+    speed: 18,    // 6 × 3 = 18
     maxAngle: Math.PI / 3
   },
 
   brick: {
-    rows: 8,
-    cols: 6,
-    width: 80,
-    height: 80,
-    padding: 40,
-    offsetX: 180,
-    offsetY: 150
+    rows: 3,      // 3 rows for cleaner layout
+    cols: 3,      // 3 columns for balanced grid
+    width: 240,   // 80 × 3 = 240
+    height: 240,  // 80 × 3 = 240
+    padding: 60,  // Unified spacing: 60px (same as Space Invaders for visual consistency)
+    offsetX: 180, // Centered: 3×240 + 2×60 = 720 + 120 = 840px, (1200-840)/2 = 180px
+    offsetY: 200  // Unified starting position with Space Invaders (same as startY)
   }
 }
 
@@ -83,6 +83,14 @@ const BRICK_PATTERNS = [
 ]
 
 // ============================================
+// GAME OVER CONFIGURATION
+// ============================================
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
+  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
+}
+
+// ============================================
 // GAME STATE
 // ============================================
 const state = {
@@ -90,7 +98,9 @@ const state = {
   lives: 1,
   level: 1,
   phase: 'PLAYING',
-  frameCount: 0
+  frameCount: 0,
+  dyingTimer: 0,
+  isWin: false
 }
 
 // ============================================
@@ -160,11 +170,11 @@ function setupPaddle() {
     height: CONFIG.paddle.height,
     vx: 0,
     gol: new GoLEngine(
-      Math.floor(CONFIG.paddle.width / 10),   // 10 cells for 100px width
-      Math.floor(CONFIG.paddle.height / 10),  // 2 cells for 20px height
+      Math.floor(CONFIG.paddle.width / 30),   // 15 cells for 450px width (450/30 = 15)
+      Math.floor(CONFIG.paddle.height / 30),  // 2-3 cells for 75px height (75/30 = 2.5)
       12
     ),
-    cellSize: 10,  // Same as Space Invaders
+    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
     gradient: GRADIENT_PRESETS.PLAYER
   }
 
@@ -172,19 +182,19 @@ function setupPaddle() {
   seedRadialDensity(paddle.gol, 0.85, 0.0)
 
   // Add accent pattern
-  paddle.gol.setPattern(Patterns.BLINKER, 4, 0)
+  paddle.gol.setPattern(Patterns.BLINKER, 7, 0)  // Scaled: 4 × 1.75 ≈ 7 (centered in 15 cols)
 }
 
 function setupBall() {
   ball = {
     x: CONFIG.width / 2,
-    y: CONFIG.paddle.y - 40,
+    y: CONFIG.paddle.y - 120,  // 40 × 3 = 120
     radius: CONFIG.ball.radius,
     vx: CONFIG.ball.speed * (Math.random() > 0.5 ? 1 : -1),
     vy: -CONFIG.ball.speed,
     stuck: false,  // Ball starts moving
-    gol: new GoLEngine(3, 3, 15),  // 3x3 grid (same as Space Invaders bullet)
-    cellSize: 10,  // Same as Space Invaders
+    gol: new GoLEngine(3, 3, 15),  // 3×3 grid maintained
+    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
     gradient: GRADIENT_PRESETS.BULLET
   }
 
@@ -209,11 +219,11 @@ function setupBricks() {
         col: col,
         scoreValue: patternInfo.scoreValue,
         gol: new GoLEngine(
-          Math.floor(CONFIG.brick.width / 10),   // 6 cells for 60px
-          Math.floor(CONFIG.brick.height / 10),  // 6 cells for 60px (square like invaders)
-          15  // Same evolution speed as Space Invaders invaders
+          Math.floor(CONFIG.brick.width / 30),   // 8 cells for 240px (240/30 = 8)
+          Math.floor(CONFIG.brick.height / 30),  // 8 cells for 240px (square)
+          15  // Same evolution speed as Space Invaders
         ),
-        cellSize: 10,  // Same as Space Invaders
+        cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
         gradient: patternInfo.gradient,
         dead: false
       }
@@ -236,6 +246,27 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    // Continue updating particles during death animation
+    state.dyingTimer++
+    particles = updateParticles(particles, state.frameCount)
+
+    // Transition to GAMEOVER/WIN when particles done or timeout reached
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = state.isWin ? 'WIN' : 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   }
 
   renderGame()
@@ -277,28 +308,18 @@ function updateGame() {
   checkCollisions()
 
   // Check win/lose
-  if (bricks.length === 0) {
-    state.phase = 'WIN'
-
-    // Send postMessage to parent if in installation
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'gameOver',
-        payload: { score: state.score }
-      }, '*')
-    }
+  if (bricks.length === 0 && state.phase !== 'DYING' && state.phase !== 'WIN') {
+    state.phase = 'DYING'
+    state.dyingTimer = 0
+    state.isWin = true  // Flag to show WIN screen instead of GAMEOVER
+    // Note: postMessage will be sent after particle animation completes
   }
 
-  if (state.lives <= 0 && state.phase !== 'GAMEOVER') {
-    state.phase = 'GAMEOVER'
-
-    // Send postMessage to parent if in installation
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'gameOver',
-        payload: { score: state.score }
-      }, '*')
-    }
+  if (state.lives <= 0 && state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+    state.phase = 'DYING'
+    state.dyingTimer = 0
+    state.isWin = false  // Flag to show GAMEOVER screen
+    // Note: postMessage will be sent after particle animation completes
   }
 }
 
@@ -368,7 +389,7 @@ function updateBall() {
 
 function resetBall() {
   ball.x = paddle.x + paddle.width / 2
-  ball.y = paddle.y - 40
+  ball.y = paddle.y - 120  // 40 × 3 = 120
   ball.vx = 0
   ball.vy = 0
   ball.stuck = true
@@ -439,15 +460,15 @@ function checkCollisions() {
 function spawnExplosion(x, y, brickGradient) {
   for (let i = 0; i < 4; i++) {  // Fewer particles
     const particle = {
-      x: x + random(-10, 10),
-      y: y + random(-10, 10),
-      vx: random(-2, 2),
-      vy: random(-2, 2),
+      x: x + random(-30, 30),  // -10 to 10 × 3
+      y: y + random(-30, 30),
+      vx: random(-6, 6),       // -2 to 2 × 3
+      vy: random(-6, 6),
       alpha: 255,
-      width: 30,   // Smaller explosions (3 cells x 10 cellSize)
-      height: 30,
-      gol: new GoLEngine(3, 3, 30),  // Smaller grid
-      cellSize: 10,
+      width: 90,   // 30 × 3 = 90 (3 cells × 30 cellSize)
+      height: 90,
+      gol: new GoLEngine(3, 3, 30),  // 3×3 grid maintained
+      cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
       gradient: brickGradient || GRADIENT_PRESETS.EXPLOSION,
       dead: false
     }
@@ -475,14 +496,16 @@ function renderGame() {
     paddle.gradient
   )
 
-  // Render ball with gradient
-  maskedRenderer.renderMaskedGrid(
-    ball.gol,
-    ball.x - ball.radius,
-    ball.y - ball.radius,
-    ball.cellSize,
-    ball.gradient
-  )
+  // Render ball with gradient (hide during DYING, GAMEOVER, and WIN)
+  if (state.phase === 'PLAYING') {
+    maskedRenderer.renderMaskedGrid(
+      ball.gol,
+      ball.x - ball.radius,
+      ball.y - ball.radius,
+      ball.cellSize,
+      ball.gradient
+    )
+  }
 
   // Render bricks with gradients
   bricks.forEach(brick => {
