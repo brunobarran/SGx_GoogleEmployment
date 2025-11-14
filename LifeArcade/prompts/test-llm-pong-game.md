@@ -20,9 +20,9 @@ Create a complete Pong game using the Game of Life Arcade framework. Follow the 
 - Single life (no continues)
 
 **Visual Design:**
-- Player paddle (left): 60×60 blue gradient, Modified GoL (life force)
-- AI paddle (right): 60×60 red gradient, Modified GoL (life force)
-- Ball: 60×60 yellow gradient, Visual Only (maintain density)
+- Player paddle (left): 180×180 blue gradient, Modified GoL (life force)
+- AI paddle (right): 180×180 red gradient, Modified GoL (life force)
+- Ball: 180×180 yellow gradient, Visual Only (maintain density)
 - Background: White (#FFFFFF)
 - UI: Google brand colors
 - Center line: Dotted line (optional, can use simple rect)
@@ -33,9 +33,9 @@ Create a complete Pong game using the Game of Life Arcade framework. Follow the 
 
 **Specific Requirements:**
 1. Ball starts at center, random direction (left or right)
-2. Ball speed: starts at 5 px/frame, increases by 0.5 after each hit (max 10)
-3. Paddle height: 150 pixels (use 3 segments of 60×60 stacked vertically)
-4. Paddle speed: 6 px/frame
+2. Ball speed: starts at 15 px/frame, increases by 1.5 after each hit (max 30)
+3. Paddle height: 540 pixels (use 3 segments of 180×180 stacked vertically)
+4. Paddle speed: 18 px/frame
 5. AI reaction delay: moves toward ball.y with 70% speed
 6. Display score: "PLAYER: X | AI: Y"
 7. Show controls: "W/S or ↑↓: Move | SPACE: Restart"
@@ -44,12 +44,12 @@ Create a complete Pong game using the Game of Life Arcade framework. Follow the 
 10. Ball resets to center after each point
 
 **Technical Specs:**
-- Canvas: 800×600
-- Paddle segments: 60×60 each (3 segments = 180 total height)
-- Ball: 60×60
-- Ball initial speed: 5 px/frame
-- Ball max speed: 10 px/frame
-- Paddle speed: 6 px/frame
+- Canvas: 1200×1920 (portrait, responsive)
+- Paddle segments: 180×180 each (3 segments = 540 total height)
+- Ball: 180×180
+- Ball initial speed: 15 px/frame
+- Ball max speed: 30 px/frame
+- Paddle speed: 18 px/frame
 - AI speed factor: 0.7 (70% of ball's Y velocity)
 - Winning score: 5
 
@@ -62,6 +62,22 @@ Create a complete Pong game using the Game of Life Arcade framework. Follow the 
 - Player paddle: GoLEngine(6, 6, 12) with applyLifeForce()
 - AI paddle: GoLEngine(6, 6, 12) with applyLifeForce()
 - Ball: GoLEngine(6, 6, 0) with maintainDensity() - Visual Only
+
+**Responsive Canvas:**
+- BASE_WIDTH = 1200, BASE_HEIGHT = 1920
+- ASPECT_RATIO = 0.625 (10:16 portrait)
+- Use calculateResponsiveSize() to fit window
+- Scale rendering with scaleFactor
+- Implement windowResized handler
+
+**postMessage Integration:**
+- Send 'gameOver' message to parent on win/lose
+- Only in installation mode (window.parent !== window)
+
+**DYING Phase:**
+- Use GAMEOVER_CONFIG (MIN_DELAY: 30, MAX_WAIT: 150)
+- Show particles during death animation
+- Transition to GAMEOVER after particles or max wait
 
 ---
 
@@ -153,20 +169,36 @@ import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
-// ===== CONFIG =====
+// ===== BASE CONFIGURATION (Portrait 1200×1920) =====
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 0.625 (10:16 portrait)
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
   ui: { /* STANDARD - DO NOT MODIFY */ }
   // ... game-specific config
+}
+
+// Store scale factor for rendering
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
+
+// Game Over configuration
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback
+  MAX_WAIT: 150    // 2.5s maximum wait
 }
 
 // ===== STATE =====
 const state = {
   score: 0,
   lives: 1,  // ALWAYS 1
-  phase: 'PLAYING',
-  frameCount: 0
+  phase: 'PLAYING',   // PLAYING | DYING | GAMEOVER | WIN
+  frameCount: 0,
+  dyingTimer: 0       // Frames since entered DYING phase
 }
 
 // ===== ENTITIES =====
@@ -175,9 +207,27 @@ let enemies = []
 let particles = []
 let maskedRenderer = null
 
+// ===== RESPONSIVE SIZING =====
+function calculateResponsiveSize() {
+  const windowAspect = windowWidth / windowHeight
+  if (windowAspect > ASPECT_RATIO) {
+    return { height: windowHeight, width: windowHeight * ASPECT_RATIO }
+  } else {
+    return { width: windowWidth, height: windowWidth / ASPECT_RATIO }
+  }
+}
+
+function updateConfigScale() {
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
 // ===== SETUP =====
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
   maskedRenderer = new SimpleGradientRenderer(this)
   initGame()
@@ -190,6 +240,24 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    state.dyingTimer++
+    particles = updateParticles(particles, state.frameCount)
+
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   } else if (state.phase === 'GAMEOVER') {
     particles = updateParticles(particles, state.frameCount)
   }
@@ -199,41 +267,55 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
+}
+
+// ===== WINDOW RESIZE =====
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
 }
 
 // ===== EXPORTS =====
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized
 ```
 
 ---
 
 ## Standards & Constants
 
-### Entity Sizes (MUST FOLLOW)
+### Entity Sizes (MUST FOLLOW - Portrait 1200×1920)
+
+**All sizes scaled 3x from baseline:**
 
 ```javascript
-// Main entities (player, invaders, bricks)
-width: 60
-height: 60
-cellSize: 10
-gol: new GoLEngine(6, 6, 12)  // Player
+// Main entities (player, paddles, invaders, bricks)
+width: 180        // Scaled 3x from 60
+height: 180       // Scaled 3x from 60
+cellSize: 30      // Scaled 3x from 10
+gol: new GoLEngine(6, 6, 12)  // Player (grid size stays same)
 gol: new GoLEngine(6, 6, 15)  // Enemies
 
 // Projectiles (bullets, ball)
-width: 30
-height: 30
-cellSize: 10
+width: 90         // Scaled 3x from 30
+height: 90        // Scaled 3x from 30
+cellSize: 30      // Scaled 3x from 10
 gol: new GoLEngine(3, 3, 0)   // Visual Only (no evolution)
 gol: new GoLEngine(3, 3, 15)  // Or with evolution
 
 // Explosions
-width: 30  // or 60
-height: 30  // or 60
-cellSize: 10
+width: 90  // or 180 (scaled 3x)
+height: 90  // or 180 (scaled 3x)
+cellSize: 30      // Scaled 3x from 10
 gol: new GoLEngine(3, 3, 30)  // Fast evolution
 ```
 
@@ -429,10 +511,10 @@ GRADIENT_PRESETS.EXPLOSION      // Red-yellow gradient
 function setupPlayer() {
   player = {
     x: CONFIG.width / 2,
-    y: CONFIG.height - 100,
-    width: 60,
-    height: 60,
-    cellSize: 10,
+    y: CONFIG.height - 300,
+    width: 180,        // Scaled 3x from 60
+    height: 180,       // Scaled 3x from 60
+    cellSize: 30,      // Scaled 3x from 10
     gol: new GoLEngine(6, 6, 12),
     gradient: GRADIENT_PRESETS.PLAYER
   }
@@ -447,7 +529,10 @@ function updatePlayer() {
   applyLifeForce(player)  // Keep player alive
 }
 
-// Render player (hide during game over)
+// Render player (hide during game over) with scaleFactor
+push()
+scale(scaleFactor)
+
 if (state.phase !== 'GAMEOVER') {
   maskedRenderer.renderMaskedGrid(
     player.gol,
@@ -457,6 +542,8 @@ if (state.phase !== 'GAMEOVER') {
     player.gradient
   )
 }
+
+pop()
 ```
 
 ### Enemies
@@ -466,9 +553,9 @@ function setupEnemy() {
   const enemy = {
     x: 200,
     y: 100,
-    width: 60,
-    height: 60,
-    cellSize: 10,
+    width: 180,        // Scaled 3x from 60
+    height: 180,       // Scaled 3x from 60
+    cellSize: 30,      // Scaled 3x from 10
     gol: new GoLEngine(6, 6, 15),
     gradient: GRADIENT_PRESETS.ENEMY_HOT,
     dead: false
@@ -492,10 +579,10 @@ function shootBullet() {
   const bullet = {
     x: player.x + player.width / 2,
     y: player.y,
-    width: 30,
-    height: 30,
-    cellSize: 10,
-    vy: -8,
+    width: 90,         // Scaled 3x from 30
+    height: 90,        // Scaled 3x from 30
+    cellSize: 30,      // Scaled 3x from 10
+    vy: -24,          // Scaled 3x from -8
     gol: new GoLEngine(3, 3, 0),  // 0 fps = no evolution
     gradient: GRADIENT_PRESETS.BULLET,
     dead: false
@@ -517,15 +604,15 @@ if (state.frameCount % 5 === 0) {
 function spawnExplosion(x, y) {
   for (let i = 0; i < 6; i++) {
     const particle = {
-      x: x + random(-10, 10),
-      y: y + random(-10, 10),
-      vx: random(-3, 3),
-      vy: random(-3, 3),
+      x: x + random(-30, 30),    // Scaled 3x from -10, 10
+      y: y + random(-30, 30),    // Scaled 3x from -10, 10
+      vx: random(-9, 9),         // Scaled 3x from -3, 3
+      vy: random(-9, 9),         // Scaled 3x from -3, 3
       alpha: 255,
-      width: 30,
-      height: 30,
+      width: 90,                 // Scaled 3x from 30
+      height: 90,                // Scaled 3x from 30
       gol: new GoLEngine(3, 3, 30),  // Fast evolution
-      cellSize: 10,
+      cellSize: 30,              // Scaled 3x from 10
       gradient: GRADIENT_PRESETS.EXPLOSION,
       dead: false
     }
@@ -571,49 +658,86 @@ Every game MUST use this exact HTML structure:
 
 ---
 
-## Checklist for New Games
+## Checklist for New Games (Portrait 1200×1920)
 
 When creating a new game, verify:
 
 - ✅ All imports from template are present
+- ✅ BASE_WIDTH = 1200, BASE_HEIGHT = 1920, ASPECT_RATIO = 0.625
+- ✅ scaleFactor, canvasWidth, canvasHeight defined
+- ✅ GAMEOVER_CONFIG with MIN_DELAY and MAX_WAIT
 - ✅ CONFIG.ui is identical to template (DO NOT MODIFY)
 - ✅ state.lives = 1 (ALWAYS)
-- ✅ Player: 60×60, cellSize 10, GoLEngine(6, 6, 12)
-- ✅ Enemies: 60×60, cellSize 10, GoLEngine(6, 6, 15)
-- ✅ Bullets: 30×30, cellSize 10, GoLEngine(3, 3, 0 or 15)
-- ✅ Explosions: 30×30, cellSize 10, GoLEngine(3, 3, 30)
+- ✅ state.dyingTimer = 0 in state
+- ✅ Player: 180×180, cellSize 30, GoLEngine(6, 6, 12)
+- ✅ Enemies: 180×180, cellSize 30, GoLEngine(6, 6, 15)
+- ✅ Bullets: 90×90, cellSize 30, GoLEngine(3, 3, 0 or 15)
+- ✅ Explosions: 90×90, cellSize 30, GoLEngine(3, 3, 30)
 - ✅ Use seedRadialDensity() for all entities
 - ✅ Use applyLifeForce() for player/critical enemies
 - ✅ Use maintainDensity() for bullets
 - ✅ Use updateParticles() and renderParticles() for explosions
 - ✅ Use renderGameUI() and renderGameOver()
-- ✅ Player hidden during GAMEOVER
-- ✅ Particles continue updating during GAMEOVER
+- ✅ Player hidden during DYING and GAMEOVER
+- ✅ Particles continue updating during DYING and GAMEOVER
+- ✅ DYING phase with GAMEOVER_CONFIG timers
+- ✅ postMessage on game over (installation mode only)
+- ✅ Rendering with push/scale/pop pattern
+- ✅ calculateResponsiveSize() function implemented
+- ✅ updateConfigScale() function implemented
+- ✅ windowResized() handler implemented
+- ✅ windowResized exported in window.windowResized
 - ✅ HTML uses exact template structure
 
 ---
 
 ## Common Patterns
 
-### Game Over with Explosion
+### Game Over with Explosion and DYING Phase
 
 ```javascript
 function checkCollisions() {
   if (collision) {
-    state.phase = 'GAMEOVER'
+    state.phase = 'DYING'
+    state.dyingTimer = 0
     spawnExplosion(player.x + player.width/2, player.y + player.height/2)
   }
 }
 
 // In draw()
-if (state.phase === 'GAMEOVER') {
+if (state.phase === 'DYING') {
+  state.dyingTimer++
+  particles = updateParticles(particles, state.frameCount)
+
+  const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+  const particlesDone = particles.length === 0
+  const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+  if ((particlesDone && minDelayPassed) || maxWaitReached) {
+    state.phase = 'GAMEOVER'
+
+    // Send postMessage to parent if in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
+    }
+  }
+} else if (state.phase === 'GAMEOVER') {
   particles = updateParticles(particles, state.frameCount)  // Continue explosions
 }
 
-// In renderGame()
-if (state.phase !== 'GAMEOVER') {
-  maskedRenderer.renderMaskedGrid(...)  // Hide player
+// In renderGame() with scaleFactor
+push()
+scale(scaleFactor)
+
+if (state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
+  maskedRenderer.renderMaskedGrid(...)  // Hide player during DYING and GAMEOVER
 }
+
+renderParticles(particles, maskedRenderer)
+pop()
 ```
 
 ### Multiple Enemy Types
@@ -654,7 +778,8 @@ state.lives = 3
 ❌ **Don't use inconsistent sizes**
 ```javascript
 // WRONG
-player = { width: 50, height: 50 }  // Must be 60×60
+player = { width: 50, height: 50 }  // Must be 180×180 (portrait)
+player = { width: 60, height: 60 }  // Old size for 800×600 (obsolete)
 ```
 
 ❌ **Don't evolve bullets**
@@ -665,8 +790,38 @@ bullet.gol.updateThrottled(state.frameCount)  // Bullets are Visual Only
 
 ❌ **Don't forget to hide player during game over**
 ```javascript
-// WRONG - Player should not be visible during GAMEOVER
+// WRONG - Player should not be visible during DYING or GAMEOVER
 maskedRenderer.renderMaskedGrid(player.gol, ...)
+```
+
+❌ **Don't forget scaleFactor rendering**
+```javascript
+// WRONG - Direct rendering without scale
+function renderGame() {
+  maskedRenderer.renderMaskedGrid(player.gol, player.x, player.y, player.cellSize, player.gradient)
+}
+
+// CORRECT - With scaleFactor
+function renderGame() {
+  push()
+  scale(scaleFactor)
+  maskedRenderer.renderMaskedGrid(player.gol, player.x, player.y, player.cellSize, player.gradient)
+  pop()
+}
+```
+
+❌ **Don't forget windowResized handler**
+```javascript
+// WRONG - Missing export
+window.setup = setup
+window.draw = draw
+window.keyPressed = keyPressed
+
+// CORRECT - Include windowResized
+window.setup = setup
+window.draw = draw
+window.keyPressed = keyPressed
+window.windowResized = windowResized
 ```
 
 ---
@@ -720,10 +875,29 @@ function draw() {
   renderGame()
 }
 
-// ✅ CORRECT - Explosion continues
+// ✅ CORRECT - Explosion continues through DYING and GAMEOVER
 function draw() {
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    state.dyingTimer++
+    particles = updateParticles(particles, state.frameCount)
+
+    // Check transition to GAMEOVER
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   } else if (state.phase === 'GAMEOVER') {
     particles = updateParticles(particles, state.frameCount)
   }
@@ -731,7 +905,7 @@ function draw() {
 }
 ```
 
-**Why:** Explosion particles need to continue animating after player dies.
+**Why:** Explosion particles need to continue animating after player dies, and postMessage needs to be sent after visual feedback.
 
 ---
 
@@ -743,15 +917,21 @@ function renderGame() {
   maskedRenderer.renderMaskedGrid(player.gol, ...)
 }
 
-// ✅ CORRECT - Hide player during game over
+// ✅ CORRECT - Hide player during DYING and GAMEOVER
 function renderGame() {
-  if (state.phase !== 'GAMEOVER') {
+  push()
+  scale(scaleFactor)
+
+  if (state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
     maskedRenderer.renderMaskedGrid(player.gol, ...)
   }
+
+  renderParticles(particles, maskedRenderer)
+  pop()
 }
 ```
 
-**Why:** Player should disappear when explosion happens.
+**Why:** Player should disappear when explosion happens (DYING phase), and rendering needs scaleFactor.
 
 ---
 
@@ -838,8 +1018,11 @@ Generate ONLY the JavaScript game file. The HTML wrapper will be created automat
 
 Create the complete Pong game JavaScript file. Include:
 - All standard imports
+- BASE_WIDTH, BASE_HEIGHT, ASPECT_RATIO constants
+- scaleFactor, canvasWidth, canvasHeight variables
+- GAMEOVER_CONFIG with MIN_DELAY and MAX_WAIT
 - CONFIG with pong-specific settings (paddle dimensions, ball speed, AI settings)
-- State with player score and AI score (not generic "score")
+- State with player score, AI score, dyingTimer
 - Player paddle (left side, 3 segments vertically stacked)
 - AI paddle (right side, 3 segments vertically stacked, follows ball)
 - Ball entity with velocity and speed tracking
@@ -849,20 +1032,29 @@ Create the complete Pong game JavaScript file. Include:
 - Win condition check (first to 5)
 - Ball reset after each point
 - Proper use of all helper functions
+- Responsive canvas functions (calculateResponsiveSize, updateConfigScale)
+- windowResized handler
+- DYING phase management
+- postMessage integration
 
 **CRITICAL REQUIREMENTS:**
-- Paddle segments: 60×60 each, 3 stacked = 180px total height
+- Canvas: 1200×1920 (portrait, responsive)
+- Paddle segments: 180×180 each, 3 stacked = 540px total height
 - Player paddle: Modified GoL with life force, GRADIENT_PRESETS.PLAYER
 - AI paddle: Modified GoL with life force, GRADIENT_PRESETS.ENEMY_HOT
 - Ball: Visual Only (maintainDensity), GRADIENT_PRESETS.BULLET
-- Ball radius: 30 (for collision detection, treat as circle)
+- Ball size: 180×180, cellSize 30
+- Ball radius: 90 (for collision detection, treat as circle)
 - Use Collision.circleRect() for ball vs paddle collision
-- Ball speed: starts 5 px/frame, increases +0.5 per hit, max 10
+- Ball speed: starts 15 px/frame, increases +1.5 per hit, max 30
+- Paddle speed: 18 px/frame
 - AI speed: 0.7 * (ball.y - aiPaddle.centerY) per frame
 - Display "PLAYER: X | AI: Y" in UI
 - Controls: "W/S or ↑↓: Move | SPACE: Restart"
 - Win message: "YOU WIN!" or "AI WINS!"
 - Use renderWin() helper for win screen (check UIHelpers)
+- Render with push/scale(scaleFactor)/pop pattern
+- Export windowResized in window.windowResized
 
 **Note:** The HTML file will be generated automatically with the correct title and script reference, so you don't need to create it.
 
@@ -873,11 +1065,18 @@ Create the complete Pong game JavaScript file. Include:
 Before submitting, verify your code has:
 
 - ✅ All imports match framework pattern exactly
+- ✅ BASE_WIDTH = 1200, BASE_HEIGHT = 1920, ASPECT_RATIO = 0.625
+- ✅ scaleFactor, canvasWidth, canvasHeight defined
+- ✅ GAMEOVER_CONFIG with MIN_DELAY: 30, MAX_WAIT: 150
 - ✅ CONFIG.ui identical to template (not modified)
 - ✅ state.lives = 1 (not 3)
-- ✅ Player paddle: 3 segments of 60×60, Modified GoL
-- ✅ AI paddle: 3 segments of 60×60, Modified GoL
-- ✅ Ball: 60×60, Visual Only (0 fps evolution)
+- ✅ state.dyingTimer = 0 in state
+- ✅ Player paddle: 3 segments of 180×180, cellSize 30, Modified GoL
+- ✅ AI paddle: 3 segments of 180×180, cellSize 30, Modified GoL
+- ✅ Ball: 180×180, cellSize 30, Visual Only (0 fps evolution)
+- ✅ Ball radius: 90 for collision detection
+- ✅ Ball speed: starts 15, increases 1.5 per hit, max 30
+- ✅ Paddle speed: 18 px/frame
 - ✅ seedRadialDensity() used for all entities
 - ✅ applyLifeForce() used for both paddles
 - ✅ maintainDensity() used for ball
@@ -887,7 +1086,14 @@ Before submitting, verify your code has:
 - ✅ NO use of 'this' with helper functions
 - ✅ NO use of 'this.' prefix for p5.js functions
 - ✅ Collision.clamp() used for paddle boundaries
-- ✅ window.setup, window.draw, window.keyPressed exported
+- ✅ calculateResponsiveSize() function implemented
+- ✅ updateConfigScale() function implemented
+- ✅ windowResized() handler implemented
+- ✅ Rendering with push/scale(scaleFactor)/pop
+- ✅ DYING phase with timer and postMessage
+- ✅ postMessage only if window.parent !== window
+- ✅ renderGameOver only if window.parent === window
+- ✅ window.setup, window.draw, window.keyPressed, window.windowResized exported
 - ✅ Ball bounces off top/bottom walls
 - ✅ Ball speeds up after each paddle hit
 - ✅ AI follows ball with delay (not perfect)

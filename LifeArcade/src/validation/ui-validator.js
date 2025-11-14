@@ -5,6 +5,19 @@
  * @license ISC
  */
 
+import { GOOGLE_COLORS } from '../utils/GradientPresets.js'
+
+/**
+ * Convert RGB array to hex color string
+ * @param {number} r - Red (0-255)
+ * @param {number} g - Green (0-255)
+ * @param {number} b - Blue (0-255)
+ * @returns {string} Hex color (e.g., '#4285F4')
+ */
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
+}
+
 /**
  * UI Validator - ensures games follow brand guidelines.
  */
@@ -31,18 +44,21 @@ export class UIValidator {
       errors.push('❌ Game must display score')
     }
 
-    // Check 2: Google brand colors
-    const brandColors = [
-      '#5f6368',  // Google Gray 700
-      '#1a73e8',  // Google Blue
-      '#ffffff',  // White
+    // Check 2: Google brand colors (official Google palette)
+    const GOOGLE_BRAND_COLORS = [
+      rgbToHex(...GOOGLE_COLORS.BLUE),    // #4285f4
+      rgbToHex(...GOOGLE_COLORS.RED),     // #ea4335
+      rgbToHex(...GOOGLE_COLORS.GREEN),   // #34a853
+      rgbToHex(...GOOGLE_COLORS.YELLOW),  // #fbbc04
+      rgbToHex(...GOOGLE_COLORS.WHITE),   // #ffffff
+      '#5f6368',  // Google Gray 700 (text color)
       '#000000'   // Black
     ]
-    const hasGoogleColors = brandColors.some(color =>
+    const hasGoogleColors = GOOGLE_BRAND_COLORS.some(color =>
       gameCode.toLowerCase().includes(color.toLowerCase())
     )
     if (!hasGoogleColors) {
-      errors.push('⚠️  UI should use Google brand colors (#5f6368, #1a73e8, #ffffff)')
+      errors.push('⚠️  UI should use Google brand colors (#4285F4, #EA4335, #34A853, #FBBC04, #FFFFFF)')
     }
 
     // Check 3: Minimal UI (not too many gradients)

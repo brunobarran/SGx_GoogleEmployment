@@ -22,32 +22,35 @@ Create a complete Snake game using the Game of Life Arcade framework. Follow the
 - Single life (no continues)
 
 **Visual Design:**
-- Snake head: 60×60 blue gradient, Modified GoL (life force)
-- Snake body segments: 60×60 blue gradient, Visual Only (maintain density)
-- Food: 60×60 yellow gradient, Pure GoL oscillator (Pulsar pattern, 15fps)
+- Snake head: 180×180 blue gradient, Modified GoL (life force)
+- Snake body segments: 180×180 blue gradient, Visual Only (maintain density)
+- Food: 180×180 yellow gradient, Pure GoL oscillator (Pulsar pattern, 15fps)
 - Background: White (#FFFFFF)
 - UI: Google brand colors
 
 **Controls:**
 - Arrow keys OR WASD: Change direction
-- Space: Restart after game over
+- Space: Restart after game over (standalone mode only)
 
 **Specific Requirements:**
-1. Snake moves at constant speed (4 pixels per frame)
+1. Snake moves at constant speed (12 pixels per frame, scaled 3x from 4px)
 2. Food respawns immediately when eaten
 3. No collisions between body segments during growth
 4. Display score and snake length in UI
-5. Show controls at bottom: "← → ↑ ↓ or WASD: Move | SPACE: Restart"
+5. Show controls: "← → ↑ ↓ or WASD: Move"
 6. Explosion particles when snake dies
-7. Hide all snake segments during game over (show only explosion)
+7. Hide all snake segments during DYING/GAMEOVER (show only explosion)
+8. Send postMessage on Game Over (installation mode)
 
 **Technical Specs:**
-- Canvas: 800×600
-- Snake segment size: 60×60 (standard entity size)
-- Food size: 60×60
-- Snake speed: 4 pixels/frame (60fps = 240 pixels/second)
+- Canvas: 1200×1920 (portrait, responsive with scaleFactor)
+- Snake segment size: 180×180 (scaled 3x from 60×60)
+- cellSize: 30 (scaled 3x from 10)
+- Food size: 180×180
+- Snake speed: 12 pixels/frame at base resolution (scaled 3x from 4px)
 - Food pattern: Patterns.PULSAR (period 3 oscillator)
-- Explosion: 6 particles, 30×30 each, fast evolution (30fps)
+- Explosion: 6 particles, 90×90 each, fast evolution (30fps)
+- DYING phase: MIN_DELAY 30 frames, MAX_WAIT 150 frames
 
 ---
 
@@ -63,6 +66,8 @@ Use this documentation to implement the game. Follow it EXACTLY.
 
 This document defines the **standard pattern** for creating games in the GoL Arcade project. It is optimized for LLM consumption to minimize errors when generating new games.
 
+**UPDATED:** 2025-11-14 - Portrait 1200×1920 with responsive canvas + postMessage integration
+
 ---
 
 ## CRITICAL: p5.js Global Mode
@@ -74,14 +79,14 @@ This document defines the **standard pattern** for creating games in the GoL Arc
 ```javascript
 // ✅ CORRECT (Global Mode - what we use)
 function setup() {
-  createCanvas(800, 600)
+  createCanvas(1200, 1920)
   fill(255, 0, 0)
   rect(10, 10, 50, 50)
 }
 
 // ❌ WRONG (Instance Mode - do NOT use)
 function setup() {
-  this.createCanvas(800, 600)  // NO 'this'
+  this.createCanvas(1200, 1920)  // NO 'this'
   this.fill(255, 0, 0)         // NO 'this'
   this.rect(10, 10, 50, 50)    // NO 'this'
 }
@@ -119,8 +124,9 @@ function setup() {
 
 1. Copy `src/game-template.js` to `games/your-game.js`
 2. Modify the marked `// CUSTOMIZE THIS` sections
-3. Create HTML file at `games/your-game.html` using standard structure
-4. Follow the standards below
+3. Follow the standards below
+
+**Reference implementation:** `src/game-template.js` contains the complete, updated pattern.
 
 ---
 
@@ -139,20 +145,35 @@ import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
-// ===== CONFIG =====
+// ===== CONFIGURATION - Portrait 1200×1920 =====
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 0.625
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,
+  height: 1920,
   ui: { /* STANDARD - DO NOT MODIFY */ }
   // ... game-specific config
+}
+
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
+
+// ===== GAME OVER CONFIG =====
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum
+  MAX_WAIT: 150    // 2.5s maximum
 }
 
 // ===== STATE =====
 const state = {
   score: 0,
   lives: 1,  // ALWAYS 1
-  phase: 'PLAYING',
-  frameCount: 0
+  phase: 'PLAYING',  // PLAYING | DYING | GAMEOVER
+  frameCount: 0,
+  dyingTimer: 0
 }
 
 // ===== ENTITIES =====
@@ -161,9 +182,28 @@ let enemies = []
 let particles = []
 let maskedRenderer = null
 
+// ===== RESPONSIVE SIZING =====
+function calculateResponsiveSize() {
+  const windowAspect = windowWidth / windowHeight
+  if (windowAspect > ASPECT_RATIO) {
+    return { height: windowHeight, width: windowHeight * ASPECT_RATIO }
+  } else {
+    return { width: windowWidth, height: windowWidth / ASPECT_RATIO }
+  }
+}
+
+function updateConfigScale() {
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
 // ===== SETUP =====
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
   maskedRenderer = new SimpleGradientRenderer(this)
   initGame()
@@ -176,6 +216,25 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    state.dyingTimer++
+    particles = updateParticles(particles, state.frameCount)
+
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   } else if (state.phase === 'GAMEOVER') {
     particles = updateParticles(particles, state.frameCount)
   }
@@ -185,41 +244,77 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    // Only show Game Over UI in standalone mode
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
+}
+
+// ===== RENDERING with scaleFactor =====
+function renderGame() {
+  push()
+  scale(scaleFactor)
+
+  // Render entities (hide during DYING/GAMEOVER)
+  if (state.phase === 'PLAYING') {
+    maskedRenderer.renderMaskedGrid(player.gol, player.x, player.y, player.cellSize, player.gradient)
+  }
+
+  // Render particles
+  renderParticles(particles, maskedRenderer)
+
+  pop()
+}
+
+function renderUI() {
+  push()
+  scale(scaleFactor)
+  renderGameUI(CONFIG, state, ['← → or A/D: Move'])
+  pop()
+}
+
+// ===== WINDOW RESIZE =====
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
 }
 
 // ===== EXPORTS =====
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized
 ```
 
 ---
 
 ## Standards & Constants
 
-### Entity Sizes (MUST FOLLOW)
+### Entity Sizes (MUST FOLLOW - Portrait 1200×1920)
 
 ```javascript
 // Main entities (player, invaders, bricks)
-width: 60
-height: 60
-cellSize: 10
+width: 180      // Scaled 3x from 60
+height: 180     // Scaled 3x from 60
+cellSize: 30    // Scaled 3x from 10
 gol: new GoLEngine(6, 6, 12)  // Player
 gol: new GoLEngine(6, 6, 15)  // Enemies
 
 // Projectiles (bullets, ball)
-width: 30
-height: 30
-cellSize: 10
+width: 90       // Scaled 3x from 30
+height: 90      // Scaled 3x from 30
+cellSize: 30    // Scaled 3x from 10
 gol: new GoLEngine(3, 3, 0)   // Visual Only (no evolution)
 gol: new GoLEngine(3, 3, 15)  // Or with evolution
 
 // Explosions
-width: 30  // or 60
-height: 30  // or 60
-cellSize: 10
+width: 90       // Scaled 3x from 30
+height: 90      // Scaled 3x from 30
+cellSize: 30    // Scaled 3x from 10
 gol: new GoLEngine(3, 3, 30)  // Fast evolution
 ```
 
@@ -250,8 +345,9 @@ ui: {
 state: {
   score: 0,
   lives: 1,           // ALWAYS 1
-  phase: 'PLAYING',   // PLAYING | GAMEOVER | WIN
-  frameCount: 0
+  phase: 'PLAYING',   // PLAYING | DYING | GAMEOVER | WIN
+  frameCount: 0,
+  dyingTimer: 0       // Frames since entered DYING phase
 }
 ```
 
@@ -292,7 +388,7 @@ renderGameUI(CONFIG, state, [
   'SPACE: Jump'
 ])
 
-// Render game over screen
+// Render game over screen (standalone mode only)
 renderGameOver(width, height, state.score)
 
 // Render win screen (for games like Breakout)
@@ -322,10 +418,10 @@ GRADIENT_PRESETS.EXPLOSION      // Red-yellow gradient
 function setupPlayer() {
   player = {
     x: CONFIG.width / 2,
-    y: CONFIG.height - 100,
-    width: 60,
-    height: 60,
-    cellSize: 10,
+    y: CONFIG.height - 300,
+    width: 180,
+    height: 180,
+    cellSize: 30,
     gol: new GoLEngine(6, 6, 12),
     gradient: GRADIENT_PRESETS.PLAYER
   }
@@ -340,8 +436,10 @@ function updatePlayer() {
   applyLifeForce(player)  // Keep player alive
 }
 
-// Render player (hide during game over)
-if (state.phase !== 'GAMEOVER') {
+// Render player (hide during DYING/GAMEOVER)
+if (state.phase === 'PLAYING') {
+  push()
+  scale(scaleFactor)
   maskedRenderer.renderMaskedGrid(
     player.gol,
     player.x,
@@ -349,6 +447,7 @@ if (state.phase !== 'GAMEOVER') {
     player.cellSize,
     player.gradient
   )
+  pop()
 }
 ```
 
@@ -359,9 +458,9 @@ function setupEnemy() {
   const enemy = {
     x: 200,
     y: 100,
-    width: 60,
-    height: 60,
-    cellSize: 10,
+    width: 180,
+    height: 180,
+    cellSize: 30,
     gol: new GoLEngine(6, 6, 15),
     gradient: GRADIENT_PRESETS.ENEMY_HOT,
     dead: false
@@ -385,10 +484,10 @@ function shootBullet() {
   const bullet = {
     x: player.x + player.width / 2,
     y: player.y,
-    width: 30,
-    height: 30,
-    cellSize: 10,
-    vy: -8,
+    width: 90,
+    height: 90,
+    cellSize: 30,
+    vy: -24,  // Scaled 3x from -8
     gol: new GoLEngine(3, 3, 0),  // 0 fps = no evolution
     gradient: GRADIENT_PRESETS.BULLET,
     dead: false
@@ -410,15 +509,15 @@ if (state.frameCount % 5 === 0) {
 function spawnExplosion(x, y) {
   for (let i = 0; i < 6; i++) {
     const particle = {
-      x: x + random(-10, 10),
-      y: y + random(-10, 10),
-      vx: random(-3, 3),
-      vy: random(-3, 3),
+      x: x + random(-30, 30),
+      y: y + random(-30, 30),
+      vx: random(-9, 9),
+      vy: random(-9, 9),
       alpha: 255,
-      width: 30,
-      height: 30,
+      width: 90,
+      height: 90,
       gol: new GoLEngine(3, 3, 30),  // Fast evolution
-      cellSize: 10,
+      cellSize: 30,
       gradient: GRADIENT_PRESETS.EXPLOSION,
       dead: false
     }
@@ -431,35 +530,66 @@ function spawnExplosion(x, y) {
 
 ---
 
-## HTML Template
+## Game Over Pattern
 
-Every game MUST use this exact HTML structure:
+### Transition to DYING Phase
 
-```html
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Game - Game of Life Arcade</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      font-family: 'Google Sans', Arial, sans-serif;
+```javascript
+function checkCollisions() {
+  if (collision) {
+    state.phase = 'DYING'
+    state.dyingTimer = 0
+    spawnExplosion(player.x + player.width/2, player.y + player.height/2)
+  }
+}
+```
+
+### DYING Phase Management
+
+```javascript
+// In draw()
+if (state.phase === 'DYING') {
+  state.dyingTimer++
+  particles = updateParticles(particles, state.frameCount)
+
+  const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+  const particlesDone = particles.length === 0
+  const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+  if ((particlesDone && minDelayPassed) || maxWaitReached) {
+    state.phase = 'GAMEOVER'
+
+    // Send postMessage if embedded in installation
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'gameOver',
+        payload: { score: state.score }
+      }, '*')
     }
-  </style>
-</head>
-<body>
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
-  <script type="module" src="/games/your-game.js"></script>
-</body>
-</html>
+  }
+}
+```
+
+### Standalone vs Installation Mode
+
+```javascript
+// In keyPressed()
+function keyPressed() {
+  if (key === ' ' && state.phase === 'GAMEOVER') {
+    // Only allow restart in standalone mode
+    if (window.parent === window) {
+      initGame()
+    }
+  }
+}
+
+// In draw()
+if (state.phase === 'GAMEOVER') {
+  // Only show Game Over UI in standalone mode
+  if (window.parent === window) {
+    renderGameOver(width, height, state.score)
+  }
+}
 ```
 
 ---
@@ -469,261 +599,99 @@ Every game MUST use this exact HTML structure:
 When creating a new game, verify:
 
 - ✅ All imports from template are present
+- ✅ BASE_WIDTH = 1200, BASE_HEIGHT = 1920, ASPECT_RATIO defined
+- ✅ calculateResponsiveSize() and updateConfigScale() functions present
+- ✅ scaleFactor, canvasWidth, canvasHeight variables declared
+- ✅ GAMEOVER_CONFIG with MIN_DELAY and MAX_WAIT defined
 - ✅ CONFIG.ui is identical to template (DO NOT MODIFY)
 - ✅ state.lives = 1 (ALWAYS)
-- ✅ Player: 60×60, cellSize 10, GoLEngine(6, 6, 12)
-- ✅ Enemies: 60×60, cellSize 10, GoLEngine(6, 6, 15)
-- ✅ Bullets: 30×30, cellSize 10, GoLEngine(3, 3, 0 or 15)
-- ✅ Explosions: 30×30, cellSize 10, GoLEngine(3, 3, 30)
+- ✅ state.dyingTimer added
+- ✅ state.phase includes 'DYING'
+- ✅ Player: 180×180, cellSize 30, GoLEngine(6, 6, 12)
+- ✅ Enemies: 180×180, cellSize 30, GoLEngine(6, 6, 15)
+- ✅ Bullets: 90×90, cellSize 30, GoLEngine(3, 3, 0 or 15)
+- ✅ Explosions: 90×90, cellSize 30, GoLEngine(3, 3, 30)
 - ✅ Use seedRadialDensity() for all entities
 - ✅ Use applyLifeForce() for player/critical enemies
 - ✅ Use maintainDensity() for bullets
 - ✅ Use updateParticles() and renderParticles() for explosions
 - ✅ Use renderGameUI() and renderGameOver()
-- ✅ Player hidden during GAMEOVER
-- ✅ Particles continue updating during GAMEOVER
-- ✅ HTML uses exact template structure
-
----
-
-## Common Patterns
-
-### Game Over with Explosion
-
-```javascript
-function checkCollisions() {
-  if (collision) {
-    state.phase = 'GAMEOVER'
-    spawnExplosion(player.x + player.width/2, player.y + player.height/2)
-  }
-}
-
-// In draw()
-if (state.phase === 'GAMEOVER') {
-  particles = updateParticles(particles, state.frameCount)  // Continue explosions
-}
-
-// In renderGame()
-if (state.phase !== 'GAMEOVER') {
-  maskedRenderer.renderMaskedGrid(...)  // Hide player
-}
-```
-
-### Multiple Enemy Types
-
-```javascript
-const ENEMY_TYPES = [
-  { gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },
-  { gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.75 },
-  { gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.7 }
-]
-
-function spawnEnemy() {
-  const type = random(ENEMY_TYPES)
-  const enemy = {
-    // ... standard setup
-    gradient: type.gradient
-  }
-  seedRadialDensity(enemy.gol, type.density, 0.0)
-}
-```
+- ✅ Player hidden during DYING/GAMEOVER
+- ✅ Particles continue updating during DYING/GAMEOVER
+- ✅ Rendering uses push/scale/pop pattern
+- ✅ postMessage sent on Game Over (if embedded)
+- ✅ windowResized handler present
+- ✅ window.windowResized exported
+- ✅ NO use of 'this' with helper functions
+- ✅ NO use of 'this.' prefix for p5.js functions
+- ✅ Collision.clamp() used for boundaries
 
 ---
 
 ## Anti-Patterns (DO NOT DO)
 
-❌ **Don't modify CONFIG.ui values**
+❌ **Don't use old resolution**
 ```javascript
 // WRONG
-CONFIG.ui.backgroundColor = '#000000'
+createCanvas(800, 600)
+
+// CORRECT
+const size = calculateResponsiveSize()
+createCanvas(size.width, size.height)
 ```
 
-❌ **Don't use multiple lives**
+❌ **Don't use old entity sizes**
 ```javascript
 // WRONG
-state.lives = 3
+player = { width: 60, height: 60, cellSize: 10 }
+
+// CORRECT
+player = { width: 180, height: 180, cellSize: 30 }
 ```
 
-❌ **Don't use inconsistent sizes**
+❌ **Don't forget scaleFactor in rendering**
 ```javascript
 // WRONG
-player = { width: 50, height: 50 }  // Must be 60×60
+maskedRenderer.renderMaskedGrid(...)
+
+// CORRECT
+push()
+scale(scaleFactor)
+maskedRenderer.renderMaskedGrid(...)
+pop()
 ```
 
-❌ **Don't evolve bullets**
+❌ **Don't show player during DYING/GAMEOVER**
 ```javascript
 // WRONG
-bullet.gol.updateThrottled(state.frameCount)  // Bullets are Visual Only
-```
-
-❌ **Don't forget to hide player during game over**
-```javascript
-// WRONG - Player should not be visible during GAMEOVER
 maskedRenderer.renderMaskedGrid(player.gol, ...)
-```
 
----
-
-## Common Pitfalls
-
-### 1. Using `this` with Helper Functions
-
-```javascript
-// ❌ WRONG - Most common error
-renderGameUI(this, CONFIG, state, controls)
-renderParticles(particles, maskedRenderer, this)
-renderGameOver(this, width, height, state.score)
-
-// ✅ CORRECT
-renderGameUI(CONFIG, state, controls)
-renderParticles(particles, maskedRenderer)
-renderGameOver(width, height, state.score)
-```
-
-**Why:** Helpers use global p5.js functions, they don't need the p5 instance.
-
----
-
-### 2. Using `this` or `p5.` Prefix for p5 Functions
-
-```javascript
-// ❌ WRONG
-this.fill(255)
-this.rect(10, 10, 50, 50)
-p5.random(0, 100)
-
-// ✅ CORRECT
-fill(255)
-rect(10, 10, 50, 50)
-random(0, 100)
-```
-
-**Why:** We use global mode, not instance mode.
-
----
-
-### 3. Forgetting to Update Particles During Game Over
-
-```javascript
-// ❌ WRONG - Explosion stops immediately
-function draw() {
-  if (state.phase === 'PLAYING') {
-    updateGame()
-  }
-  renderGame()
-}
-
-// ✅ CORRECT - Explosion continues
-function draw() {
-  if (state.phase === 'PLAYING') {
-    updateGame()
-  } else if (state.phase === 'GAMEOVER') {
-    particles = updateParticles(particles, state.frameCount)
-  }
-  renderGame()
-}
-```
-
-**Why:** Explosion particles need to continue animating after player dies.
-
----
-
-### 4. Showing Player During Game Over
-
-```javascript
-// ❌ WRONG - Player visible after death
-function renderGame() {
+// CORRECT
+if (state.phase === 'PLAYING') {
   maskedRenderer.renderMaskedGrid(player.gol, ...)
 }
+```
 
-// ✅ CORRECT - Hide player during game over
-function renderGame() {
-  if (state.phase !== 'GAMEOVER') {
-    maskedRenderer.renderMaskedGrid(player.gol, ...)
-  }
+❌ **Don't forget postMessage**
+```javascript
+// WRONG
+state.phase = 'GAMEOVER'
+
+// CORRECT
+state.phase = 'GAMEOVER'
+if (window.parent !== window) {
+  window.parent.postMessage({
+    type: 'gameOver',
+    payload: { score: state.score }
+  }, '*')
 }
 ```
-
-**Why:** Player should disappear when explosion happens.
-
----
-
-### 5. Evolving Visual Only Entities
-
-```javascript
-// ❌ WRONG - Bullets evolve unpredictably
-bullet.gol = new GoLEngine(3, 3, 15)
-bullet.gol.updateThrottled(state.frameCount)
-
-// ✅ CORRECT - Bullets maintain density
-bullet.gol = new GoLEngine(3, 3, 0)  // 0 fps
-if (state.frameCount % 5 === 0) {
-  maintainDensity(bullet, 0.75)
-}
-```
-
-**Why:** Bullets need predictable appearance for gameplay.
-
----
-
-### 6. Wrong Import Paths
-
-```javascript
-// ❌ WRONG - Missing '../'
-import { updateParticles } from '../utils/ParticleHelpers.js'
-
-// ✅ CORRECT - Relative to games/
-import { updateParticles } from '../src/utils/ParticleHelpers.js'
-```
-
-**Why:** Games are in `games/`, helpers are in `src/utils/`.
-
----
-
-### 7. Using Multiple Lives
-
-```javascript
-// ❌ WRONG
-state.lives = 3
-
-// ✅ CORRECT
-state.lives = 1  // ALWAYS 1
-```
-
-**Why:** This is an arcade installation, one life only.
-
----
-
-## File Locations
-
-- **Helpers**: `src/utils/GoLHelpers.js`, `ParticleHelpers.js`, `UIHelpers.js`
-- **Template**: `src/game-template.js`
-- **Games**: `games/your-game.js`
-- **HTML**: `games/your-game.html`
-- **Core**: `src/core/GoLEngine.js`
-- **Rendering**: `src/rendering/SimpleGradientRenderer.js`
-- **Presets**: `src/utils/GradientPresets.js`
-
----
-
-## Example: Minimal Working Game
-
-See `src/game-template.js` for a complete, working example with all patterns implemented correctly.
-
----
-
-## Questions?
-
-If unsure about any pattern:
-1. Check `src/game-template.js`
-2. Check existing games: `games/space-invaders.js`, `games/dino-runner.js`, `games/breakout.js`, `games/asteroids.js`, `games/flappy-bird.js`
-3. All games follow this exact pattern
 
 ---
 
 ## Output Instructions
 
-Generate ONLY the JavaScript game file. The HTML wrapper will be created automatically.
+Generate ONLY the JavaScript game file.
 
 **IMPORTANT:** Do NOT generate HTML. Only generate the complete JavaScript code.
 
@@ -731,7 +699,10 @@ Generate ONLY the JavaScript game file. The HTML wrapper will be created automat
 
 Create the complete Snake game JavaScript file. Include:
 - All standard imports
-- CONFIG with snake-specific settings (speed, segment size, etc.)
+- BASE_WIDTH, BASE_HEIGHT, ASPECT_RATIO constants
+- CONFIG with snake-specific settings (speed scaled 3x)
+- scaleFactor, canvasWidth, canvasHeight
+- GAMEOVER_CONFIG
 - Snake state (head position, body segments array, direction, length)
 - Food state (position, GoL engine)
 - Setup functions for snake head, body segments, and food
@@ -739,21 +710,26 @@ Create the complete Snake game JavaScript file. Include:
 - Collision detection (walls, self-collision, food eating)
 - Growth logic when eating food
 - Score tracking (+10 per food)
-- Game over with explosion
-- Proper use of all helper functions
+- DYING phase with explosion
+- postMessage integration
+- Responsive canvas functions
+- windowResized handler
+- Rendering with push/scale/pop
 
 **CRITICAL REQUIREMENTS:**
-- Snake head: 60×60, Modified GoL with life force
-- Snake body: 60×60, Visual Only (maintainDensity)
-- Food: 60×60, Pure GoL Pulsar pattern (15fps evolution)
+- Resolution: 1200×1920 (portrait, responsive)
+- Snake head: 180×180, cellSize 30, Modified GoL with life force
+- Snake body: 180×180, cellSize 30, Visual Only (maintainDensity)
+- Food: 180×180, cellSize 30, Pure GoL Pulsar pattern (15fps)
 - Use GRADIENT_PRESETS.PLAYER for snake
 - Use GRADIENT_PRESETS.BULLET for food
-- Movement speed: 4 pixels per frame
+- Movement speed: 12 pixels per frame (scaled 3x)
 - Food respawns immediately when eaten
 - Display "SCORE: X | LENGTH: Y" in UI
-- Controls: "← → ↑ ↓ or WASD: Move | SPACE: Restart"
-
-**Note:** The HTML file will be generated automatically with the correct title and script reference, so you don't need to create it.
+- Controls: "← → ↑ ↓ or WASD: Move"
+- DYING phase before GAMEOVER
+- postMessage on Game Over (if embedded)
+- All rendering uses scaleFactor
 
 ---
 
@@ -761,21 +737,18 @@ Create the complete Snake game JavaScript file. Include:
 
 Before submitting, verify your code has:
 
-- ✅ All imports match framework pattern exactly
-- ✅ CONFIG.ui identical to template (not modified)
-- ✅ state.lives = 1 (not 3)
-- ✅ Snake segments are 60×60, cellSize 10
+- ✅ Portrait 1200×1920 with responsive canvas
+- ✅ BASE_WIDTH, BASE_HEIGHT, ASPECT_RATIO constants
+- ✅ calculateResponsiveSize() and updateConfigScale()
+- ✅ scaleFactor applied in all rendering (push/scale/pop)
+- ✅ Snake segments are 180×180, cellSize 30
 - ✅ Food uses Patterns.PULSAR
-- ✅ seedRadialDensity() used for all entities
-- ✅ applyLifeForce() used for snake head
-- ✅ maintainDensity() used for body segments
-- ✅ renderGameUI() and renderGameOver() used
-- ✅ Snake hidden during GAMEOVER
-- ✅ Particles continue during GAMEOVER
-- ✅ NO use of 'this' with helper functions
-- ✅ NO use of 'this.' prefix for p5.js functions
-- ✅ Collision.clamp() used for boundaries
-- ✅ window.setup, window.draw, window.keyPressed exported
+- ✅ DYING phase with MIN_DELAY/MAX_WAIT
+- ✅ postMessage sent on Game Over
+- ✅ windowResized handler
+- ✅ window.windowResized exported
+- ✅ Speeds scaled 3x (12px instead of 4px)
+- ✅ NO 'this' with helpers or p5.js functions
 
 ---
 
@@ -797,9 +770,9 @@ import { GoLEngine } from '../src/core/GoLEngine.js'
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized
 ```
 
 ---
 
 **BEGIN YOUR RESPONSE NOW. Generate the complete JavaScript file.**
-

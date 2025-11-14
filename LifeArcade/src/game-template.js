@@ -5,11 +5,14 @@
  * Copy this file and modify the marked sections to create your game.
  *
  * FEATURES:
+ * - Portrait 1200×1920 resolution (installation target)
+ * - Responsive canvas with scaleFactor
+ * - postMessage integration for installation mode
+ * - Game Over with particle delay pattern
  * - Uses helper functions (GoLHelpers, ParticleHelpers, UIHelpers)
- * - Consistent 60×60 sizing for main entities
- * - Standardized GoL evolution speeds
+ * - Standardized entity sizes (scaled 3x: 180×180 for main entities)
  * - Animated gradient rendering
- * - Simple, LLM-friendly structure
+ * - LLM-friendly structure
  *
  * CRITICAL: p5.js GLOBAL MODE
  * - This framework uses p5.js global mode (NOT instance mode)
@@ -25,21 +28,26 @@
 // ============================================
 // IMPORTS - Standard imports for all games
 // ============================================
-import { GoLEngine } from './core/GoLEngine.js'
-import { SimpleGradientRenderer } from './rendering/SimpleGradientRenderer.js'
-import { GRADIENT_PRESETS } from './utils/GradientPresets.js'
-import { Collision } from './utils/Collision.js'
-import { Patterns } from './utils/Patterns.js'
-import { seedRadialDensity, applyLifeForce, maintainDensity } from './utils/GoLHelpers.js'
-import { updateParticles, renderParticles } from './utils/ParticleHelpers.js'
-import { renderGameUI, renderGameOver } from './utils/UIHelpers.js'
+import { GoLEngine } from '../src/core/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
+import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
+import { Collision } from '../src/utils/Collision.js'
+import { Patterns } from '../src/utils/Patterns.js'
+import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
+import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
+import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 
 // ============================================
-// CONFIGURATION - Customize for your game
+// GAME CONFIGURATION - BASE REFERENCE (Portrait 1200×1920)
+// All values are proportional to 1200×1920 reference resolution
 // ============================================
+const BASE_WIDTH = 1200
+const BASE_HEIGHT = 1920
+const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 0.625 (10:16 portrait)
+
 const CONFIG = {
-  width: 800,
-  height: 600,
+  width: 1200,   // Will be updated dynamically
+  height: 1920,  // Will be updated dynamically
 
   // Standard UI config (DO NOT MODIFY)
   ui: {
@@ -52,15 +60,28 @@ const CONFIG = {
 
   // Game-specific config (CUSTOMIZE THIS)
   player: {
-    width: 60,        // Standard: 60×60 for main entities
-    height: 60,
-    cellSize: 10,     // Standard: cellSize 10
-    speed: 6
+    width: 180,        // Standard: 180×180 for main entities (scaled 3x from 60×60)
+    height: 180,
+    cellSize: 30,      // Standard: cellSize 30 (scaled 3x from 10)
+    speed: 18          // Standard: 18 (scaled 3x from 6)
   }
 
   // Add your game-specific config here
-  // enemy: { width: 60, height: 60, cellSize: 10, ... },
-  // projectile: { width: 30, height: 30, cellSize: 10, ... },
+  // enemy: { width: 180, height: 180, cellSize: 30, ... },
+  // projectile: { width: 90, height: 90, cellSize: 30, ... },
+}
+
+// Store scale factor for rendering (don't modify CONFIG values)
+let scaleFactor = 1
+let canvasWidth = BASE_WIDTH
+let canvasHeight = BASE_HEIGHT
+
+// ============================================
+// GAME OVER CONFIGURATION
+// ============================================
+const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
+  MAX_WAIT: 150    // 2.5s maximum wait (150 frames)
 }
 
 // ============================================
@@ -69,8 +90,9 @@ const CONFIG = {
 const state = {
   score: 0,
   lives: 1,           // Standard: 1 life
-  phase: 'PLAYING',   // PLAYING | GAMEOVER | WIN
-  frameCount: 0
+  phase: 'PLAYING',   // PLAYING | DYING | GAMEOVER | WIN
+  frameCount: 0,
+  dyingTimer: 0       // Frames since entered DYING phase
 
   // Add game-specific state here
   // level: 1,
@@ -89,12 +111,58 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
-// p5.js SETUP - Standard setup (rarely needs modification)
+// RESPONSIVE SIZING FUNCTIONS
+// ============================================
+
+/**
+ * Calculate responsive canvas size maintaining aspect ratio
+ */
+function calculateResponsiveSize() {
+  const windowAspect = windowWidth / windowHeight
+
+  if (windowAspect > ASPECT_RATIO) {
+    // Window is wider than canvas aspect - fit to height
+    return {
+      height: windowHeight,
+      width: windowHeight * ASPECT_RATIO
+    }
+  } else {
+    // Window is taller than canvas aspect - fit to width
+    return {
+      width: windowWidth,
+      height: windowWidth / ASPECT_RATIO
+    }
+  }
+}
+
+/**
+ * Update scale factor based on current canvas size
+ */
+function updateConfigScale() {
+  // Only update scaleFactor based on canvas size, don't modify CONFIG values
+  scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
+// p5.js SETUP - Standard setup with responsive canvas
 // ============================================
 function setup() {
-  createCanvas(CONFIG.width, CONFIG.height)
+  // Calculate responsive size
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+
+  // Update scale factor
+  updateConfigScale()
+
+  // Create canvas
+  createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
+
+  // Create renderer (EXCEPTION: needs 'this' parameter)
   maskedRenderer = new SimpleGradientRenderer(this)
+
+  // Initialize game
   initGame()
 }
 
@@ -103,6 +171,7 @@ function initGame() {
   state.lives = 1
   state.phase = 'PLAYING'
   state.frameCount = 0
+  state.dyingTimer = 0
 
   // Initialize your entities
   setupPlayer()
@@ -118,12 +187,12 @@ function initGame() {
 // ============================================
 
 /**
- * STANDARD SIZES AND CONFIGURATIONS:
+ * STANDARD SIZES AND CONFIGURATIONS (Portrait 1200×1920):
  *
- * Player/Main entities: 60×60, cellSize 10, GoLEngine(6, 6, 12)
- * Enemies/Bricks: 60×60, cellSize 10, GoLEngine(6, 6, 15)
- * Bullets/Projectiles: 30×30, cellSize 10, GoLEngine(3, 3, 0 or 15)
- * Explosions: 30×30 or 60×60, cellSize 10, GoLEngine(3-6, 3-6, 30)
+ * Player/Main entities: 180×180, cellSize 30, GoLEngine(6, 6, 12)
+ * Enemies/Bricks: 180×180, cellSize 30, GoLEngine(6, 6, 15)
+ * Bullets/Projectiles: 90×90, cellSize 30, GoLEngine(3, 3, 0 or 15)
+ * Explosions: 90×90 or 180×180, cellSize 30, GoLEngine(3-6, 3-6, 30)
  *
  * GRADIENTS: Use GRADIENT_PRESETS
  * - GRADIENT_PRESETS.PLAYER (blue)
@@ -137,7 +206,7 @@ function initGame() {
 function setupPlayer() {
   player = {
     x: CONFIG.width / 2,
-    y: CONFIG.height - 100,
+    y: CONFIG.height - 300,
     width: CONFIG.player.width,
     height: CONFIG.player.height,
     cellSize: CONFIG.player.cellSize,
@@ -165,8 +234,29 @@ function draw() {
 
   if (state.phase === 'PLAYING') {
     updateGame()
+  } else if (state.phase === 'DYING') {
+    // Update particles during death animation
+    state.dyingTimer++
+    particles = updateParticles(particles, state.frameCount)
+
+    // Check if we should transition to GAMEOVER
+    const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
+    const particlesDone = particles.length === 0
+    const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
+
+    if ((particlesDone && minDelayPassed) || maxWaitReached) {
+      state.phase = 'GAMEOVER'
+
+      // Send postMessage to parent if in installation
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'gameOver',
+          payload: { score: state.score }
+        }, '*')
+      }
+    }
   } else if (state.phase === 'GAMEOVER') {
-    // Continue updating particles during game over for explosion effect
+    // Continue updating particles during game over
     particles = updateParticles(particles, state.frameCount)
   }
 
@@ -175,7 +265,10 @@ function draw() {
   maskedRenderer.updateAnimation()
 
   if (state.phase === 'GAMEOVER') {
-    renderGameOver(width, height, state.score)
+    // Only show Game Over UI in standalone mode
+    if (window.parent === window) {
+      renderGameOver(width, height, state.score)
+    }
   }
 }
 
@@ -217,11 +310,15 @@ function updatePlayer() {
 }
 
 // ============================================
-// RENDERING - Draw all game elements
+// RENDERING - Draw all game elements with scaling
 // ============================================
 function renderGame() {
-  // Render player (hide during game over)
-  if (state.phase !== 'GAMEOVER') {
+  // Apply responsive scaling
+  push()
+  scale(scaleFactor)
+
+  // Render player (hide during DYING/GAMEOVER)
+  if (state.phase === 'PLAYING') {
     maskedRenderer.renderMaskedGrid(
       player.gol,
       player.x,
@@ -244,32 +341,41 @@ function renderGame() {
 
   // Render particles with alpha
   renderParticles(particles, maskedRenderer)
+
+  pop()
 }
 
 function renderUI() {
+  push()
+  scale(scaleFactor)
+
   renderGameUI(CONFIG, state, [
     '← → or A/D: Move'
     // Add more control instructions here
   ])
+
+  pop()
 }
 
 // ============================================
 // GAME LOGIC - Your game-specific functions
 // ============================================
 
-// Example: Spawn explosion particles
+/**
+ * Example: Spawn explosion particles
+ */
 // function spawnExplosion(x, y) {
 //   for (let i = 0; i < 6; i++) {
 //     const particle = {
-//       x: x + random(-10, 10),
-//       y: y + random(-10, 10),
-//       vx: random(-3, 3),
-//       vy: random(-3, 3),
+//       x: x + random(-30, 30),
+//       y: y + random(-30, 30),
+//       vx: random(-9, 9),
+//       vy: random(-9, 9),
 //       alpha: 255,
-//       width: 30,
-//       height: 30,
+//       width: 90,
+//       height: 90,
 //       gol: new GoLEngine(3, 3, 30),
-//       cellSize: 10,
+//       cellSize: 30,
 //       gradient: GRADIENT_PRESETS.EXPLOSION,
 //       dead: false
 //     }
@@ -278,14 +384,17 @@ function renderUI() {
 //   }
 // }
 
-// Example: Check collisions
+/**
+ * Example: Check collisions and trigger death
+ */
 // function checkCollisions() {
 //   enemies.forEach(enemy => {
 //     if (Collision.rectRect(
 //       player.x, player.y, player.width, player.height,
 //       enemy.x, enemy.y, enemy.width, enemy.height
 //     )) {
-//       state.phase = 'GAMEOVER'
+//       state.phase = 'DYING'
+//       state.dyingTimer = 0
 //       spawnExplosion(player.x + player.width/2, player.y + player.height/2)
 //     }
 //   })
@@ -296,8 +405,22 @@ function renderUI() {
 // ============================================
 function keyPressed() {
   if (key === ' ' && state.phase === 'GAMEOVER') {
-    initGame()
+    // Only allow restart in standalone mode
+    if (window.parent === window) {
+      initGame()
+    }
   }
+}
+
+// ============================================
+// WINDOW RESIZE HANDLER
+// ============================================
+function windowResized() {
+  const size = calculateResponsiveSize()
+  canvasWidth = size.width
+  canvasHeight = size.height
+  updateConfigScale()
+  resizeCanvas(canvasWidth, canvasHeight)
 }
 
 // ============================================
@@ -306,3 +429,4 @@ function keyPressed() {
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
+window.windowResized = windowResized

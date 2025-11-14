@@ -1,481 +1,259 @@
-# Game Template - Usage Guide
+# Archive - LifeArcade Refactor
 
-## 🎯 Purpose
-
-Starting point for vibe coding games. LLM uses this template to generate arcade games with Conway's Game of Life aesthetics.
-
----
-
-## 🎨 Key Design Decisions
-
-### 1. **Clean White Background** (NO GoL background)
-```javascript
-background(CONFIG.ui.backgroundColor)  // '#FFFFFF'
-```
-
-**Rationale:**
-- ✅ Visual clarity - player/enemies stand out
-- ✅ Matches reference games (Space Invaders CA, explosions demo)
-- ✅ No visual confusion between background and gameplay
-- ❌ GoL background would compete with entities
-
-**When to use GoL background:**
-- ONLY if specific game aesthetic requires it
-- Must be very subtle (low density, muted colors)
-- Example: Puzzle game where background is part of mechanics
-
-### 2. **GoL on Entities Only**
-```javascript
-// Player with GoL visual
-player.gol = new GoLEngine(13, 13, 12)
-
-// Enemy with GoL visual
-enemy.gol = new GoLEngine(10, 10, 15)
-```
-
-**GoL Strategies:**
-
-| Entity Type | Strategy | Rationale |
-|-------------|----------|-----------|
-| Player | Modified (life force) | Never dies completely, stable |
-| Large enemies | Modified OR Pure | Stable or evolving |
-| Small obstacles | Visual Only | Too small for real GoL |
-| Bullets | Visual Only | Must be predictable |
-| Explosions | Pure GoL | Showcase authentic GoL |
-| Powerups | Pure GoL (oscillators) | Naturally stable patterns |
-
-### 3. **Google Brand UI**
-```javascript
-ui: {
-  backgroundColor: '#FFFFFF',  // Clean white
-  textColor: '#5f6368',        // Google Gray 700
-  accentColor: '#1a73e8',      // Google Blue
-  font: 'Google Sans, Arial, sans-serif'
-}
-```
-
-**Requirements:**
-- Minimal UI (score, lives, level in corner)
-- Clean typography
-- Consistent placement across all games
-- No clutter
+**Date:** 2025-11-14
+**Refactor:** Project cleanup and documentation coherence
 
 ---
 
-## 🚀 Quick Start
+## 📋 PURPOSE
 
-### 1. Copy Template
-```bash
-cp src/template/game-template.js src/games/my-game.js
-```
+This archive contains obsolete files and documentation that were:
+1. **Superseded** by newer implementations
+2. **Planning docs** for features now implemented
+3. **Status reports** from development phases
 
-### 2. Customize
-```javascript
-// Change game name
-const CONFIG = {
-  // ... add your config
-}
-
-// Setup your entities
-function setupPlayer() {
-  player = {
-    x: 100,
-    y: 400,
-    gol: new GoLEngine(15, 15, 12),  // 15x15 cells, 12fps
-    cellSize: 3
-  }
-
-  // Seed with pattern
-  player.gol.setPattern(Patterns.BLINKER, 7, 7)
-}
-
-function setupEnemies() {
-  // Spawn your enemies
-}
-
-// Implement game logic
-function gameLogic() {
-  // Spawn enemies
-  if (state.frameCount % 60 === 0) {
-    spawnEnemy()
-  }
-
-  // Check win condition
-  if (enemies.length === 0) {
-    state.phase = 'WIN'
-  }
-}
-```
-
-### 3. Test
-```bash
-# Open in browser
-open http://localhost:5173
-```
+All files here are **safe to ignore** for ongoing development.
 
 ---
 
-## 📋 Common Patterns
+## 🗂️ ARCHIVED FILES
 
-### Pattern 1: Player with Jump
-```javascript
-function setupPlayer() {
-  player = {
-    x: 100,
-    y: 400,
-    vx: 0,
-    vy: 0,
-    onGround: true,
-    gol: new GoLEngine(13, 13, 12),
-    cellSize: 3
-  }
+### 1. Old Versions (`old-versions/`)
 
-  player.gol.randomSeed(0.4)
-}
+**Obsolete HTML files** (replaced by `installation.html` + SPA system):
 
-function keyPressed() {
-  if (key === ' ' && player.onGround) {
-    player.vy = -15  // Jump
-    player.onGround = false
-  }
-}
+```
+gallery.html  (191 lines)
+  - Old gallery with black background
+  - No integration with screen system
+  - Replaced by: src/screens/GalleryScreen.js
 
-function updatePlayer() {
-  // Gravity
-  player.vy += CONFIG.gravity
-  player.y += player.vy
+games.html  (87 lines)
+  - Simple game listing page
+  - No installation integration
+  - Replaced by: installation.html flow
 
-  // Ground collision
-  if (player.y > CONFIG.groundY) {
-    player.y = CONFIG.groundY
-    player.vy = 0
-    player.onGround = true
-  }
-
-  // Update GoL
-  player.gol.update()
-  applyLifeForce(player)
-}
+index.html  (70 lines)
+  - Landing page with purple gradient
+  - Not the real entry point
+  - Replaced by: installation.html (main entry)
 ```
 
-### Pattern 2: Moving Enemies
-```javascript
-function spawnEnemy() {
-  const enemy = {
-    x: width,
-    y: random(100, 500),
-    vx: -3,
-    vy: 0,
-    width: 30,
-    height: 30,
-    dead: false,
-    gol: new GoLEngine(10, 10, 15),
-    cellSize: 3
-  }
+**Why archived:**
+- These used standalone HTML pages
+- New system uses SPA (Single Page Application) architecture
+- All screens now live in `src/screens/` as JavaScript classes
+- Unified navigation through `AppState.js`
 
-  enemy.gol.randomSeed(0.5)
-  enemies.push(enemy)
-}
+---
 
-function updateEnemy(enemy) {
-  enemy.x += enemy.vx
+### 2. Planning Documents (`planning/`)
 
-  // Update GoL
-  enemy.gol.update()
+**Installation planning docs** (now implemented):
 
-  // Remove if off-screen
-  if (enemy.x < -50) {
-    enemy.dead = true
-  }
-}
+```
+coding-prompt-physical-installation.md  (71k)
+  - Original installation planning prompt
+  - 8-screen flow design
+  - Now implemented in src/installation/ and src/screens/
+
+coding-prompt-physical-installation-PHASES-1-3.md  (50k)
+  - Phased implementation plan
+  - Phases 1-4 all completed
+  - System fully operational
+
+coding-prompt-cell-size-unification.md  (32k)
+  - Cell size standardization plan
+  - Updated to 30px (scaled 3x from 10px)
+  - All games now use consistent sizes
+
+installation-phases-plan.md
+INSTALLATION-PLAN-SUMMARY.md
+8-screen-flow-diagram.md
+PHYSICAL_INSTALLATION_PLAN.md
+  - Various planning documents
+  - Features all implemented
+  - Archived for historical reference
 ```
 
-### Pattern 3: Shooting Bullets
-```javascript
-function shootBullet() {
-  const bullet = {
-    x: player.x + player.width,
-    y: player.y + player.height/2,
-    vx: 8,
-    vy: 0,
-    width: 10,
-    height: 4,
-    age: 0,
-    lifetime: 120,  // 2 seconds at 60fps
-    dead: false,
-    gol: new GoLEngine(3, 2, 30),  // Small, fast update
-    cellSize: 3
-  }
+**Why archived:**
+- Installation system is **100% complete**
+- 8/8 screens implemented and functional
+- All planning goals achieved
+- Kept for historical context only
 
-  bullet.gol.randomSeed(0.8)
-  bullets.push(bullet)
-}
+---
 
-function keyPressed() {
-  if (key === 'z' || key === 'Z') {
-    shootBullet()
-  }
-}
+### 3. Status Reports (`reports/`)
+
+**Development progress reports** (outdated):
+
+```
+SPRINT1_COMPLETE.md
+SPRINT1_PROGRESS.md
+  - Sprint 1 completion reports
+  - Documented framework validation
+  - Now superseded by current state
+
+PROJECT_STATUS_AND_ROADMAP.md
+  - Status from November 12
+  - Claimed "75% complete" for installation (was actually 0%)
+  - Installation now 100% complete
+
+FRAMEWORK_VALIDATION_REPORT.md
+  - Framework validation results
+  - Snake/Pong LLM generation tests
+  - Still relevant but not active
 ```
 
-### Pattern 4: Explosion Effect (Pure GoL)
-```javascript
-function spawnExplosion(x, y) {
-  for (let i = 0; i < 8; i++) {
-    const particle = {
-      x: x + random(-15, 15),
-      y: y + random(-15, 15),
-      vx: random(-3, 3),
-      vy: random(-3, 3),
-      alpha: 255,
-      dead: false,
-      gol: new GoLEngine(10, 10, 30),
-      cellSize: 2
-    }
+**Why archived:**
+- Reports reference outdated project state
+- Installation system now complete (not 0% or 75%)
+- Game count: 4 (not 7 as reports claim)
+- Kept for development history
 
-    // Use Methuselah pattern (long evolution)
-    particle.gol.setPattern(Patterns.R_PENTOMINO, 3, 3)
+---
 
-    particles.push(particle)
-  }
-}
+## ✅ CURRENT STATE (Post-Refactor)
 
-function updateParticle(particle) {
-  particle.gol.update()
+### Implementation Status
 
-  particle.x += particle.vx
-  particle.y += particle.vy
-  particle.alpha -= 3
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Installation System** | ✅ 100% | All 8 screens + 4 managers |
+| **Games** | ✅ 100% | 4/4 games complete at 1200×1920 |
+| **Core Framework** | ✅ 100% | GoLEngine, renderers, helpers |
+| **Tests** | ✅ 96.4% | 161/167 passing |
+| **Documentation** | ✅ Updated | CLAUDE.md, game-template.js |
 
-  if (particle.alpha <= 0) {
-    particle.dead = true
-  }
-}
+### Active Files
 
-function renderEntity(entity) {
-  if (entity.alpha) {
-    push()
-    tint(255, entity.alpha)  // Fade out
-  }
-
-  renderGoLCells(entity)
-
-  if (entity.alpha) {
-    pop()
-  }
-}
+```
+LifeArcade/
+├── installation.html          # Main entry point (SPA)
+├── src/
+│   ├── installation/          # ✅ Complete (4 managers)
+│   ├── screens/               # ✅ Complete (8 screens)
+│   ├── core/                  # ✅ Complete (GoL engine)
+│   ├── rendering/             # ✅ Complete (gradients, backgrounds)
+│   ├── utils/                 # ✅ Complete (helpers, patterns)
+│   └── validation/            # ✅ Complete (validators)
+├── games/                     # ✅ 4 games (1200×1920 + postMessage)
+├── tests/                     # ✅ 96.4% coverage
+└── CLAUDE.md                  # ✅ Updated with correct info
 ```
 
 ---
 
-## 🎨 Visual Enhancements
+## 🔄 WHAT CHANGED IN REFACTOR
 
-### Gradients (Like Space Invaders CA)
-```javascript
-// Create gradient for entity
-function createGradient(entity) {
-  entity.gradient = {
-    colors: [
-      color(49, 134, 255),   // Blue
-      color(252, 65, 61),    // Red
-      color(0, 175, 87),     // Green
-      color(255, 204, 0),    // Yellow
-      color(255, 255, 255)   // White
-    ],
-    offset: 0
-  }
-}
+### 1. File Movements
 
-function renderGoLCellsWithGradient(entity) {
-  const grid = entity.gol.current
-  const cellSize = entity.cellSize || 3
+**Archived:**
+- 3 HTML files → `archive/old-versions/`
+- 7 planning docs → `archive/planning/`
+- 4 status reports → `archive/reports/`
 
-  // Animate gradient
-  entity.gradient.offset += 0.01
+**Updated:**
+- `src/game-template.js` → New 1200×1920 pattern
+- `CLAUDE.md` → Correct architecture docs
+- `prompts/README_PROMPTS_UPDATE.md` → Created (update instructions)
 
-  for (let x = 0; x < grid.length; x++) {
-    for (let y = 0; y < grid[x].length; y++) {
-      if (grid[x][y] === 1) {
-        // Map position to gradient
-        const t = (y / grid[x].length + entity.gradient.offset) % 1
-        const c = lerpGradient(entity.gradient.colors, t)
+### 2. Documentation Updates
 
-        fill(c)
-        noStroke()
-        rect(
-          entity.x + x * cellSize,
-          entity.y + y * cellSize,
-          cellSize,
-          cellSize
-        )
-      }
-    }
-  }
-}
+**CLAUDE.md changes:**
+- ✅ Added `src/installation/` and `src/screens/` to architecture
+- ✅ Updated screen flow from 6 to 8 screens
+- ✅ Updated game count from 7 to 4
+- ✅ Added installation system status (100% complete)
+- ✅ Added archive/ directory to structure
 
-function lerpGradient(colors, t) {
-  const scaled = t * (colors.length - 1)
-  const index = Math.floor(scaled)
-  const frac = scaled - index
-
-  if (index >= colors.length - 1) {
-    return colors[colors.length - 1]
-  }
-
-  return lerpColor(colors[index], colors[index + 1], frac)
-}
-```
-
-### Cell Glow Effect
-```javascript
-function renderGoLCellsWithGlow(entity) {
-  const grid = entity.gol.current
-  const cellSize = entity.cellSize || 3
-
-  // Draw glow first (larger, semi-transparent)
-  fill(entity.color.r, entity.color.g, entity.color.b, 100)
-  for (let x = 0; x < grid.length; x++) {
-    for (let y = 0; y < grid[x].length; y++) {
-      if (grid[x][y] === 1) {
-        rect(
-          entity.x + x * cellSize - 1,
-          entity.y + y * cellSize - 1,
-          cellSize + 2,
-          cellSize + 2
-        )
-      }
-    }
-  }
-
-  // Draw solid cells on top
-  fill(entity.color.r, entity.color.g, entity.color.b)
-  for (let x = 0; x < grid.length; x++) {
-    for (let y = 0; y < grid[x].length; y++) {
-      if (grid[x][y] === 1) {
-        rect(
-          entity.x + x * cellSize,
-          entity.y + y * cellSize,
-          cellSize,
-          cellSize
-        )
-      }
-    }
-  }
-}
-```
+**game-template.js changes:**
+- ✅ Resolution: 800×600 → 1200×1920
+- ✅ Entity sizes: 60×60 → 180×180, cellSize 10 → 30
+- ✅ Added responsive canvas (scaleFactor, calculateResponsiveSize)
+- ✅ Added postMessage integration
+- ✅ Added DYING phase + GAMEOVER_CONFIG
+- ✅ Added windowResized handler
+- ✅ Rendering with push/scale/pop pattern
 
 ---
 
-## ✅ Validation Checklist
+## 📚 ARCHIVED DOCUMENTATION NOTES
 
-Before submitting game:
+### Still Useful References
 
-### GoL Requirements
-- [ ] NO static images/sprites (all visuals are procedural)
-- [ ] GoLEngine used for all entity visuals
-- [ ] B3/S23 rules not modified (unless documented)
-- [ ] BLINKER pattern oscillates correctly (runtime test)
+While archived, some docs contain valuable information:
 
-### UI Requirements
-- [ ] Score displayed in top-left
-- [ ] Lives displayed (if applicable)
-- [ ] Level displayed (if applicable)
-- [ ] Google brand colors used
-- [ ] Clean white background (or solid color)
-- [ ] Minimal, uncluttered UI
+**Planning docs:**
+- Technical decisions and rationale
+- Design patterns discussion
+- Feature requirements
 
-### Performance Requirements
-- [ ] Maintains 60fps with 10+ entities
-- [ ] GoL grid sizes reasonable (< 30x30 per entity)
-- [ ] No memory leaks (entities cleaned up)
+**Status reports:**
+- Development timeline
+- LLM generation test results (Snake 95%, Pong 90%)
+- Framework validation insights
 
-### Gameplay Requirements
-- [ ] MENU → PLAYING → GAMEOVER flow works
-- [ ] SPACE to start/restart
-- [ ] Controls clearly documented
-- [ ] Win/lose conditions clear
+**If you need context** on why certain decisions were made, these docs provide historical background.
 
 ---
 
-## 🔧 Troubleshooting
+## 🚀 FUTURE UPDATES
 
-### "Player visual looks static"
-```javascript
-// Check GoL is updating
-player.gol.update()  // Must be called every frame
+### LLM Prompts Need Updating
 
-// Check update rate isn't too slow
-player.gol = new GoLEngine(13, 13, 12)  // 12fps is good
+The test prompts (`test-llm-snake-game.md`, `test-llm-pong-game.md`) still reference the old 800×600 pattern.
 
-// Apply life force if cells are dying
-applyLifeForce(player)
-```
+**See:** `prompts/README_PROMPTS_UPDATE.md` for update requirements.
 
-### "Performance is slow"
-```javascript
-// Reduce GoL grid sizes
-player.gol = new GoLEngine(10, 10, 12)  // Smaller = faster
+**When to update:**
+- If generating new games with LLMs
+- Reference updated `game-template.js` for correct pattern
 
-// Reduce update rate
-player.gol = new GoLEngine(13, 13, 8)  // 8fps instead of 12
+### Potential New Games
 
-// Limit entity count
-if (enemies.length > 20) {
-  enemies.shift()  // Remove oldest
-}
-```
+**Missing from original plan:**
+- Asteroids (mentioned in docs)
+- Snake (mentioned in docs)
+- Pong (mentioned in docs)
 
-### "Collision detection not working"
-```javascript
-// Debug: Draw hitboxes
-function renderEntity(entity) {
-  renderGoLCells(entity)
-
-  // Debug hitbox
-  noFill()
-  stroke(255, 0, 0)
-  rect(entity.x, entity.y, entity.width, entity.height)
-}
-```
+**Current games are sufficient** for installation demo. Additional games can use the updated `game-template.js` as a starting point.
 
 ---
 
-## 📚 Reference
+## ⚠️ IMPORTANT NOTES
 
-### Available Patterns
-From `src/utils/Patterns.js`:
-- `BLOCK` - 2x2 still life
-- `BEEHIVE` - 4x3 still life
-- `BLINKER` - 1x3 oscillator (period 2)
-- `TOAD` - 4x2 oscillator (period 2)
-- `PULSAR` - 13x13 oscillator (period 3)
-- `GLIDER` - 3x3 spaceship
-- `LIGHTWEIGHT_SPACESHIP` - 5x4 spaceship
-- `R_PENTOMINO` - Methuselah (1,103 generations)
+### Don't Restore These Files
 
-### GoL Strategies
-- **Pure:** Just B3/S23, no modifications (explosions, powerups)
-- **Modified:** B3/S23 + life force (player, bosses)
-- **Visual Only:** Static pattern + flicker (small obstacles, bullets)
+The archived files should **NOT** be restored to the project root. They represent:
+- Outdated approaches
+- Completed planning phases
+- Historical snapshots
 
-### Color Palette (Google Brand)
-```javascript
-const GOOGLE_COLORS = {
-  blue: color(49, 134, 255),
-  red: color(252, 65, 61),
-  green: color(0, 175, 87),
-  yellow: color(255, 204, 0),
-  white: color(255, 255, 255),
-  gray700: color(95, 99, 104)
-}
-```
+### Current System is Correct
+
+The **active codebase** (`src/installation/`, `src/screens/`, `installation.html`) represents the **correct, working implementation**.
+
+### Reference Only
+
+Use archived files as **reference** for:
+- Understanding project evolution
+- Historical context
+- Design decisions
 
 ---
 
-## 🚀 Next Steps
+## 📞 QUESTIONS?
 
-1. Copy template to new game file
-2. Customize game logic
-3. Test thoroughly
-4. Run validation: `npm run validate src/games/your-game.js`
-5. Submit for review
+If you need to understand:
+- **Why something was archived** → Read this README
+- **How current system works** → Read `CLAUDE.md`
+- **How to create new games** → Read `src/game-template.js`
+- **How installation works** → Read `src/installation/` and `src/screens/`
+
+---
+
+**Last Updated:** 2025-11-14
+**Refactor Status:** ✅ Complete
+**Project State:** Production-ready for 4-game installation

@@ -9,6 +9,7 @@
  */
 
 import { CELL_STATES } from '../utils/Config.js'
+import { GOOGLE_COLORS } from '../utils/GradientPresets.js'
 
 const { ALIVE } = CELL_STATES
 
@@ -21,18 +22,30 @@ const { ALIVE } = CELL_STATES
  * - Keep it stupid simple (KISS)
  */
 class SimpleGradientRenderer {
+  /**
+   * Create gradient renderer
+   *
+   * @param {p5} p5Instance - p5.js instance (EXCEPTION: needs 'this' in p5.js GLOBAL mode)
+   *
+   * @example
+   * // In p5.js sketch
+   * function setup() {
+   *   createCanvas(1200, 1920)
+   *   maskedRenderer = new SimpleGradientRenderer(this)
+   * }
+   */
   constructor(p5Instance) {
     this.p5 = p5Instance
 
     // Animation offset for gradient scrolling
     this.animationOffset = 0
 
-    // Global gradient palette (Google colors)
+    // Global gradient palette (official Google brand colors)
     this.palette = [
-      [66, 133, 244],   // Blue
-      [234, 67, 53],    // Red
-      [52, 168, 83],    // Green
-      [251, 188, 4]     // Yellow
+      GOOGLE_COLORS.BLUE,
+      GOOGLE_COLORS.RED,
+      GOOGLE_COLORS.GREEN,
+      GOOGLE_COLORS.YELLOW
     ]
 
     // Control points for smooth gradient
@@ -42,9 +55,17 @@ class SimpleGradientRenderer {
   /**
    * Get color from 2D animated noise field (like flowing clouds).
    *
+   * Uses Perlin noise to create smooth, organic color transitions.
+   * The noise field animates over time via animationOffset.
+   *
    * @param {number} screenX - X position in screen coordinates
    * @param {number} screenY - Y position in screen coordinates
-   * @returns {array} RGB color array [r, g, b]
+   * @returns {number[]} RGB color array [r, g, b]
+   *
+   * @example
+   * const [r, g, b] = renderer.getGradientColor(100, 200)
+   * fill(r, g, b)
+   * rect(100, 200, 30, 30)
    */
   getGradientColor(screenX, screenY) {
     // Noise scale - controls the "zoom" of the noise pattern
@@ -81,11 +102,23 @@ class SimpleGradientRenderer {
   /**
    * Render GoL grid as mask revealing background gradient with noise.
    *
-   * @param {GoLEngine} engine - GoL engine
-   * @param {number} x - X position
-   * @param {number} y - Y position
-   * @param {number} cellSize - Cell size
-   * @param {object} gradientConfig - Not used (kept for compatibility)
+   * Only alive cells are rendered, each sampling the gradient at its center position.
+   * This creates an organic, flowing appearance as the GoL evolves.
+   *
+   * @param {GoLEngine} engine - GoL engine instance
+   * @param {number} x - Top-left X position of grid
+   * @param {number} y - Top-left Y position of grid
+   * @param {number} cellSize - Size of each cell in pixels
+   * @param {object} gradientConfig - Not used (kept for API compatibility)
+   *
+   * @example
+   * const player = {
+   *   gol: new GoLEngine(6, 6, 12),
+   *   x: 100, y: 200,
+   *   cellSize: 30,
+   *   gradient: GRADIENT_PRESETS.PLAYER
+   * }
+   * renderer.renderMaskedGrid(player.gol, player.x, player.y, player.cellSize, player.gradient)
    */
   renderMaskedGrid(engine, x, y, cellSize, gradientConfig) {
     const cols = engine.cols
@@ -157,17 +190,18 @@ class SimpleGradientRenderer {
 
   /**
    * Update gradient animation offset
+   *
+   * Call this every frame to animate the gradient smoothly.
+   * Increments the time dimension of the Perlin noise field.
+   *
+   * @example
+   * function draw() {
+   *   // ... render game
+   *   maskedRenderer.updateAnimation()
+   * }
    */
   updateAnimation() {
     this.animationOffset += 0.005 // Slow, smooth animation
-  }
-
-  /**
-   * Clear cache
-   */
-  dispose() {
-    this.gradientCache.forEach(g => g.remove())
-    this.gradientCache.clear()
   }
 }
 

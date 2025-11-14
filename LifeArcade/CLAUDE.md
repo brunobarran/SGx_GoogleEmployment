@@ -74,37 +74,56 @@ export const GOOGLE_COLORS = {
 ```
 LifeArcade/
 ├── src/
-│   ├── core/             # GoLEngine (B3/S23), state machine
-│   ├── rendering/        # SimpleGradientRenderer, particles
+│   ├── core/             # GoLEngine (B3/S23)
+│   ├── rendering/        # SimpleGradientRenderer, GoLBackground
 │   ├── utils/            # Helpers, collision, patterns
-│   └── validation/       # Runtime validators
-├── games/                # 7 games (iframes)
-│   ├── space-invaders.js/html
-│   ├── dino-runner.js/html
-│   ├── breakout.js/html
-│   ├── asteroids.js/html
-│   ├── flappy-bird.js/html
-│   ├── snake.js/html
-│   └── pong.js/html
-├── screens/              # Arcade screen system (SPA)
-│   ├── attract.js        # Screen 1: Attract/Inicio
-│   ├── gallery.js        # Screen 2: Game selection
-│   ├── code-animation.js # Screen 3: Code typewriter
-│   ├── score-entry.js    # Screen 5: 3-initial input
-│   └── leaderboard.js    # Screen 6: High scores table
+│   ├── validation/       # Runtime validators
+│   ├── installation/     # Installation system managers
+│   │   ├── AppState.js         # State machine (8 screens)
+│   │   ├── StorageManager.js   # localStorage leaderboards
+│   │   ├── InputManager.js     # Keyboard + arcade controls
+│   │   └── IframeComm.js       # postMessage game communication
+│   └── screens/          # 8-screen installation flow
+│       ├── IdleScreen.js           # Screen 1: GoL attract
+│       ├── WelcomeScreen.js        # Screen 2: Title screen
+│       ├── GalleryScreen.js        # Screen 3: Game selection
+│       ├── CodeAnimationScreen.js  # Screen 4: Code typewriter
+│       ├── GameScreen.js           # Screen 5: iframe container
+│       ├── ScoreEntryScreen.js     # Screen 6: 3-letter input
+│       ├── LeaderboardScreen.js    # Screen 7: Top 10 display
+│       └── QRCodeScreen.js         # Screen 8: QR + URL
+├── games/                # 4 games implemented (portrait 1200×1920)
+│   ├── space-invaders.js      # ✅ Complete
+│   ├── dino-runner.js         # ✅ Complete
+│   ├── breakout.js            # ✅ Complete
+│   ├── flappy-bird.js         # ✅ Complete
+│   └── game-wrapper.html      # Universal iframe wrapper
 ├── tests/                # Mirror src/ structure
 │   ├── core/
 │   ├── utils/
-│   └── validation/
-└── installation.html     # Main SPA container
+│   ├── validation/
+│   └── installation/
+├── installation.html     # Main SPA entry point
+└── archive/              # Archived obsolete files
+    ├── old-versions/     # Old HTML files (gallery.html, games.html, index.html)
+    ├── planning/         # Installation planning docs (implemented)
+    └── reports/          # Old status reports
 ```
 
-### Screen Flow (6 Screens)
+### Screen Flow (8 Screens)
 ```
-1. Attract → 2. Gallery → 3. Code Animation → 4. Game (iframe) → 5. Score Entry → 6. Leaderboard
-     ↑_______________________________________________________________________________|
-                                    (30s timeout loop)
+1. Idle → 2. Welcome → 3. Gallery → 4. Code Animation → 5. Game (iframe) → 6. Score Entry → 7. Leaderboard → 8. QR Code
+   ↑__________________________________________________________________________________________________|
+                                    (auto-loop on timeout)
 ```
+
+**Implementation Status:** ✅ All 8 screens fully implemented
+
+**Communication:**
+- Screens communicate via AppState (Observer pattern)
+- Games send `postMessage` on Game Over
+- IframeComm handles game ↔ installation communication
+- StorageManager persists leaderboards in localStorage
 
 ### Portrait Display Specifications
 

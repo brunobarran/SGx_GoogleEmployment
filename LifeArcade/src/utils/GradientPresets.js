@@ -190,12 +190,51 @@ export function getRandomEnemyGradient() {
 /**
  * Create a custom gradient preset.
  *
- * @param {string} name - Preset name
- * @param {array} colors - Array of RGB color arrays
- * @param {number} controlPoints - Number of control points (4-8)
- * @param {number} animationSpeed - Animation speed
- * @param {boolean} perColumn - Whether to render per column
- * @returns {object} Custom gradient preset
+ * Allows creating custom gradients with specific color palettes.
+ * Control points determine smoothness (4=sharp transitions, 8=smooth blending).
+ *
+ * @param {string} name - Preset name (e.g., 'CUSTOM_PURPLE')
+ * @param {number[][]} colors - Array of RGB color arrays, e.g., [[255, 0, 0], [0, 0, 255]]
+ * @param {number} [controlPoints=6] - Number of control points (4-8, clamped). Higher = smoother
+ * @param {number} [animationSpeed=0.5] - Animation speed multiplier (0.1 = slow, 2.0 = fast)
+ * @param {boolean} [perColumn=true] - Whether to render per column (true) or pre-render (false)
+ * @returns {object} Custom gradient preset object
+ * @returns {string} returns.name - Preset name
+ * @returns {number[][]} returns.palette - Color palette
+ * @returns {number} returns.controlPoints - Clamped control points (4-8)
+ * @returns {number} returns.animationSpeed - Animation speed
+ * @returns {boolean} returns.perColumn - Render mode flag
+ *
+ * @example
+ * // Purple to pink gradient
+ * const purpleGradient = createCustomGradient(
+ *   'CUSTOM_PURPLE',
+ *   [[128, 0, 128], [255, 192, 203]],  // Purple to Pink
+ *   6,     // Smooth blending
+ *   0.5,   // Medium animation speed
+ *   true   // Render per column
+ * )
+ *
+ * @example
+ * // Fiery gradient with sharp transitions
+ * const fireGradient = createCustomGradient(
+ *   'FIRE',
+ *   [
+ *     [255, 255, 0],   // Yellow
+ *     [255, 128, 0],   // Orange
+ *     [255, 0, 0],     // Red
+ *     [128, 0, 0]      // Dark red
+ *   ],
+ *   4,     // Sharp transitions
+ *   1.5    // Fast animation
+ * )
+ *
+ * @example
+ * // Using with entity
+ * const enemy = {
+ *   gol: new GoLEngine(6, 6, 15),
+ *   gradient: createCustomGradient('NEON', [[0, 255, 255], [255, 0, 255]])
+ * }
  */
 export function createCustomGradient(name, colors, controlPoints = 6, animationSpeed = 0.5, perColumn = true) {
   return {
