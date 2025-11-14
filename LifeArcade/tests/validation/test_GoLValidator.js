@@ -9,6 +9,12 @@
 import { describe, test, expect, beforeEach } from 'vitest'
 import { GoLValidator } from '../../src/validation/gol-validator.js'
 import { GoLEngine } from '../../src/core/GoLEngine.js'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const gamesDir = join(__dirname, '..', '..', 'games')
 
 describe('GoLValidator - Static Analysis', () => {
   describe('GoLEngine import check', () => {
@@ -262,19 +268,19 @@ describe('GoLValidator - File validation', () => {
 
 describe('GoLValidator - Integration with example games', () => {
   test('dino-runner.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('../../games/dino-runner.js')
+    const result = await GoLValidator.validateFile(join(gamesDir, 'dino-runner.js'))
 
     expect(result.valid).toBe(true)
   })
 
   test('space-invaders-ca.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('../../games/space-invaders.js')
+    const result = await GoLValidator.validateFile(join(gamesDir, 'space-invaders.js'))
 
     expect(result.valid).toBe(true)
   })
 
   test('breakout.js should pass validation', async () => {
-    const result = await GoLValidator.validateFile('../../games/breakout.js')
+    const result = await GoLValidator.validateFile(join(gamesDir, 'breakout.js'))
 
     expect(result.valid).toBe(true)
   })

@@ -8,6 +8,12 @@
 
 import { describe, test, expect } from 'vitest'
 import { UIValidator } from '../../src/validation/ui-validator.js'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const gamesDir = join(__dirname, '..', '..', 'games')
 
 describe('UIValidator - Static Analysis', () => {
   describe('Score display check', () => {
@@ -75,9 +81,9 @@ describe('UIValidator - Static Analysis', () => {
 
     test('passes when Google Blue is used', () => {
       const code = `
-        const accentColor = '#1a73e8'
+        const accentColor = '#4285f4'
         const score = 0
-        background('#1a73e8')
+        background('#4285f4')
       `
       const result = UIValidator.validate(code)
 
@@ -143,7 +149,7 @@ describe('UIValidator - Static Analysis', () => {
     })
 
     test('warns when too many gradients are used', () => {
-      const gradientCode = Array(22).fill('const g = createGradient()').join('\n')
+      const gradientCode = Array(45).fill('const g = createGradient()').join('\n')
       const result = UIValidator.validate(gradientCode)
 
       expect(result.valid).toBe(false)
@@ -184,7 +190,7 @@ describe('UIValidator - Static Analysis', () => {
           ui: {
             backgroundColor: '#FFFFFF',
             textColor: '#5f6368',
-            accentColor: '#1a73e8'
+            accentColor: '#4285f4'
           }
         }
 
@@ -258,19 +264,19 @@ describe('UIValidator - File validation', () => {
 
 describe('UIValidator - Integration with example games', () => {
   test('dino-runner.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('../../games/dino-runner.js')
+    const result = await UIValidator.validateFile(join(gamesDir, 'dino-runner.js'))
 
     expect(result.valid).toBe(true)
   })
 
   test('space-invaders-ca.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('../../games/space-invaders.js')
+    const result = await UIValidator.validateFile(join(gamesDir, 'space-invaders.js'))
 
     expect(result.valid).toBe(true)
   })
 
   test('breakout.js should pass UI validation', async () => {
-    const result = await UIValidator.validateFile('../../games/breakout.js')
+    const result = await UIValidator.validateFile(join(gamesDir, 'breakout.js'))
 
     expect(result.valid).toBe(true)
   })

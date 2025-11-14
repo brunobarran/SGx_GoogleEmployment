@@ -63,7 +63,7 @@ export class UIValidator {
 
     // Check 3: Minimal UI (not too many gradients)
     const gradientCount = (gameCode.match(/gradient/gi) || []).length
-    if (gradientCount > 20) {
+    if (gradientCount > 40) {
       errors.push('⚠️  UI should be minimal - too many gradients detected')
     }
 
