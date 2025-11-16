@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const GAME_PATH = join(process.cwd(), 'games', 'breakout.js')
+const GAME_PATH = join(process.cwd(), 'public', 'games', 'breakout.js')
 
 describe('Breakout - File Structure', () => {
   let gameCode

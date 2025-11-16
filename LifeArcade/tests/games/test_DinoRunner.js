@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const GAME_PATH = join(process.cwd(), 'games', 'dino-runner.js')
+const GAME_PATH = join(process.cwd(), 'public', 'games', 'dino-runner.js')
 
 describe('DinoRunner - File Structure', () => {
   let gameCode

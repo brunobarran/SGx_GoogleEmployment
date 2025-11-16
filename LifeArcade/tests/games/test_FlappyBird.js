@@ -2,7 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const GAME_PATH = join(process.cwd(), 'games', 'flappy-bird.js')
+const GAME_PATH = join(process.cwd(), 'public', 'games', 'flappy-bird.js')
 
 describe('FlappyBird - File Structure', () => {
   let gameCode

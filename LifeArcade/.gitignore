@@ -10,6 +10,9 @@ build/
 .vite/
 .turbo/
 
+# Build intermediates
+public/src/
+
 # Development
 .DS_Store
 .env
