@@ -43,8 +43,8 @@ export class CodeAnimationScreen {
     }
 
     // Load game code dynamically from .js file
-    // Convert path from .html to .js (e.g., "games/space-invaders.html" -> "games/space-invaders.js")
-    const jsPath = game.path.replace('.html', '.js')
+    // Use game.id to construct path (e.g., "space-invaders" -> "games/space-invaders.js")
+    const jsPath = `games/${game.id}.js`
 
     try {
       const response = await fetch(jsPath)
