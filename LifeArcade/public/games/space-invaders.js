@@ -59,13 +59,18 @@ const CONFIG = {
   bullet: {
     width: 90,    // 3 cells × 30px (scaled 3x from 30px)
     height: 90,   // 3 cells × 30px
-    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
+    cellSize: 30, // Scaled to 30px (3x from 10px baseline)
+    speed: 12     // Bullet vertical speed (negative = upward)
   },
 
   explosion: {
     width: 180,   // 6 cells × 30px (scaled 3x from 60px)
     height: 180,  // 6 cells × 30px
     cellSize: 30  // Scaled to 30px (3x from 10px baseline)
+  },
+
+  background: {
+    updateRate: 10  // Background GoL update rate (fps)
   }
 }
 
@@ -141,6 +146,38 @@ function setup() {
   // Create simple gradient renderer (KISS)
   maskedRenderer = new SimpleGradientRenderer(this)
 
+  // Debug interface initialization (Phase 1)
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.get('debug') === 'true') {
+    import('/src/debug/DebugInterface.js').then(module => {
+      // Inject CSS
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = '/src/debug/debug-styles.css'
+      document.head.appendChild(link)
+
+      // Initialize debug interface with callbacks
+      module.initDebugInterface(CONFIG, 'space-invaders', {
+        onInvadersChange: () => {
+          // Recreate invaders when any invader property changes
+          invaders = []
+          setupInvaders()
+        },
+        onPlayerChange: () => {
+          // Recreate player when player properties change
+          setupPlayer()
+        },
+        onBulletSpeedChange: () => {
+          // Bullet speed is stored in CONFIG.bullet.speed
+          // No action needed - bullets read from CONFIG each frame
+          console.log('[SpaceInvaders] Bullet speed updated (live)')
+        }
+      })
+    }).catch(err => {
+      console.error('[SpaceInvaders] Failed to load debug interface:', err)
+    })
+  }
+
   initGame()
 }
 
@@ -159,15 +196,18 @@ function initGame() {
 }
 
 function setupPlayer() {
+  // Calculate size from cellSize (6x6 grid)
+  const playerSize = 6 * CONFIG.player.cellSize
+
   player = {
-    x: CONFIG.width / 2 - CONFIG.player.width / 2,
+    x: CONFIG.width / 2 - playerSize / 2,
     y: CONFIG.height - 200,  // Adjusted for portrait
-    width: CONFIG.player.width,
-    height: CONFIG.player.height,
+    width: playerSize,  // Calculated: 6 cells × cellSize
+    height: playerSize, // Calculated: 6 cells × cellSize
     vx: 0,
     cellSize: CONFIG.player.cellSize,
 
-    // GoL engine - 6x6 grid for 80x80 visual size
+    // GoL engine - 6x6 grid
     gol: new GoLEngine(6, 6, 12),
 
     // Gradient configuration
@@ -182,9 +222,12 @@ function setupPlayer() {
 }
 
 function setupInvaders() {
-  const { cols, rows, width, height, spacing, startX, startY, cellSize } = CONFIG.invader
+  const { cols, rows, spacing, startX, startY, cellSize } = CONFIG.invader
 
-  console.log('Setting up invaders:', { cols, rows })
+  // Calculate size from cellSize (6x6 grid)
+  const invaderSize = 6 * cellSize
+
+  console.log('Setting up invaders:', { cols, rows, cellSize, size: invaderSize })
 
   // Array of organic patterns for variety
   const organicPatterns = [
@@ -199,14 +242,14 @@ function setupInvaders() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const invader = {
-        x: startX + col * (width + spacing),
-        y: startY + row * (height + spacing),
-        width,
-        height,
+        x: startX + col * (invaderSize + spacing),
+        y: startY + row * (invaderSize + spacing),
+        width: invaderSize,   // Calculated: 6 cells × cellSize
+        height: invaderSize,  // Calculated: 6 cells × cellSize
         cellSize,
         dead: false,
 
-        // GoL engine - 6x6 grid for 60x60 visual size
+        // GoL engine - 6x6 grid
         gol: new GoLEngine(6, 6, 15),
 
         // Assign gradient based on row
@@ -369,12 +412,15 @@ function moveInvaders() {
 }
 
 function shootBullet() {
+  // Calculate size from cellSize (3×3 grid)
+  const bulletSize = 3 * CONFIG.bullet.cellSize
+
   const bullet = {
-    x: player.x + player.width / 2 - CONFIG.bullet.width / 2,
-    y: player.y - CONFIG.bullet.height,
-    width: CONFIG.bullet.width,
-    height: CONFIG.bullet.height,
-    vy: -8,
+    x: player.x + player.width / 2 - bulletSize / 2,
+    y: player.y - bulletSize,
+    width: bulletSize,   // Calculated: 3 cells × cellSize
+    height: bulletSize,  // Calculated: 3 cells × cellSize
+    vy: -CONFIG.bullet.speed,  // Use CONFIG value (negative = upward)
     cellSize: CONFIG.bullet.cellSize,
     dead: false,
 
@@ -431,8 +477,8 @@ function renderGame() {
   push()
   scale(scaleFactor)
 
-  // DEBUG: Test if rendering works with simple rectangles
-  if (keyIsDown(68)) { // Press 'D' for debug mode
+  // DEBUG: Visualize hitboxes with simple rectangles
+  if (keyIsDown(72)) { // Press 'H' for hitbox visualization
     // Draw simple rectangles where entities should be
     fill(255, 0, 0, 100)
     rect(player.x, player.y, player.width, player.height)
@@ -442,7 +488,7 @@ function renderGame() {
       rect(inv.x, inv.y, inv.width, inv.height)
     })
     pop()
-    return // Skip gradient rendering in debug mode
+    return // Skip gradient rendering in hitbox mode
   }
 
   // Render player with masked gradient (hide during DYING and GAMEOVER)
@@ -501,6 +547,9 @@ function renderUI() {
 // ============================================
 
 function spawnExplosion(x, y) {
+  // Calculate size from cellSize (6×6 grid)
+  const explosionSize = 6 * CONFIG.explosion.cellSize
+
   for (let i = 0; i < 3; i++) {
     const particle = {
       x: x + Math.random() * 20 - 10,
@@ -508,8 +557,8 @@ function spawnExplosion(x, y) {
       vx: Math.random() * 4 - 2,
       vy: Math.random() * 4 - 2,
       alpha: 255,
-      width: CONFIG.explosion.width,
-      height: CONFIG.explosion.height,
+      width: explosionSize,   // Calculated: 6 cells × cellSize
+      height: explosionSize,  // Calculated: 6 cells × cellSize
       cellSize: CONFIG.explosion.cellSize,
       dead: false,
 
