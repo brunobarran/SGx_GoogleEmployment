@@ -5,6 +5,8 @@
  * @license ISC
  */
 
+import { updateLoopPattern } from './LoopPatternHelpers.js'
+
 /**
  * Update all particles in array (movement + fade + cleanup).
  *
@@ -12,15 +14,24 @@
  *
  * @param {Array} particles - Array of particle objects
  * @param {number} frameCount - Current frame count from state
+ * @param {number} loopUpdateRate - Frames between loop phase changes (from CONFIG.loopUpdateRate)
  * @returns {Array} Filtered array (dead particles removed)
  *
  * @example
  * // In your updateGame() function:
- * particles = updateParticles(particles, state.frameCount)
+ * particles = updateParticles(particles, state.frameCount, CONFIG.loopUpdateRate)
  */
-export function updateParticles(particles, frameCount) {
+export function updateParticles(particles, frameCount, loopUpdateRate = 30) {
   particles.forEach(p => {
     p.gol.updateThrottled(frameCount)
+
+    // Handle loop pattern resets for Pure GoL patterns
+    // Explosions are Tier 1 (Pure GoL) and may use loop patterns
+    // Use updateLoopPattern with logChanges=false to avoid console spam
+    if (p.gol.isLoopPattern) {
+      updateLoopPattern(p.gol, loopUpdateRate, false)
+    }
+
     p.x += p.vx
     p.y += p.vy
     p.alpha -= 4

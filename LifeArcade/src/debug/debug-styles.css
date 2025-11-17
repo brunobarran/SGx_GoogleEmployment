@@ -223,6 +223,43 @@
   transform: scale(1.05);
 }
 
+/* ===== DROPDOWNS (Phase 2) ===== */
+
+.debug-dropdown {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333333;
+  background: #FFFFFF;
+  border: 2px solid rgba(66, 133, 244, 0.3); /* Google Blue */
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.debug-dropdown:hover {
+  border-color: rgba(66, 133, 244, 0.5);
+}
+
+.debug-dropdown:focus {
+  border-color: #4285F4; /* Google Blue */
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+}
+
+.debug-dropdown option {
+  padding: 6px;
+  font-size: 13px;
+}
+
+.debug-dropdown optgroup {
+  font-weight: 600;
+  font-size: 12px;
+  color: #4285F4; /* Google Blue */
+  padding: 4px 0;
+}
+
 /* ===== SCROLLBAR STYLING (Webkit) ===== */
 
 .debug-panel::-webkit-scrollbar {

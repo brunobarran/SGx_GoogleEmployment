@@ -23,7 +23,7 @@ class GoLEngine {
   constructor(cols, rows, updateRateFPS = 10) {
     this.cols = cols
     this.rows = rows
-    this.updateRateFPS = updateRateFPS
+    this._updateRateFPS = updateRateFPS  // Private storage
     this.framesBetweenUpdates = 60 / updateRateFPS  // Assuming 60fps main loop
     this.frameCounter = 0
 
@@ -32,6 +32,24 @@ class GoLEngine {
     this.next = this.create2DArray(cols, rows)
 
     this.generation = 0
+    this._frozen = false  // Freeze state for static patterns
+  }
+
+  /**
+   * Get the current update rate in FPS.
+   * @returns {number} Update rate in frames per second
+   */
+  get updateRateFPS() {
+    return this._updateRateFPS
+  }
+
+  /**
+   * Set the update rate in FPS. Automatically recalculates framesBetweenUpdates.
+   * @param {number} fps - New update rate in frames per second
+   */
+  set updateRateFPS(fps) {
+    this._updateRateFPS = fps
+    this.framesBetweenUpdates = 60 / fps  // Recalculate throttle interval
   }
 
   /**
@@ -184,11 +202,49 @@ class GoLEngine {
    * @returns {boolean} True if an update occurred
    */
   updateThrottled(frameCount) {
+    // Skip update if frozen (for static patterns)
+    if (this._frozen) {
+      return false
+    }
+
     if (frameCount % this.framesBetweenUpdates === 0) {
       this.update()
       return true
     }
     return false
+  }
+
+  /**
+   * Freeze GoL evolution (for static pattern display).
+   * When frozen, updateThrottled() will skip all updates.
+   *
+   * @example
+   * gol.freeze()
+   * gol.setPattern(Patterns.GLIDER, 0, 0)
+   * // Pattern will remain static, no evolution
+   */
+  freeze() {
+    this._frozen = true
+  }
+
+  /**
+   * Unfreeze GoL evolution (resume normal B3/S23 updates).
+   *
+   * @example
+   * gol.unfreeze()
+   * // Pattern will resume evolving according to B3/S23 rules
+   */
+  unfreeze() {
+    this._frozen = false
+  }
+
+  /**
+   * Check if GoL is currently frozen.
+   *
+   * @returns {boolean} True if frozen, false otherwise
+   */
+  isFrozen() {
+    return this._frozen
   }
 
   /**

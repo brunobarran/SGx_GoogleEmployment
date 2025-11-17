@@ -13,8 +13,20 @@
  * - Parameter binding (sliders → CONFIG updates)
  * - Hide/show toggle (ESC key)
  *
+ * PHASE 2: Appearance System
+ * - Three appearance modes (Modified GoL, Static, Density)
+ * - Dropdown selectors per entity type
+ * - Real-time appearance switching
+ *
  * @module DebugInterface
  */
+
+import {
+  initAppearanceOverrides,
+  getAppearanceOptions,
+  parseAppearanceValue,
+  updateAppearanceOverride
+} from './DebugAppearance.js'
 
 /**
  * Initialize debug interface for a game.
@@ -40,6 +52,9 @@
  */
 export function initDebugInterface(config, gameName, callbacks = {}) {
   console.log(`[DebugInterface] Initializing for ${gameName}`)
+
+  // Initialize appearance override system (Phase 2)
+  initAppearanceOverrides()
 
   // Create debug panel container
   const panel = createDebugPanel(gameName)
@@ -119,6 +134,10 @@ function populateControls(panel, config, gameName, callbacks) {
       controlsContainer.appendChild(groupElement)
     }
   })
+
+  // Add appearance dropdowns group (Phase 2)
+  const appearanceGroup = createAppearanceGroup(gameName, callbacks)
+  controlsContainer.appendChild(appearanceGroup)
 }
 
 /**
@@ -243,6 +262,157 @@ function triggerCallbacks(path, callbacks) {
 }
 
 /**
+ * Create appearance dropdowns group (Phase 2).
+ *
+ * @param {string} gameName - Game identifier
+ * @param {Object} callbacks - Callbacks object
+ * @returns {HTMLElement} Appearance group element
+ */
+function createAppearanceGroup(gameName, callbacks) {
+  const group = document.createElement('div')
+  group.className = 'debug-group'
+
+  const title = document.createElement('h3')
+  title.className = 'debug-group-title'
+  title.textContent = 'Entity Appearances'
+  group.appendChild(title)
+
+  // Define entity types based on game
+  const entityTypes = getEntityTypes(gameName)
+
+  entityTypes.forEach(entityType => {
+    const dropdown = createAppearanceDropdown(entityType, callbacks)
+    group.appendChild(dropdown)
+  })
+
+  return group
+}
+
+/**
+ * Get entity types for a specific game.
+ * NOTE: Explosions removed - always use Pure GoL (no dropdown needed)
+ *
+ * @param {string} gameName - Game identifier
+ * @returns {Array} Entity type names
+ */
+function getEntityTypes(gameName) {
+  const entityTypesByGame = {
+    'space-invaders': ['player', 'invaders', 'bullets'],
+    'dino-runner': ['player', 'obstacles'],
+    'breakout': ['paddle', 'ball', 'bricks'],
+    'flappy-bird': ['player', 'pipes']
+  }
+
+  return entityTypesByGame[gameName] || []
+}
+
+/**
+ * Create appearance dropdown for an entity type.
+ *
+ * @param {string} entityType - Entity type name
+ * @param {Object} callbacks - Callbacks object
+ * @returns {HTMLElement} Dropdown control element
+ */
+function createAppearanceDropdown(entityType, callbacks) {
+  const control = document.createElement('div')
+  control.className = 'debug-control'
+
+  // Get options for this entity type
+  const options = getAppearanceOptions(entityType)
+
+  // Group options by group
+  const groupedOptions = {}
+  options.forEach(opt => {
+    if (!groupedOptions[opt.group]) {
+      groupedOptions[opt.group] = []
+    }
+    groupedOptions[opt.group].push(opt)
+  })
+
+  // Build dropdown HTML
+  let optionsHTML = ''
+  Object.entries(groupedOptions).forEach(([groupName, groupOptions]) => {
+    if (groupOptions.length === 1 && groupName === 'current') {
+      // No optgroup for single "current" option
+      optionsHTML += `<option value="${groupOptions[0].value}">${groupOptions[0].label}</option>`
+    } else {
+      optionsHTML += `<optgroup label="${groupName}">`
+      groupOptions.forEach(opt => {
+        optionsHTML += `<option value="${opt.value}">${opt.label}</option>`
+      })
+      optionsHTML += `</optgroup>`
+    }
+  })
+
+  control.innerHTML = `
+    <label class="debug-label">
+      <span class="debug-label-text">${formatEntityName(entityType)} Appearance</span>
+    </label>
+    <select
+      class="debug-dropdown"
+      id="appearance-${entityType}"
+      data-entity-type="${entityType}"
+    >
+      ${optionsHTML}
+    </select>
+  `
+
+  // Bind dropdown to appearance override
+  const dropdown = control.querySelector('.debug-dropdown')
+  dropdown.addEventListener('change', (e) => {
+    const value = e.target.value
+    const { mode, pattern, period } = parseAppearanceValue(value)
+
+    updateAppearanceOverride(entityType, mode, pattern, period)
+    console.log(`[DebugInterface] Appearance changed for ${entityType}:`, { mode, pattern, period })
+
+    // Trigger appropriate callback
+    triggerAppearanceCallback(entityType, callbacks)
+  })
+
+  return control
+}
+
+/**
+ * Trigger appearance change callback for entity type.
+ *
+ * @param {string} entityType - Entity type that changed
+ * @param {Object} callbacks - Callbacks object
+ */
+function triggerAppearanceCallback(entityType, callbacks) {
+  // Map entity types to appearance callbacks
+  // NOTE: explosions removed - always Pure GoL, no appearance dropdown
+  const callbackMap = {
+    player: 'onPlayerAppearanceChange',
+    invaders: 'onInvadersAppearanceChange',
+    bullets: 'onBulletsAppearanceChange',
+    obstacles: 'onObstaclesAppearanceChange',
+    paddle: 'onPaddleAppearanceChange',
+    ball: 'onBallAppearanceChange',
+    bricks: 'onBricksAppearanceChange',
+    pipes: 'onPipesAppearanceChange'
+  }
+
+  const callbackName = callbackMap[entityType]
+  if (callbackName && callbacks[callbackName]) {
+    console.log(`[DebugInterface] Triggering ${callbackName} for ${entityType} appearance change...`)
+    callbacks[callbackName]()
+  } else {
+    console.warn(`[DebugInterface] No callback found for ${entityType} appearance change (expected: ${callbackName})`)
+  }
+}
+
+/**
+ * Format entity type name for display.
+ *
+ * @param {string} entityType - Entity type identifier
+ * @returns {string} Formatted name
+ */
+function formatEntityName(entityType) {
+  return entityType.charAt(0).toUpperCase() + entityType.slice(1)
+}
+
+/**
  * Setup keyboard shortcuts for debug panel.
  *
  * @param {HTMLElement} panel - Debug panel container
@@ -345,7 +515,7 @@ function setNestedValue(obj, path, value) {
 function getGameParameters(gameName) {
   const parameterSets = {
     'space-invaders': [
-      // GAMEPLAY (7 params)
+      // GAMEPLAY (8 params)
       { id: 'inv-cols', label: 'Invader Columns', path: 'invader.cols', min: 2, max: 8, step: 1, group: 'gameplay' },
       { id: 'inv-rows', label: 'Invader Rows', path: 'invader.rows', min: 2, max: 8, step: 1, group: 'gameplay' },
       { id: 'inv-move-int', label: 'Invader Move Interval', path: 'invader.moveInterval', min: 10, max: 60, step: 5, group: 'gameplay' },
@@ -353,6 +523,7 @@ function getGameParameters(gameName) {
       { id: 'player-speed', label: 'Player Speed', path: 'player.speed', min: 6, max: 36, step: 2, group: 'gameplay' },
       { id: 'shoot-cooldown', label: 'Shoot Cooldown', path: 'player.shootCooldown', min: 5, max: 30, step: 1, group: 'gameplay' },
       { id: 'bullet-speed', label: 'Bullet Speed', path: 'bullet.speed', min: 6, max: 30, step: 2, group: 'gameplay' },
+      { id: 'loop-update-rate', label: 'Loop Update Rate (frames)', path: 'loopUpdateRate', min: 5, max: 120, step: 5, group: 'gameplay' },
 
       // APPEARANCE (5 params) - Cell sizes and spacing control visual appearance and hitbox size
       { id: 'inv-cell', label: 'Invader Cell Size', path: 'invader.cellSize', min: 15, max: 60, step: 5, group: 'appearance' },

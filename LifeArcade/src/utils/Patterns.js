@@ -104,13 +104,17 @@ export const Patterns = {
   ],
 
   /**
-   * TOAD - 4x2 oscillator
+   * TOAD - 4x4 oscillator (with padding for proper evolution)
    * Source: https://conwaylife.com/wiki/Toad
    * Period: 2
+   * Phase 1: Horizontal offset configuration
+   * Phase 2: Vertical configuration
    */
   TOAD: [
+    [0, 0, 0, 0],
     [0, 1, 1, 1],
-    [1, 1, 1, 0]
+    [1, 1, 1, 0],
+    [0, 0, 0, 0]
   ],
 
   /**
@@ -160,16 +164,27 @@ export const Patterns = {
   ],
 
   /**
-   * LIGHTWEIGHT_SPACESHIP (LWSS) - 5x4 spaceship
+   * LIGHTWEIGHT_SPACESHIP (LWSS) - 7x6 spaceship (horizontally flipped, standard padding)
    * Source: https://conwaylife.com/wiki/Lightweight_spaceship
-   * Speed: c/2 (1 cell horizontally per 2 generations)
-   * Direction: Rightward in this orientation
+   * Speed: c/2 (moves 2 cells left per 4 generations in this orientation)
+   * Direction: Leftward in this orientation (flipped to match Wikipedia)
+   * Period: 4
+   * Canonical representation (flipped horizontally):
+   * Original:        Flipped:
+   * . * . . *    →   * . . * .
+   * * . . . .    →   . . . . *
+   * * . . . *    →   * . . . *
+   * * * * * .    →   . * * * *
+   *
+   * Standard padding: 1 row top/bottom, 1 column left/right
    */
   LIGHTWEIGHT_SPACESHIP: [
-    [0, 1, 0, 0, 1],
-    [1, 0, 0, 0, 0],
-    [1, 0, 0, 0, 1],
-    [1, 1, 1, 1, 0]
+    [0, 0, 0, 0, 0, 0, 0],  // Row 0: top padding
+    [0, 1, 0, 0, 1, 0, 0],  // Row 1: * . . * . (flipped)
+    [0, 0, 0, 0, 0, 1, 0],  // Row 2: . . . . * (flipped)
+    [0, 1, 0, 0, 0, 1, 0],  // Row 3: * . . . * (flipped)
+    [0, 0, 1, 1, 1, 1, 0],  // Row 4: . * * * * (flipped)
+    [0, 0, 0, 0, 0, 0, 0]   // Row 5: bottom padding
   ],
 
   /**
