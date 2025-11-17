@@ -32,6 +32,7 @@
  */
 
 import { GoLEngine } from '../core/GoLEngine.js'
+import { Patterns } from '../utils/Patterns.js'
 
 /**
  * Available canonical GoL patterns from Patterns.js
@@ -576,4 +577,66 @@ export function parseAppearanceValue(value) {
 
   // Fallback to Modified GoL
   return { mode: APPEARANCE_MODES.MODIFIED_GOL, pattern: null, period: null }
+}
+
+/**
+ * Calculate optimal grid size for a GoL pattern (Phase 3.1).
+ * Strategy: Use pattern dimensions as-is (patterns already include padding).
+ *
+ * NOTE: Patterns in Patterns.js already have padding integrated.
+ * We don't add additional padding here.
+ *
+ * @param {string} patternName - Pattern name from Patterns module
+ * @returns {Object} { cols, rows } - Grid dimensions
+ *
+ * @example
+ * calculateGridSize('BLINKER')
+ * // Returns: { cols: 3, rows: 3 }  // BLINKER pattern with padding
+ *
+ * calculateGridSize('PULSAR')
+ * // Returns: { cols: 13, rows: 13 }  // PULSAR pattern dimensions
+ *
+ * calculateGridSize(null)
+ * // Returns: { cols: 7, rows: 7 }  // Default for Modified GoL/Density
+ */
+export function calculateGridSize(patternName) {
+  if (!patternName || !Patterns[patternName]) {
+    return { cols: 7, rows: 7 }  // Default for Modified GoL/Density
+  }
+
+  const pattern = Patterns[patternName]
+  const patternWidth = pattern[0] ? pattern[0].length : 0
+  const patternHeight = pattern.length
+
+  return {
+    cols: patternWidth,
+    rows: patternHeight
+  }
+}
+
+/**
+ * Get pattern metadata for UI display (Phase 3.1).
+ * Returns structured information about pattern dimensions and required grid size.
+ *
+ * @param {string} patternName - Pattern name from Patterns module
+ * @returns {Object} { name, dimensions, gridSize } - Pattern metadata
+ *
+ * @example
+ * getPatternMetadata('BLINKER')
+ * // Returns: { name: 'BLINKER', dimensions: '3×1', gridSize: '5×3' }
+ *
+ * getPatternMetadata('PULSAR')
+ * // Returns: { name: 'PULSAR', dimensions: '13×13', gridSize: '15×15' }
+ */
+export function getPatternMetadata(patternName) {
+  const pattern = Patterns[patternName]
+  const width = pattern[0] ? pattern[0].length : 0
+  const height = pattern.length
+  const gridSize = calculateGridSize(patternName)
+
+  return {
+    name: patternName,
+    dimensions: `${width}×${height}`,
+    gridSize: `${gridSize.cols}×${gridSize.rows}`
+  }
 }

@@ -14,9 +14,16 @@
  * - Hide/show toggle (ESC key)
  *
  * PHASE 2: Appearance System
- * - Three appearance modes (Modified GoL, Static, Density)
+ * - Three appearance modes (Modified GoL, Static, Loop)
  * - Dropdown selectors per entity type
  * - Real-time appearance switching
+ * - Loop pattern speed control
+ *
+ * PHASE 3: Unified Cell Size System
+ * - Single globalCellSize slider for all entities
+ * - Pattern-driven grid sizing (pattern dimensions determine grid size)
+ * - Dynamic entity dimensions (width/height calculated from grid × cellSize)
+ * - Hitbox scaling with visual appearance
  *
  * @module DebugInterface
  */
@@ -34,8 +41,8 @@ import {
  * @param {Object} config - Game CONFIG object (will be mutated)
  * @param {string} gameName - Game identifier ('space-invaders', 'dino-runner', etc.)
  * @param {Object} callbacks - Optional callbacks for parameter changes
- * @param {Function} callbacks.onInvadersChange - Called when invader properties change (cols, rows, sizes, spacing, cellSize)
- * @param {Function} callbacks.onPlayerChange - Called when player properties change (width, height, cellSize)
+ * @param {Function} callbacks.onInvadersChange - Called when invader properties change (cols, rows, spacing) or globalCellSize
+ * @param {Function} callbacks.onPlayerChange - Called when player properties change or globalCellSize
  * @param {Function} callbacks.onBulletSpeedChange - Called when bullet speed changes (affects existing bullets)
  *
  * @example
@@ -120,23 +127,31 @@ function populateControls(panel, config, gameName, callbacks) {
   // Group controls by category
   const groups = {
     gameplay: [],
-    appearance: []
+    'entity-appearances': []
   }
 
   params.forEach(param => {
+    // Ensure group exists before pushing
+    if (!groups[param.group]) {
+      groups[param.group] = []
+    }
     groups[param.group].push(param)
   })
 
-  // Render each group
+  // Render each group (except entity-appearances, which is handled specially)
   Object.entries(groups).forEach(([groupName, groupParams]) => {
+    if (groupName === 'entity-appearances') {
+      // Skip - will be merged with appearance dropdowns below
+      return
+    }
     if (groupParams.length > 0) {
       const groupElement = createControlGroup(groupName, groupParams, config, callbacks)
       controlsContainer.appendChild(groupElement)
     }
   })
 
-  // Add appearance dropdowns group (Phase 2)
-  const appearanceGroup = createAppearanceGroup(gameName, callbacks)
+  // Add unified appearance group (sliders + dropdowns)
+  const appearanceGroup = createAppearanceGroup(gameName, config, callbacks, groups['entity-appearances'])
   controlsContainer.appendChild(appearanceGroup)
 }
 
@@ -222,62 +237,67 @@ function createSliderControl(param, config, callbacks) {
  * @param {Object} callbacks - Callbacks object
  */
 function triggerCallbacks(path, callbacks) {
-  // Invader changes (cols, rows, spacing, cellSize)
-  // Note: width/height are calculated automatically from cellSize
-  const invaderParams = ['invader.cols', 'invader.rows', 'invader.spacing', 'invader.cellSize']
+  // PHASE 3: Global cell size change triggers ALL entity rebuilds
+  if (path === 'globalCellSize') {
+    console.log(`[DebugInterface] PHASE 3: Global cell size changed - rebuilding all entities...`)
+    if (callbacks.onInvadersChange) callbacks.onInvadersChange()
+    if (callbacks.onPlayerChange) callbacks.onPlayerChange()
+    // Note: Bullets and explosions are created dynamically, will use new globalCellSize automatically
+    return
+  }
+
+  // GoL Update Rate change triggers ALL entity rebuilds (affects GoL engine fps)
+  if (path === 'loopUpdateRate') {
+    console.log(`[DebugInterface] GoL Update Rate changed - rebuilding all entities...`)
+    if (callbacks.onInvadersChange) callbacks.onInvadersChange()
+    if (callbacks.onPlayerChange) callbacks.onPlayerChange()
+    // Note: Bullets and explosions are created dynamically, will use new loopUpdateRate automatically
+    return
+  }
+
+  // Invader changes (cols, rows, spacing)
+  // Note: width/height are calculated automatically from globalCellSize
+  const invaderParams = ['invader.cols', 'invader.rows', 'invader.spacing']
   if (invaderParams.includes(path) && callbacks.onInvadersChange) {
     console.log(`[DebugInterface] Triggering invaders rebuild...`)
     callbacks.onInvadersChange()
     return
   }
 
-  // Player changes (cellSize)
-  // Note: width/height are calculated automatically from cellSize
-  const playerParams = ['player.cellSize']
-  if (playerParams.includes(path) && callbacks.onPlayerChange) {
-    console.log(`[DebugInterface] Triggering player rebuild...`)
-    callbacks.onPlayerChange()
-    return
-  }
-
-  // Bullet changes (cellSize, speed)
-  if (path === 'bullet.cellSize' && callbacks.onBulletChange) {
-    console.log(`[DebugInterface] Bullet appearance changed...`)
-    callbacks.onBulletChange()
-    return
-  }
-
+  // Bullet speed changes (affects NEW bullets only)
   if (path === 'bullet.speed' && callbacks.onBulletSpeedChange) {
     console.log(`[DebugInterface] Bullet speed changed (affects NEW bullets only)`)
     callbacks.onBulletSpeedChange()
     return
   }
-
-  // Explosion changes (cellSize)
-  if (path === 'explosion.cellSize' && callbacks.onExplosionChange) {
-    console.log(`[DebugInterface] Explosion appearance changed...`)
-    callbacks.onExplosionChange()
-    return
-  }
 }
 
 /**
- * Create appearance dropdowns group (Phase 2).
+ * Create unified appearance group (Phase 3).
+ * Combines sliders (e.g., Cell Size) with entity appearance dropdowns.
  *
  * @param {string} gameName - Game identifier
+ * @param {Object} config - Game CONFIG object
  * @param {Object} callbacks - Callbacks object
+ * @param {Array} sliderParams - Slider parameters for this group (e.g., globalCellSize)
  * @returns {HTMLElement} Appearance group element
  */
-function createAppearanceGroup(gameName, callbacks) {
+function createAppearanceGroup(gameName, config, callbacks, sliderParams = []) {
   const group = document.createElement('div')
   group.className = 'debug-group'
 
   const title = document.createElement('h3')
   title.className = 'debug-group-title'
-  title.textContent = 'Entity Appearances'
+  title.textContent = 'Appearance'
   group.appendChild(title)
 
-  // Define entity types based on game
+  // Add sliders first (e.g., Cell Size)
+  sliderParams.forEach(param => {
+    const control = createSliderControl(param, config, callbacks)
+    group.appendChild(control)
+  })
+
+  // Then add entity appearance dropdowns
   const entityTypes = getEntityTypes(gameName)
 
   entityTypes.forEach(entityType => {
@@ -291,13 +311,14 @@ function createAppearanceGroup(gameName, callbacks) {
 /**
  * Get entity types for a specific game.
  * NOTE: Explosions removed - always use Pure GoL (no dropdown needed)
+ * NOTE: Bullets removed - always use Modified GoL (no dropdown needed)
  *
  * @param {string} gameName - Game identifier
  * @returns {Array} Entity type names
  */
 function getEntityTypes(gameName) {
   const entityTypesByGame = {
-    'space-invaders': ['player', 'invaders', 'bullets'],
+    'space-invaders': ['player', 'invaders'],
     'dino-runner': ['player', 'obstacles'],
     'breakout': ['paddle', 'ball', 'bricks'],
     'flappy-bird': ['player', 'pipes']
@@ -382,10 +403,10 @@ function createAppearanceDropdown(entityType, callbacks) {
 function triggerAppearanceCallback(entityType, callbacks) {
   // Map entity types to appearance callbacks
   // NOTE: explosions removed - always Pure GoL, no appearance dropdown
+  // NOTE: bullets removed - always Modified GoL, no appearance dropdown
   const callbackMap = {
     player: 'onPlayerAppearanceChange',
     invaders: 'onInvadersAppearanceChange',
-    bullets: 'onBulletsAppearanceChange',
     obstacles: 'onObstaclesAppearanceChange',
     paddle: 'onPaddleAppearanceChange',
     ball: 'onBallAppearanceChange',
@@ -515,22 +536,19 @@ function setNestedValue(obj, path, value) {
 function getGameParameters(gameName) {
   const parameterSets = {
     'space-invaders': [
-      // GAMEPLAY (8 params)
+      // GAMEPLAY (9 params)
       { id: 'inv-cols', label: 'Invader Columns', path: 'invader.cols', min: 2, max: 8, step: 1, group: 'gameplay' },
       { id: 'inv-rows', label: 'Invader Rows', path: 'invader.rows', min: 2, max: 8, step: 1, group: 'gameplay' },
       { id: 'inv-move-int', label: 'Invader Move Interval', path: 'invader.moveInterval', min: 10, max: 60, step: 5, group: 'gameplay' },
       { id: 'inv-speed', label: 'Invader Speed', path: 'invader.speed', min: 15, max: 90, step: 5, group: 'gameplay' },
+      { id: 'inv-spacing', label: 'Invader Spacing', path: 'invader.spacing', min: 20, max: 120, step: 10, group: 'gameplay' },
       { id: 'player-speed', label: 'Player Speed', path: 'player.speed', min: 6, max: 36, step: 2, group: 'gameplay' },
       { id: 'shoot-cooldown', label: 'Shoot Cooldown', path: 'player.shootCooldown', min: 5, max: 30, step: 1, group: 'gameplay' },
       { id: 'bullet-speed', label: 'Bullet Speed', path: 'bullet.speed', min: 6, max: 30, step: 2, group: 'gameplay' },
-      { id: 'loop-update-rate', label: 'Loop Update Rate (frames)', path: 'loopUpdateRate', min: 5, max: 120, step: 5, group: 'gameplay' },
+      { id: 'loop-update-rate', label: 'GoL Update Rate (fps)', path: 'loopUpdateRate', min: 5, max: 40, step: 5, group: 'gameplay', description: 'Evolution speed for all GoL entities (Pure + Modified)' },
 
-      // APPEARANCE (5 params) - Cell sizes and spacing control visual appearance and hitbox size
-      { id: 'inv-cell', label: 'Invader Cell Size', path: 'invader.cellSize', min: 15, max: 60, step: 5, group: 'appearance' },
-      { id: 'player-cell', label: 'Player Cell Size', path: 'player.cellSize', min: 15, max: 60, step: 5, group: 'appearance' },
-      { id: 'bullet-cell', label: 'Bullet Cell Size', path: 'bullet.cellSize', min: 15, max: 60, step: 5, group: 'appearance' },
-      { id: 'exp-cell', label: 'Explosion Cell Size', path: 'explosion.cellSize', min: 15, max: 60, step: 5, group: 'appearance' },
-      { id: 'spacing', label: 'Invader Spacing', path: 'invader.spacing', min: 20, max: 120, step: 10, group: 'appearance' }
+      // ENTITY APPEARANCES (1 param - PHASE 3: Unified cell size)
+      { id: 'global-cell-size', label: 'Cell Size (All Entities)', path: 'globalCellSize', min: 15, max: 60, step: 1, group: 'entity-appearances', description: 'Pixel size of all GoL cells' }
     ],
 
     // Placeholder for other games (to be implemented in future phases)
@@ -562,5 +580,10 @@ function formatGameName(gameName) {
  * @returns {string} Formatted name
  */
 function formatGroupName(groupName) {
+  // Special case: entity-appearances → Appearance
+  if (groupName === 'entity-appearances') {
+    return 'Appearance'
+  }
+
   return groupName.charAt(0).toUpperCase() + groupName.slice(1)
 }

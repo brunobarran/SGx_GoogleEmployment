@@ -11,14 +11,14 @@
 /**
  * Update loop pattern speed and handle periodic resets.
  *
- * OPTION B: Dynamic updateRateFPS Control
- * - Converts loopUpdateRate (frames) → updateRateFPS (fps)
- * - Example: loopUpdateRate=30 frames → 60/30 = 2fps
+ * PHASE 3: Unified GoL Update Rate
+ * - loopUpdateRate is now fps (not frames) - matches Modified GoL entities
+ * - Example: loopUpdateRate=30 fps → 30fps (same as Modified GoL)
  * - Directly controls GoL evolution speed via updateThrottled
  * - Tracks GoL generations (not frames) for period-based resets
  *
  * @param {GoLEngine} gol - GoL instance with loop metadata (must have isLoopPattern=true)
- * @param {number} loopUpdateRate - Frames between phase changes (from CONFIG.loopUpdateRate)
+ * @param {number} loopUpdateRate - Update rate in fps (from CONFIG.loopUpdateRate)
  * @param {boolean} logChanges - Whether to log speed changes and resets (default: true)
  * @returns {void}
  *
@@ -37,9 +37,9 @@
 export function updateLoopPattern(gol, loopUpdateRate, logChanges = true) {
   if (!gol.isLoopPattern) return
 
-  // Convert loopUpdateRate (frames) to updateRateFPS (fps)
-  // Example: 30 frames → 60/30 = 2fps, 60 frames → 60/60 = 1fps
-  const targetFPS = Math.max(0.5, Math.min(60, 60 / loopUpdateRate))
+  // PHASE 3: Use loopUpdateRate directly as fps (unified with Modified GoL)
+  // Example: 30 fps → 30fps, 15 fps → 15fps
+  const targetFPS = Math.max(0.5, Math.min(60, loopUpdateRate))
 
   // Initialize tracking (use hasOwnProperty to distinguish 0 from undefined)
   if (!gol.hasOwnProperty('loopLastGeneration')) {
@@ -51,7 +51,7 @@ export function updateLoopPattern(gol, loopUpdateRate, logChanges = true) {
   if (gol.updateRateFPS !== targetFPS) {
     gol.updateRateFPS = targetFPS
     if (logChanges) {
-      console.log(`[Loop] Speed updated: ${targetFPS.toFixed(1)}fps (loopUpdateRate=${loopUpdateRate} frames)`)
+      console.log(`[Loop] Speed updated: ${targetFPS.toFixed(1)}fps (loopUpdateRate=${loopUpdateRate} fps)`)
     }
   }
 

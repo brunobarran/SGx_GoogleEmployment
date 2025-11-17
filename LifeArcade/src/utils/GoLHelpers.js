@@ -73,13 +73,29 @@ export function applyLifeForce(entity) {
   const aliveCount = engine.countAliveCells()
   const density = aliveCount / totalCells
 
-  // Maintain at least 35% density
-  if (density < 0.35) {
-    const cellsToInject = Math.floor(totalCells * 0.15)  // Inject 15%
+  // PHASE 3: Very aggressive lifeForce for high-speed GoL (25-40 fps)
+  // Maintain at least 45% density (increased from 35%)
+  if (density < 0.45) {
+    // Inject 25-35% based on how low the density is (very aggressive)
+    const deficitRatio = Math.max(0, 0.45 - density) / 0.45
+    const injectionRate = 0.25 + (deficitRatio * 0.10)  // 25-35%
+    const cellsToInject = Math.floor(totalCells * injectionRate)
+
+    // Focus injections in center for more organic recovery
+    const centerX = engine.cols / 2
+    const centerY = engine.rows / 2
+    const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY)
+
     for (let i = 0; i < cellsToInject; i++) {
-      const x = Math.floor(Math.random() * engine.cols)
-      const y = Math.floor(Math.random() * engine.rows)
-      engine.setCell(x, y, 1)
+      // Weighted random towards center
+      const angle = Math.random() * Math.PI * 2
+      const radius = Math.random() * maxRadius * 0.7  // 70% of max radius
+      const x = Math.floor(centerX + Math.cos(angle) * radius)
+      const y = Math.floor(centerY + Math.sin(angle) * radius)
+
+      if (x >= 0 && x < engine.cols && y >= 0 && y < engine.rows) {
+        engine.setCell(x, y, 1)
+      }
     }
   }
 }

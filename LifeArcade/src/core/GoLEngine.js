@@ -26,6 +26,7 @@ class GoLEngine {
     this._updateRateFPS = updateRateFPS  // Private storage
     this.framesBetweenUpdates = 60 / updateRateFPS  // Assuming 60fps main loop
     this.frameCounter = 0
+    this._throttleAccumulator = 0  // Accumulator for fractional frames
 
     // Double buffer - CRITICAL for correct GoL implementation
     this.current = this.create2DArray(cols, rows)
@@ -50,6 +51,7 @@ class GoLEngine {
   set updateRateFPS(fps) {
     this._updateRateFPS = fps
     this.framesBetweenUpdates = 60 / fps  // Recalculate throttle interval
+    this._throttleAccumulator = 0  // Reset accumulator when rate changes
   }
 
   /**
@@ -198,7 +200,10 @@ class GoLEngine {
    * Update with frame rate throttling.
    * Call this from your main draw() loop.
    *
-   * @param {number} frameCount - Current frame count from p5.js
+   * Uses accumulator pattern to handle fractional framesBetweenUpdates.
+   * Example: 25 fps = 2.4 frames between updates (not 2 or 3, but exactly 2.4 average)
+   *
+   * @param {number} frameCount - Current frame count from p5.js (unused, kept for API compatibility)
    * @returns {boolean} True if an update occurred
    */
   updateThrottled(frameCount) {
@@ -207,7 +212,10 @@ class GoLEngine {
       return false
     }
 
-    if (frameCount % this.framesBetweenUpdates === 0) {
+    // Accumulator pattern for fractional frame intervals
+    this._throttleAccumulator += 1
+    if (this._throttleAccumulator >= this.framesBetweenUpdates) {
+      this._throttleAccumulator -= this.framesBetweenUpdates
       this.update()
       return true
     }

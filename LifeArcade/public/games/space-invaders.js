@@ -29,6 +29,9 @@ const CONFIG = {
   width: 1200,   // Will be updated dynamically
   height: 1920,  // Will be updated dynamically
 
+  // PHASE 3: Global cell size for all entities
+  globalCellSize: 30,  // Pixel size of all GoL cells (range: 15-60)
+
   ui: {
     backgroundColor: '#FFFFFF',
     textColor: '#5f6368',
@@ -40,35 +43,28 @@ const CONFIG = {
   invader: {
     cols: 4,      // 4 columns for balanced grid layout
     rows: 4,      // 4 rows
-    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
-    height: 180,  // 6 cells × 30px
+    // width/height now calculated dynamically from gol.cols/rows × globalCellSize
     spacing: 60,  // Unified spacing: 60px (same as Breakout padding)
     startX: 180,  // Same as Breakout offsetX for visual consistency
     startY: 200,  // Same as Breakout offsetY - unified starting position
     moveInterval: 30,
-    speed: 45,    // 15 × 3 = 45
-    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
+    speed: 45     // 15 × 3 = 45
+    // NOTE: golUpdateRate removed - now uses CONFIG.loopUpdateRate (unified for all GoL)
   },
 
   player: {
-    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
-    height: 180,  // 6 cells × 30px
-    cellSize: 30, // Scaled to 30px (3x from 10px baseline)
+    // width/height now calculated dynamically from gol.cols/rows × globalCellSize
     speed: 18,    // 6 × 3 = 18
     shootCooldown: 15
   },
 
   bullet: {
-    width: 90,    // 3 cells × 30px (scaled 3x from 30px)
-    height: 90,   // 3 cells × 30px
-    cellSize: 30, // Scaled to 30px (3x from 10px baseline)
+    // width/height now calculated dynamically from gol.cols/rows × globalCellSize
     speed: 12     // Bullet vertical speed (negative = upward)
   },
 
   explosion: {
-    width: 180,   // 6 cells × 30px (scaled 3x from 60px)
-    height: 180,  // 6 cells × 30px
-    cellSize: 30  // Scaled to 30px (3x from 10px baseline)
+    // width/height now calculated dynamically from gol.cols/rows × globalCellSize
   },
 
   background: {
@@ -143,6 +139,35 @@ function updateConfigScale() {
   scaleFactor = canvasHeight / BASE_HEIGHT
 }
 
+/**
+ * Calculate entity dimensions from GoL grid size and global cell size (Phase 3).
+ * Implements pattern-driven sizing where entity visual size depends on pattern dimensions.
+ *
+ * @param {Object} entity - Entity with gol property (GoLEngine instance)
+ * @returns {Object} { width, height, hitboxRadius }
+ *
+ * @example
+ * // BLINKER player (5×3 grid) at 30px cells
+ * const dims = calculateEntityDimensions(player)  // { width: 150, height: 90, hitboxRadius: 72 }
+ *
+ * // PULSAR invader (15×15 grid) at 30px cells
+ * const dims = calculateEntityDimensions(invader)  // { width: 450, height: 450, hitboxRadius: 270 }
+ */
+function calculateEntityDimensions(entity) {
+  const cellSize = CONFIG.globalCellSize
+  const cols = entity.gol.cols
+  const rows = entity.gol.rows
+
+  const width = cols * cellSize
+  const height = rows * cellSize
+
+  // Hitbox scales with visual size (user decision: Q3/Q4 - acceptable gameplay tradeoff)
+  // Formula: average dimension × 0.6
+  const hitboxRadius = (width + height) / 2 * 0.6
+
+  return { width, height, hitboxRadius }
+}
+
 // ============================================
 // p5.js SETUP
 // ============================================
@@ -199,11 +224,8 @@ function setup() {
           console.log('[SpaceInvaders] Invaders appearance changed, recreating...')
           invaders = []
           setupInvaders()
-        },
-        onBulletsAppearanceChange: () => {
-          // Bullets: appearance will apply to NEW bullets only
-          console.log('[SpaceInvaders] Bullets appearance changed (affects new bullets)')
         }
+        // NOTE: onBulletsAppearanceChange removed - bullets are always Modified GoL
         // NOTE: onExplosionsAppearanceChange removed - explosions are always Pure GoL
       })
     }).catch(err => {
@@ -262,34 +284,36 @@ function setupPlayer() {
   // Check for tier configuration BEFORE creating entity
   const tierConfig = applyAppearanceOverride(null, 'player', Patterns, seedRadialDensity, CONFIG)
 
-  // Use tier config if provided, otherwise use default CONFIG values
-  const cellSize = tierConfig ? tierConfig.cellSize : CONFIG.player.cellSize
+  // PHASE 3: Use tier gridSize if provided, otherwise default to 6
   const gridSize = tierConfig ? tierConfig.gridSize : 6
 
-  // Calculate size from cellSize and gridSize
-  const playerSize = gridSize * cellSize
+  // Create GoL engine first (needed for calculateEntityDimensions)
+  const golEngine = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
+
+  // Create temporary entity to calculate dimensions
+  const tempEntity = { gol: golEngine }
+  const dims = calculateEntityDimensions(tempEntity)
 
   // Calculate clamped hitbox (CLAUDE.md: separate visual from logic)
-  const hitbox = calculateClampedHitbox(playerSize, 'player')
+  const hitbox = calculateClampedHitbox(dims.width, 'player')
 
-  console.log(`[SetupPlayer] CONFIG.player.cellSize=${CONFIG.player.cellSize}, tierConfig=`, tierConfig)
-  console.log(`[SetupPlayer] Using cellSize=${cellSize}, gridSize=${gridSize}, playerSize=${playerSize}`)
-  console.log(`[SetupPlayer] Calculated hitbox=`, hitbox)
+  console.log(`[SetupPlayer] PHASE 3: globalCellSize=${CONFIG.globalCellSize}, gridSize=${gridSize}`)
+  console.log(`[SetupPlayer] Calculated dimensions:`, dims)
+  console.log(`[SetupPlayer] Clamped hitbox:`, hitbox)
 
   player = {
-    x: CONFIG.width / 2 - playerSize / 2,
+    x: CONFIG.width / 2 - dims.width / 2,
     y: CONFIG.height - 200,  // Adjusted for portrait
-    width: playerSize,        // Visual size (varies)
-    height: playerSize,       // Visual size (varies)
+    width: dims.width,        // Dynamic: gridSize × globalCellSize
+    height: dims.height,      // Dynamic: gridSize × globalCellSize
 
     // Hitbox clamped (gameplay consistent)
     hitbox: hitbox,
 
     vx: 0,
-    cellSize: cellSize,
 
     // GoL engine - uses tier-specific grid size
-    gol: new GoLEngine(gridSize, gridSize, 12),
+    gol: golEngine,
 
     // Gradient configuration
     gradient: GRADIENT_PRESETS.PLAYER
@@ -307,6 +331,15 @@ function setupPlayer() {
     seedRadialDensity(player.gol, 0.85, 0.0)
     player.gol.setPattern(Patterns.BLINKER, 2, 2)
   }
+
+  // PHASE 3: Recalculate dimensions after pattern applied (may have changed grid size)
+  if (overrideApplied) {
+    const finalDims = calculateEntityDimensions(player)
+    player.width = finalDims.width
+    player.height = finalDims.height
+    player.x = CONFIG.width / 2 - player.width / 2  // Re-center
+    console.log(`[SetupPlayer] Recalculated after override:`, { width: player.width, height: player.height })
+  }
 }
 
 function setupInvaders() {
@@ -315,17 +348,19 @@ function setupInvaders() {
   // Check for tier configuration BEFORE creating entities
   const tierConfig = applyAppearanceOverride(null, 'invaders', Patterns, seedRadialDensity, CONFIG)
 
-  // Use tier config if provided, otherwise use default CONFIG values
-  const cellSize = tierConfig ? tierConfig.cellSize : CONFIG.invader.cellSize
+  // PHASE 3: Use tier gridSize if provided, otherwise default to 6
   const gridSize = tierConfig ? tierConfig.gridSize : 6
 
-  // Calculate size from cellSize and gridSize
-  const invaderSize = gridSize * cellSize
+  // Create temporary GoL to calculate initial dimensions
+  const tempGol = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
+  const tempEntity = { gol: tempGol }
+  const dims = calculateEntityDimensions(tempEntity)
 
   // Calculate clamped hitbox (CLAUDE.md: separate visual from logic)
-  const hitbox = calculateClampedHitbox(invaderSize, 'invaders')
+  const hitbox = calculateClampedHitbox(dims.width, 'invaders')
 
-  console.log('Setting up invaders:', { cols, rows, cellSize, gridSize, size: invaderSize, hitbox })
+  console.log(`[SetupInvaders] PHASE 3: globalCellSize=${CONFIG.globalCellSize}, gridSize=${gridSize}`)
+  console.log(`[SetupInvaders] Calculated dimensions:`, dims)
 
   // Array of organic patterns for variety
   const organicPatterns = [
@@ -340,19 +375,18 @@ function setupInvaders() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const invader = {
-        x: startX + col * (invaderSize + spacing),
-        y: startY + row * (invaderSize + spacing),
-        width: invaderSize,     // Visual size (varies)
-        height: invaderSize,    // Visual size (varies)
+        x: startX + col * (dims.width + spacing),
+        y: startY + row * (dims.height + spacing),
+        width: dims.width,      // Dynamic: gridSize × globalCellSize
+        height: dims.height,    // Dynamic: gridSize × globalCellSize
 
         // Hitbox clamped (gameplay consistent)
         hitbox: hitbox,
 
-        cellSize,
         dead: false,
 
-        // GoL engine - uses tier-specific grid size
-        gol: new GoLEngine(gridSize, gridSize, 15),
+        // GoL engine - uses tier-specific grid size and unified update rate
+        gol: new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate),
 
         // Assign gradient based on row
         gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
@@ -372,6 +406,16 @@ function setupInvaders() {
         // Pick random accent pattern (smaller grid, adjusted position)
         const patternSet = organicPatterns[Math.floor(Math.random() * organicPatterns.length)]
         invader.gol.setPattern(patternSet.accent, 2, 2)
+      }
+
+      // PHASE 3: Recalculate dimensions after pattern applied (may have changed grid size)
+      if (overrideApplied) {
+        const finalDims = calculateEntityDimensions(invader)
+        invader.width = finalDims.width
+        invader.height = finalDims.height
+        // Reposition to maintain grid spacing
+        invader.x = startX + col * (finalDims.width + spacing)
+        invader.y = startY + row * (finalDims.height + spacing)
       }
 
       invaders.push(invader)
@@ -554,20 +598,17 @@ function moveInvaders() {
 }
 
 function shootBullet() {
-  // Calculate size from cellSize (3×3 grid)
-  const bulletSize = 3 * CONFIG.bullet.cellSize
-
+  // PHASE 3: Create bullet with dynamic dimensions
   const bullet = {
-    x: player.x + player.width / 2 - bulletSize / 2,
-    y: player.y - bulletSize,
-    width: bulletSize,   // Calculated: 3 cells × cellSize
-    height: bulletSize,  // Calculated: 3 cells × cellSize
+    x: player.x + player.width / 2,  // Temp position, will adjust after dims calculated
+    y: player.y,
+    width: 0,   // Will be calculated
+    height: 0,  // Will be calculated
     vy: -CONFIG.bullet.speed,  // Use CONFIG value (negative = upward)
-    cellSize: CONFIG.bullet.cellSize,
     dead: false,
 
-    // 3x3 grid for 30x30 visual size
-    gol: new GoLEngine(3, 3, 0),
+    // 3x3 grid for bullets (uses unified update rate)
+    gol: new GoLEngine(3, 3, CONFIG.loopUpdateRate),
     gradient: GRADIENT_PRESETS.BULLET
   }
 
@@ -580,6 +621,13 @@ function shootBullet() {
     // Default Visual Only (no evolution, maintain density)
     seedRadialDensity(bullet.gol, 0.9, 0.0)
   }
+
+  // PHASE 3: Calculate dimensions after pattern applied
+  const dims = calculateEntityDimensions(bullet)
+  bullet.width = dims.width
+  bullet.height = dims.height
+  bullet.x = player.x + player.width / 2 - bullet.width / 2  // Center under player
+  bullet.y = player.y - bullet.height
 
   bullets.push(bullet)
 }
@@ -600,7 +648,7 @@ function checkCollisions() {
           bullet.dead = true
           invader.dead = true
           state.score += 100
-          spawnExplosion(invader.x, invader.y)
+          spawnExplosion(invader)  // PHASE 3: Pass entire invader for size-based explosion
         }
       }
     })
@@ -650,7 +698,7 @@ function renderGame() {
       player.gol,
       player.x,
       player.y,
-      player.cellSize,
+      CONFIG.globalCellSize,  // PHASE 3: Use global cell size
       player.gradient
     )
   }
@@ -661,7 +709,7 @@ function renderGame() {
       invader.gol,
       invader.x,
       invader.y,
-      invader.cellSize,
+      CONFIG.globalCellSize,  // PHASE 3: Use global cell size
       invader.gradient
     )
   })
@@ -672,13 +720,13 @@ function renderGame() {
       bullet.gol,
       bullet.x,
       bullet.y,
-      bullet.cellSize,
+      CONFIG.globalCellSize,  // PHASE 3: Use global cell size
       bullet.gradient
     )
   })
 
-  // Render particles with masked gradients
-  renderParticles(particles, maskedRenderer)
+  // Render particles with masked gradients (PHASE 3: pass globalCellSize)
+  renderParticles(particles, maskedRenderer, CONFIG.globalCellSize)
 
   pop()
 }
@@ -699,24 +747,35 @@ function renderUI() {
 // GAME-SPECIFIC FUNCTIONS
 // ============================================
 
-function spawnExplosion(x, y) {
-  // Calculate size from cellSize (6×6 grid)
-  const explosionSize = 6 * CONFIG.explosion.cellSize
+function spawnExplosion(invader) {
+  // PHASE 3: Calculate center position and size-based particle count
+  const centerX = invader.x + invader.width / 2
+  const centerY = invader.y + invader.height / 2
 
-  for (let i = 0; i < 3; i++) {
+  // Calculate particle count based on GoL grid cell count (not pixel area)
+  const cellCount = invader.gol.cols * invader.gol.rows
+  const baseCellCount = 36  // Baseline: 6×6 grid = 36 cells
+  const scaleFactor = cellCount / baseCellCount
+  const particleCount = Math.max(2, Math.ceil(scaleFactor * 3))
+
+  // Dispersion radius proportional to invader size
+  const dispersionRadius = (invader.width + invader.height) / 4
+
+  console.log(`[Explosion] Spawning ${particleCount} particles at (${centerX}, ${centerY}) with radius ${dispersionRadius}`)
+
+  for (let i = 0; i < particleCount; i++) {
     const particle = {
-      x: x + Math.random() * 20 - 10,
-      y: y + Math.random() * 20 - 10,
-      vx: Math.random() * 4 - 2,
-      vy: Math.random() * 4 - 2,
+      x: centerX + (Math.random() * 2 - 1) * dispersionRadius,
+      y: centerY + (Math.random() * 2 - 1) * dispersionRadius,
+      vx: (Math.random() * 2 - 1) * 4,
+      vy: (Math.random() * 2 - 1) * 4,
       alpha: 255,
-      width: explosionSize,   // Calculated: 6 cells × cellSize
-      height: explosionSize,  // Calculated: 6 cells × cellSize
-      cellSize: CONFIG.explosion.cellSize,
+      width: 0,   // Will be calculated
+      height: 0,  // Will be calculated
       dead: false,
 
-      // 6x6 grid for 60x60 visual size (same as invaders)
-      gol: new GoLEngine(6, 6, 30),
+      // 6x6 grid for explosions (uses unified update rate)
+      gol: new GoLEngine(6, 6, CONFIG.loopUpdateRate),
       gradient: GRADIENT_PRESETS.EXPLOSION
     }
 
@@ -734,6 +793,11 @@ function spawnExplosion(x, y) {
       const pattern = explosionPatterns[Math.floor(Math.random() * explosionPatterns.length)]
       particle.gol.setPattern(pattern, 1, 1)
     }
+
+    // PHASE 3: Calculate dimensions after pattern applied
+    const dims = calculateEntityDimensions(particle)
+    particle.width = dims.width
+    particle.height = dims.height
 
     particles.push(particle)
   }
@@ -771,3 +835,4 @@ window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
 window.windowResized = windowResized
+
