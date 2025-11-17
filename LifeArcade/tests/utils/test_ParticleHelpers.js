@@ -351,3 +351,134 @@ describe('ParticleHelpers - Integration', () => {
     expect(particles.length).toBe(0)
   })
 })
+
+describe('ParticleHelpers - Loop Patterns', () => {
+  let particles
+
+  beforeEach(() => {
+    particles = [
+      {
+        gol: {
+          updateThrottled: vi.fn(),
+          isLoopPattern: true,
+          loopPeriod: 2,
+          loopPattern: [[0, 1, 0], [0, 1, 0], [0, 1, 0]],
+          loopPatternWidth: 3,
+          loopPatternHeight: 3,
+          generation: 0,
+          updateRateFPS: 12,
+          cols: 5,
+          rows: 5,
+          clearGrid: vi.fn(),
+          setPattern: vi.fn()
+        },
+        x: 100,
+        y: 200,
+        vx: 5,
+        vy: -3,
+        alpha: 255,
+        dead: false
+      }
+    ]
+  })
+
+  test('calls updateLoopPattern for loop pattern particles', () => {
+    // Mock the import - in real test, updateLoopPattern would be called
+    const updated = updateParticles(particles, 0, 30)
+
+    // Verify GoL is updated
+    expect(particles[0].gol.updateThrottled).toHaveBeenCalledWith(0)
+
+    // updateRateFPS should be set based on loopUpdateRate
+    // 30 frames → 60/30 = 2fps
+    expect(updated[0].gol.updateRateFPS).toBe(2)
+  })
+
+  test('updates loop pattern speed when loopUpdateRate changes', () => {
+    // Start at 30 frames (2fps)
+    updateParticles(particles, 0, 30)
+    expect(particles[0].gol.updateRateFPS).toBe(2)
+
+    // Change to 60 frames (1fps)
+    updateParticles(particles, 1, 60)
+    expect(particles[0].gol.updateRateFPS).toBe(1)
+  })
+
+  test('does not call updateLoopPattern for non-loop particles', () => {
+    particles[0].gol.isLoopPattern = false
+    const initialFPS = particles[0].gol.updateRateFPS
+
+    updateParticles(particles, 0, 30)
+
+    // updateRateFPS should not change
+    expect(particles[0].gol.updateRateFPS).toBe(initialFPS)
+  })
+
+  test('handles mix of loop and non-loop particles', () => {
+    particles.push({
+      gol: {
+        updateThrottled: vi.fn(),
+        isLoopPattern: false
+      },
+      x: 300,
+      y: 400,
+      vx: -2,
+      vy: 4,
+      alpha: 200,
+      dead: false
+    })
+
+    const updated = updateParticles(particles, 0, 30)
+
+    // Loop particle should have updateRateFPS set
+    expect(updated[0].gol.updateRateFPS).toBe(2)
+
+    // Both should still move and fade
+    expect(updated[0].x).toBe(105)
+    expect(updated[0].alpha).toBe(251)
+    expect(updated[1].x).toBe(298)
+    expect(updated[1].alpha).toBe(196)
+  })
+
+  test('loop particles still move and fade normally', () => {
+    const updated = updateParticles(particles, 0, 30)
+
+    // Loop pattern logic applied
+    expect(updated[0].gol.updateRateFPS).toBe(2)
+
+    // But physics still apply
+    expect(updated[0].x).toBe(105)
+    expect(updated[0].y).toBe(197)
+    expect(updated[0].alpha).toBe(251)
+  })
+
+  test('loop particles die when alpha reaches 0', () => {
+    particles[0].alpha = 3
+
+    let updated = particles
+    updated = updateParticles(updated, 0, 30) // alpha = -1, dead = true
+    expect(updated.length).toBe(0)
+  })
+
+  test('loop pattern resets after period completes', () => {
+    particles[0].gol.generation = 0
+
+    // First update: gen 0 → 1
+    updateParticles(particles, 0, 30)
+    particles[0].gol.generation = 1
+
+    // Second update: gen 1 → 2 (should trigger reset at period=2)
+    updateParticles(particles, 1, 30)
+    particles[0].gol.generation = 2
+
+    updateParticles(particles, 2, 30)
+
+    // After 2 generations, pattern should reset
+    expect(particles[0].gol.clearGrid).toHaveBeenCalled()
+    expect(particles[0].gol.setPattern).toHaveBeenCalledWith(
+      particles[0].gol.loopPattern,
+      1, // centerX
+      1  // centerY
+    )
+  })
+})

@@ -41,8 +41,8 @@ export function updateLoopPattern(gol, loopUpdateRate, logChanges = true) {
   // Example: 30 frames → 60/30 = 2fps, 60 frames → 60/60 = 1fps
   const targetFPS = Math.max(0.5, Math.min(60, 60 / loopUpdateRate))
 
-  // Initialize tracking
-  if (!gol.loopLastGeneration) {
+  // Initialize tracking (use hasOwnProperty to distinguish 0 from undefined)
+  if (!gol.hasOwnProperty('loopLastGeneration')) {
     gol.loopLastGeneration = gol.generation || 0
     gol.loopResetCounter = 0
   }

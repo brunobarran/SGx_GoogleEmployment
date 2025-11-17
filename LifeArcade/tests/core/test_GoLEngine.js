@@ -385,4 +385,72 @@ describe('GoLEngine', () => {
       expect(updateTime).toBeLessThan(5)
     })
   })
+
+  describe('updateRateFPS getter/setter', () => {
+    test('getter returns current updateRateFPS value', () => {
+      const engine = new GoLEngine(5, 5, 15)
+      expect(engine.updateRateFPS).toBe(15)
+    })
+
+    test('setter updates updateRateFPS and recalculates framesBetweenUpdates', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      // Initial: 10fps → 60/10 = 6 frames between updates
+      expect(engine.updateRateFPS).toBe(10)
+      expect(engine.framesBetweenUpdates).toBe(6)
+
+      // Change to 20fps → 60/20 = 3 frames between updates
+      engine.updateRateFPS = 20
+      expect(engine.updateRateFPS).toBe(20)
+      expect(engine.framesBetweenUpdates).toBe(3)
+    })
+
+    test('setter correctly handles fractional fps values', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      // 2.5fps → 60/2.5 = 24 frames between updates
+      engine.updateRateFPS = 2.5
+      expect(engine.updateRateFPS).toBe(2.5)
+      expect(engine.framesBetweenUpdates).toBe(24)
+    })
+
+    test('setter handles low fps values correctly', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      // 0.5fps → 60/0.5 = 120 frames between updates
+      engine.updateRateFPS = 0.5
+      expect(engine.updateRateFPS).toBe(0.5)
+      expect(engine.framesBetweenUpdates).toBe(120)
+    })
+
+    test('setter handles high fps values correctly', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      // 60fps → 60/60 = 1 frame between updates
+      engine.updateRateFPS = 60
+      expect(engine.updateRateFPS).toBe(60)
+      expect(engine.framesBetweenUpdates).toBe(1)
+    })
+
+    test('multiple setter calls recalculate correctly', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      engine.updateRateFPS = 12  // 60/12 = 5
+      expect(engine.framesBetweenUpdates).toBe(5)
+
+      engine.updateRateFPS = 15  // 60/15 = 4
+      expect(engine.framesBetweenUpdates).toBe(4)
+
+      engine.updateRateFPS = 30  // 60/30 = 2
+      expect(engine.framesBetweenUpdates).toBe(2)
+    })
+
+    test('setter preserves internal _updateRateFPS value', () => {
+      const engine = new GoLEngine(5, 5, 10)
+
+      engine.updateRateFPS = 25
+      expect(engine._updateRateFPS).toBe(25)
+      expect(engine.updateRateFPS).toBe(25)
+    })
+  })
 })
