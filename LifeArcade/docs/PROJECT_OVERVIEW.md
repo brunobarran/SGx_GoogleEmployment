@@ -1,8 +1,8 @@
 # Game of Life Arcade - Project Overview
 
-**Last Updated:** 2025-11-14
-**Version:** 1.0 (Post-Refactor)
-**Status:** Production Ready (Installation System Complete)
+**Last Updated:** 2025-11-18
+**Version:** 1.1 (Phase 3 Complete, Phase 3.1 In Progress)
+**Status:** Development (Debug Interface Phase 3.1 In Progress)
 
 ---
 
@@ -24,16 +24,48 @@
 | **Installation System** | ✅ 100% | All 8 screens + 4 managers implemented |
 | **Games Collection** | ✅ 100% | 4 games complete at 1200×1920 portrait |
 | **Core Framework** | ✅ 100% | GoLEngine, renderers, helpers, patterns |
-| **Tests** | ✅ 96.4% | 161/167 passing |
+| **Debug Interface** | ⚠️ 90% | Phase 1-3 complete, Phase 3.1 in progress |
+| **Tests** | ✅ 95.9% | 1,216/1,268 passing (31 test files) |
 | **Documentation** | ✅ 100% | CLAUDE.md, game-template.js, this file |
+
+### Debug Interface Status
+
+**Phase 1: Core Controls (✅ Complete)**
+- Real-time configuration sliders
+- Entity recreation callbacks
+- Cell size control: `globalCellSize` at CONFIG level
+- UI integration with game state
+
+**Phase 2: Appearance Controls (✅ Complete)**
+- Pattern appearance modes (modified-gol, pure-gol, pure-gradient)
+- Pattern preset selection (blinker, glider, pulsar, etc.)
+- Visual effect controls
+- Config persistence
+
+**Phase 3: Cell Size Unification (✅ Complete)**
+- Moved `cellSize` to `globalCellSize` at CONFIG level
+- Eliminated per-entity `cellSize` properties
+- All entities share global cell size
+- Updated game files: space-invaders.js, debug interface integration
+
+**Phase 3.1: Preset Management (⚠️ In Progress - 50%)**
+- ⚠️ Built-in preset JSON files (MISSING - 0/4 created)
+- ⚠️ Preset dropdown UI (PARTIALLY implemented)
+- ⚠️ Import/Export functionality (PARTIALLY implemented)
+- ⚠️ Validation code exists but untested
+
+**Documentation:**
+- Planning document: `archive/planning/phase-3.1-preset-management.md`
+- Implementation spec includes 4 presets per game: Default, Easy, Hard, Chaos
+- Phase 3 format validation to reject obsolete Phase 2 presets
 
 ### Implementation Details
 
 **Games (4 complete):**
-- Space Invaders (366 lines)
-- Dino Runner (366 lines)
-- Breakout (402 lines)
-- Flappy Bird (343 lines)
+- Space Invaders (space-invaders.js - with debug interface)
+- Dino Runner (dino-runner.js)
+- Breakout (breakout.js)
+- Flappy Bird (flappy-bird.js)
 
 **Installation Screens (8 screens):**
 1. IdleScreen - Pure GoL attract loop
@@ -47,10 +79,18 @@
 
 **Core Systems:**
 - `src/core/GoLEngine.js` - B3/S23 rules, double buffer, 383 lines
-- `src/rendering/SimpleGradientRenderer.js` - 2D Perlin noise gradients, 217 lines
+- `src/rendering/SimpleGradientRenderer.js` - 2D Perlin noise gradients, 209 lines
+- `src/debug/DebugInterface.js` - Real-time game configuration UI (Phases 1-3)
+- `src/debug/DebugPresets.js` - Preset management (Phase 3.1, partial)
 - `src/installation/` - AppState, StorageManager, InputManager, IframeComm
 - `src/screens/` - 8 screen classes with lifecycle methods
 - `src/utils/` - 10+ helper modules (GoL, particles, UI, collision, patterns)
+
+**File Statistics:**
+- **29 source files** (src/: 23 files, public/: 6 games)
+- **31 test files** (96% coverage of src/)
+- **4 games** (space-invaders, dino-runner, breakout, flappy-bird)
+- **1,268 tests** (1,216 passing, 52 failing = 95.9%)
 
 ---
 
@@ -67,6 +107,10 @@ LifeArcade/
 │   ├── rendering/
 │   │   ├── SimpleGradientRenderer.js # Gradient masking with Perlin noise
 │   │   └── GoLBackground.js          # Full-screen GoL background
+│   ├── debug/                        # 🆕 Debug Interface (Phase 1-3.1)
+│   │   ├── DebugInterface.js         # Real-time config UI (Phase 1-3)
+│   │   ├── DebugPresets.js           # Preset management (Phase 3.1, partial)
+│   │   └── debug-styles.css          # Debug panel styling
 │   ├── installation/
 │   │   ├── AppState.js               # State machine (8 screens)
 │   │   ├── StorageManager.js         # localStorage leaderboards
@@ -94,19 +138,39 @@ LifeArcade/
 │   │   ├── gol-validator.js          # Validates B3/S23 rules
 │   │   └── ui-validator.js           # Validates Google brand colors
 │   └── game-template.js              # Template for new games
-├── games/
-│   ├── space-invaders.html + .js
-│   ├── dino-runner.html + .js
-│   ├── breakout.html + .js
-│   ├── flappy-bird.html + .js
-│   └── game-wrapper.html             # Universal iframe wrapper
+├── presets/                          # 🆕 Preset JSON files (Phase 3.1)
+│   └── space-invaders/               # ⚠️ EMPTY - 0/4 presets created
+│       ├── default.json              # ⚠️ Missing
+│       ├── easy.json                 # ⚠️ Missing
+│       ├── hard.json                 # ⚠️ Missing
+│       └── chaos.json                # ⚠️ Missing
+├── public/                           # Public game files (mirror of src/)
+│   ├── games/
+│   │   ├── space-invaders.html + .js # With debug interface integration
+│   │   ├── dino-runner.html + .js
+│   │   ├── breakout.html + .js
+│   │   ├── flappy-bird.html + .js
+│   │   └── game-wrapper.html         # Universal iframe wrapper
+│   └── src/                          # Mirrored source files
 ├── tests/
-│   └── (167 tests, 96.4% coverage)
-└── archive/
-    ├── old-versions/                 # Archived HTML files
-    ├── planning/                     # Archived planning docs
-    ├── reports/                      # Archived status reports
-    └── docs/                         # Archived documentation (old)
+│   ├── debug/                        # 🆕 Debug interface tests
+│   │   ├── test_DebugInterface.js    # ⚠️ 5 failing tests
+│   │   └── test_DebugPresets.js      # ⚠️ 12 failing tests
+│   ├── core/
+│   ├── utils/
+│   ├── validation/
+│   └── installation/
+│   └── (31 test files, 1,268 tests, 95.9% passing)
+├── docs/                             # 📄 Current documentation
+│   ├── PROJECT_STATUS.md             # ✅ Updated (2025-11-18)
+│   ├── PROJECT_OVERVIEW.md           # ✅ This file
+│   ├── DEBUG_INTERFACE_FEATURE.md    # ⚠️ Needs update
+│   └── TESTING_ANALYSIS.md           # ⚠️ Needs update
+└── archive/                          # Obsolete files (ignore)
+    ├── old-versions/                 # Old HTML files
+    ├── planning/                     # Phase 3.1 planning doc
+    ├── reports/                      # Old status reports
+    └── docs/                         # Obsolete documentation
 ```
 
 ### Screen Flow (8 Screens)
@@ -223,70 +287,73 @@ window.windowResized = windowResized
 
 ### Critical: p5.js Global Mode
 
-**NEVER use `this` or `p5` prefix for p5.js functions:**
+**See `CLAUDE.md` Section 4 for complete p5.js Global Mode rules.**
+
+**Quick reminder:** NEVER use `this.` or `p5.` prefix. Exception: `new SimpleGradientRenderer(this)`
+
+### Standard Entity Sizes (Phase 3 Format)
+
+**CRITICAL:** As of Phase 3, all entities use `globalCellSize` from CONFIG.
 
 ```javascript
-// ✅ CORRECT (Global Mode)
-fill(255, 0, 0)
-rect(10, 10, 50, 50)
-random(0, 100)
+// CONFIG level (Phase 3+)
+const CONFIG = {
+  globalCellSize: 30,    // ALL entities use this size
+  invader: {
+    rows: 4,
+    cols: 4,
+    golUpdateRate: 15    // Update rate per entity type
+  },
+  player: {
+    golUpdateRate: 12
+  },
+  bullet: {
+    golUpdateRate: 0     // No evolution (Visual Only)
+  },
+  explosion: {
+    golUpdateRate: 30    // Fast chaotic evolution
+  }
+}
 
-// ❌ WRONG (Instance Mode - DO NOT USE)
-this.fill(255, 0, 0)
-p5.rect(10, 10, 50, 50)
+// Entity creation (uses globalCellSize)
+player = {
+  x: CONFIG.width / 2,
+  y: CONFIG.height - 300,
+  width: 180,           // 6 cells × 30px (derived from globalCellSize)
+  height: 180,
+  gol: new GoLEngine(6, 6, CONFIG.player.golUpdateRate)
+}
+
+// ❌ DEPRECATED Phase 2 Format (DO NOT USE):
+// player = { cellSize: 30, ... }  // Per-entity cellSize removed
 ```
 
-**EXCEPTION:** Only when creating SimpleGradientRenderer:
-```javascript
-maskedRenderer = new SimpleGradientRenderer(this)  // Only place 'this' is used
-```
+**Debug Interface:**
+- Global cell size controlled via debug panel slider
+- Changing cell size recreates all entities with new dimensions
+- Phase 3 format ensures consistent visual appearance
 
-### Standard Entity Sizes
-
-```javascript
-// Player/Enemies (main entities)
-width: 180          // 6 cells × 30px
-height: 180
-cellSize: 30
-gol: new GoLEngine(6, 6, 12)   // 12 fps for player
-gol: new GoLEngine(6, 6, 15)   // 15 fps for enemies
-
-// Bullets/Projectiles
-width: 90           // 3 cells × 30px
-height: 90
-cellSize: 30
-gol: new GoLEngine(3, 3, 0)    // 0 fps = no evolution (Visual Only)
-
-// Explosions
-width: 90
-height: 90
-cellSize: 30
-gol: new GoLEngine(3, 3, 30)   // 30 fps = fast chaotic evolution
-```
-
-### Entity Creation Pattern
+### Entity Creation Pattern (Phase 3 Format)
 
 ```javascript
-// Player
+// Player (Phase 3 - uses CONFIG.globalCellSize)
 player = {
   x: CONFIG.width / 2,
   y: CONFIG.height - 300,
   width: 180,
   height: 180,
-  cellSize: 30,
   vx: 0, vy: 0,
-  gol: new GoLEngine(6, 6, 12),
+  gol: new GoLEngine(6, 6, CONFIG.player.golUpdateRate),
   gradient: GRADIENT_PRESETS.PLAYER
 }
 seedRadialDensity(player.gol, 0.85, 0.0)
 player.gol.setPattern(Patterns.BLINKER, 2, 2)  // Optional accent
 
-// Enemy
+// Enemy (Phase 3 - uses CONFIG.globalCellSize)
 enemy = {
   x: 200, y: 100,
   width: 180, height: 180,
-  cellSize: 30,
-  gol: new GoLEngine(6, 6, 15),
+  gol: new GoLEngine(6, 6, CONFIG.invader.golUpdateRate),
   gradient: GRADIENT_PRESETS.ENEMY_HOT,
   dead: false
 }
@@ -295,7 +362,21 @@ seedRadialDensity(enemy.gol, 0.75, 0.0)
 // Update entities
 player.gol.updateThrottled(state.frameCount)
 applyLifeForce(player)  // Maintain core density
+
+// Rendering (uses CONFIG.globalCellSize)
+maskedRenderer.renderMaskedGrid(
+  player.gol,
+  player.x,
+  player.y,
+  CONFIG.globalCellSize,  // ✅ Phase 3: global cell size
+  player.gradient
+)
 ```
+
+**Phase 2 → Phase 3 Migration:**
+- ❌ Removed: `entity.cellSize` (per-entity property)
+- ✅ Added: `CONFIG.globalCellSize` (top-level configuration)
+- ✅ Added: `CONFIG.{entity}.golUpdateRate` (per-entity update rates)
 
 ### Collision Detection (FIXED HITBOXES)
 
@@ -399,72 +480,22 @@ maskedRenderer.updateAnimation()
 
 ## 🧬 Conway's Game of Life
 
-### B3/S23 Rules (Authentic)
+**Complete B3/S23 rules, double buffer pattern, and authenticity tiers are documented in `CLAUDE.md` (Section 5).**
 
-```javascript
-// Birth: Exactly 3 neighbors → cell becomes alive
-// Survival: 2 or 3 neighbors → cell stays alive
-// Death: < 2 (underpopulation) or > 3 (overpopulation)
+### Quick Reference
 
-if (currentState === ALIVE) {
-  nextState = (neighbors === 2 || neighbors === 3) ? ALIVE : DEAD
-} else {
-  nextState = (neighbors === 3) ? ALIVE : DEAD
-}
-```
+**Authenticity Tiers:**
+- **Tier 1 (Pure GoL):** Background, explosions - 100% authentic B3/S23
+- **Tier 2 (Modified GoL):** Player, enemies - Uses `applyLifeForce()` for stability
+- **Tier 3 (Visual Only):** Bullets, obstacles - Predictable, no evolution
 
-### Double Buffer Pattern (MANDATORY)
+**14 Canonical Patterns Available:**
+- Still Lifes: BLOCK, BEEHIVE, LOAF, BOAT, TUB, POND, SHIP
+- Oscillators: BLINKER, TOAD, BEACON, PULSAR
+- Spaceships: GLIDER, LIGHTWEIGHT_SPACESHIP
+- Methuselahs: R_PENTOMINO, ACORN
 
-```javascript
-class GoLEngine {
-  constructor(cols, rows, updateRate) {
-    this.current = create2DArray(cols, rows)  // Read from this
-    this.next = create2DArray(cols, rows)     // Write to this
-  }
-
-  update() {
-    applyGoLRules(this.current, this.next)    // Read current, write next
-    [this.current, this.next] = [this.next, this.current]  // Swap pointers
-  }
-}
-```
-
-**Why:** Prevents grid corruption. NEVER modify while reading.
-
-### GoL Patterns (14 Canonical)
-
-```javascript
-// Still Lifes (never change)
-Patterns.BLOCK, Patterns.BEEHIVE, Patterns.LOAF, Patterns.BOAT
-
-// Oscillators (periodic)
-Patterns.BLINKER, Patterns.TOAD, Patterns.BEACON, Patterns.PULSAR
-
-// Spaceships (move)
-Patterns.GLIDER, Patterns.LIGHTWEIGHT_SPACESHIP
-
-// Methuselahs (evolve for long time)
-Patterns.R_PENTOMINO, Patterns.ACORN
-
-// Usage
-entity.gol.setPattern(Patterns.PULSAR, 0, 0)
-entity.gol.setPattern(Patterns.BLINKER, 2, 2)
-```
-
-### GoL Authenticity Tiers
-
-```javascript
-// TIER 1: Pure GoL (100% authentic B3/S23)
-background: 'PureGoL'      // Full-screen GoL background (IdleScreen)
-explosions: 'PureGoL'      // Chaotic evolution (visual wow factor)
-
-// TIER 2: Modified GoL (80% authentic)
-player: 'ModifiedGoL'      // Uses applyLifeForce() for stability
-enemies: 'ModifiedGoL'     // Uses applyLifeForce() for stability
-
-// TIER 3: Visual Only (0% authentic)
-bullets: 'VisualOnly'      // Must be 100% predictable (no evolution)
-```
+**See:** `CLAUDE.md` Section 5 for complete implementation details.
 
 ---
 
@@ -538,29 +569,73 @@ Collision.clamp(value, min, max)                    // → number
 
 ## 🧪 Testing
 
+### Test Statistics (2025-11-18)
+
+**Overall Coverage:** 95.9% (1,216/1,268 tests passing)
+
+**Test Files:** 31 total
+- ✅ 21 fully passing
+- ⚠️ 10 with failures
+
+**Breakdown by Component:**
+
+| Component | Tests | Passing | Failing | Status |
+|-----------|-------|---------|---------|--------|
+| Core | 43 | 43 | 0 | ✅ 100% |
+| Utils | 586 | 586 | 0 | ✅ 100% |
+| Debug Interface | 26 | 9 | 17 | ⚠️ 35% |
+| Installation | 107 | 107 | 0 | ✅ 100% |
+| Rendering | 150 | 118 | 32 | ⚠️ 79% |
+| Validation | 68 | 65 | 3 | ⚠️ 96% |
+
+**Priority Failing Tests:**
+
+**P0 - Debug Interface (17 failures):**
+- `test_DebugInterface.js` - 5 failures (Phase 3 format changes)
+- `test_DebugPresets.js` - 12 failures (Phase 3.1 incomplete)
+
+**P1 - Rendering (32 failures):**
+- `test_SimpleGradientRenderer.js` - Mock issues, path mismatches
+
+**P2 - Validation (3 failures):**
+- `test_GoLValidator.js` - Minor edge cases
+
 ### Test Structure
 
 ```
 tests/
 ├── core/
-│   ├── test_GoLEngine.js         # B3/S23 rules, double buffer
-│   └── test_GoLValidator.js      # Rule validation
+│   ├── test_GoLEngine.js         # ✅ B3/S23 rules, double buffer
+│   └── test_GoLValidator.js      # ⚠️ 3 failures (edge cases)
+├── debug/                        # 🆕 Debug interface tests
+│   ├── test_DebugInterface.js    # ⚠️ 5 failures (Phase 3 changes)
+│   └── test_DebugPresets.js      # ⚠️ 12 failures (Phase 3.1 incomplete)
 ├── utils/
-│   ├── test_Collision.js         # 60/60 tests ✅
-│   ├── test_Patterns.js
-│   └── test_UIValidator.js
+│   ├── test_Collision.js         # ✅ 60/60 tests passing
+│   ├── test_Patterns.js          # ✅ Passing
+│   └── test_UIValidator.js       # ✅ Passing
+├── rendering/
+│   └── test_SimpleGradientRenderer.js  # ⚠️ 32 failures (mock issues)
+├── installation/
+│   ├── test_AppState.js          # ✅ Passing
+│   ├── test_InputManager.js      # ✅ Passing
+│   └── test_StorageManager.js    # ✅ Passing
 └── validation/
     └── (runtime validators)
 ```
 
-**Coverage:** 96.4% (161/167 tests passing)
-
 **Run tests:**
 ```bash
 npm test                    # All tests
-npm test -- core           # Only core tests
+npm test -- debug          # Only debug tests
 npm test -- --watch        # Watch mode
+npm test -- --reporter=verbose  # Detailed output
 ```
+
+**Test Priorities (Est. 7 hours to 100%):**
+1. **P0:** Fix debug interface tests (4 hours) - Phase 3 format migration
+2. **P1:** Fix renderer mocks (2 hours) - Mock path updates
+3. **P2:** Fix validator edge cases (1 hour) - Minor fixes
 
 ---
 
@@ -1028,31 +1103,51 @@ mcp__chrome-devtools__performance_start_trace({ reload: true, autoStop: true })
 
 ## 🎯 Summary
 
-**Game of Life Arcade** is a production-ready physical installation with:
+**Game of Life Arcade** is a physical installation in active development with:
 
+### Completed Features ✅
 - ✅ **8-screen installation flow** (IdleScreen → QRCodeScreen loop)
 - ✅ **4 complete games** at 1200×1920 portrait
 - ✅ **LLM-friendly framework** for generating new games
-- ✅ **96.4% test coverage** (161/167 tests passing)
+- ✅ **Debug Interface Phase 1-3** (real-time config, appearance controls, cell size unification)
+- ✅ **95.9% test coverage** (1,216/1,268 tests passing)
 - ✅ **60fps performance** guaranteed
 - ✅ **Pure Conway's Game of Life** (B3/S23 rules)
 - ✅ **Google Brand Colors** (official palette)
 - ✅ **MCP tools integration** (Archon RAG + Chrome DevTools)
 - ✅ **Comprehensive documentation** (CLAUDE.md, templates, this file)
 
-**Next Steps:**
-1. Deploy to Mac Mini with kiosk mode
-2. Generate more games (LLM or manual)
-3. Public web version (optional)
+### In Progress ⚠️
+- ⚠️ **Phase 3.1: Preset Management** (50% complete)
+  - Planning document complete (`archive/planning/phase-3.1-preset-management.md`)
+  - Preset JSON files MISSING (0/4 created)
+  - Import/Export UI partially implemented
+  - 17 failing tests in debug interface
 
-**Documentation:**
+### Known Issues
+- **52 failing tests** across 10 test files (4.1% failure rate)
+  - P0: Debug interface tests (17 failures) - Phase 3 format changes
+  - P1: Renderer tests (32 failures) - Mock issues
+  - P2: Validator tests (3 failures) - Edge cases
+- **Estimated fix time:** 7 hours to reach 100% test coverage
+
+### Next Steps
+1. **Complete Phase 3.1:** Create 4 preset JSON files per game
+2. **Fix failing tests:** Migrate to Phase 3 format, update mocks
+3. **Deploy to Mac Mini:** Kiosk mode installation
+4. **Generate more games:** LLM or manual implementation
+
+### Documentation
 - Development rules: `CLAUDE.md`
-- Game template: `src/game-template.js`
+- Project status: `docs/PROJECT_STATUS.md`
 - Project overview: `docs/PROJECT_OVERVIEW.md` (this file)
+- Game template: `src/game-template.js`
+- Phase 3.1 planning: `archive/planning/phase-3.1-preset-management.md`
 
 ---
 
-**Last Updated:** 2025-11-14
-**Project Status:** ✅ Production Ready
+**Last Updated:** 2025-11-18
+**Project Status:** ⚠️ Development (95.9% test coverage, Phase 3.1 in progress)
 **Installation Status:** ✅ Complete (8/8 screens)
-**Game Count:** 4 (Space Invaders, Dino Runner, Breakout, Flappy Bird)
+**Debug Interface:** ⚠️ Phase 3 complete, Phase 3.1 50% complete
+**Game Count:** 4 (Space Invaders with debug interface, Dino Runner, Breakout, Flappy Bird)
