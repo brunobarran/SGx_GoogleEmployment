@@ -7,6 +7,11 @@
  * - Static Patterns: Frozen canonical patterns (Tier 1 visual)
  * - Loop Patterns: Animated patterns with periodic evolution (Tier 1)
  *
+ * REFACTORED (2025-11-18):
+ * - Now uses PatternRenderer.js for Static/Loop modes
+ * - Eliminates 200+ lines of duplicated code
+ * - Maintains 100% backward compatibility with debug UI
+ *
  * CRITICAL: Follows CLAUDE.md authenticity tiers:
  * - Tier 1 (Pure GoL): Explosions, power-ups
  * - Tier 2 (Modified GoL): Player, large enemies
@@ -18,21 +23,12 @@
  * - Oscillators Period 3 (PULSAR): 3 phases + Loop
  * - Spaceships Period 4 (GLIDER, LWSS): 4 phases + Loop
  *
- * OPTION A IMPROVED Implementation (Temporal Grid with Padding):
- * - Patterns evolve in temporary grid at ORIGINAL size (authentic B3/S23)
- * - 20% padding prevents border artifacts (CRITICAL for PULSAR)
- * - CellSize adjusted to make all patterns ~200px visual size
- * - Pattern cell count preserved (BLOCK=4 cells, PULSAR=169 cells)
- *
- * Phase Calculation:
- * - periodPhase directly maps to generations: phase 0 = gen 0, phase 1 = gen 1, etc.
- * - Evolution happens in temporal grid with padding, then snapshot applied to entity grid
- *
  * @module DebugAppearance
  */
 
 import { GoLEngine } from '../core/GoLEngine.js'
 import { Patterns } from '../utils/Patterns.js'
+import { createPatternRenderer, RenderMode } from '../utils/PatternRenderer.js'
 
 /**
  * Available canonical GoL patterns from Patterns.js
@@ -158,104 +154,8 @@ export function getAppearanceOverride(entityType) {
   return window.APPEARANCE_OVERRIDES[entityType] || null
 }
 
-/**
- * Calculate optimal configuration for a pattern using automatic formula.
- *
- * PHILOSOPHY (CLAUDE.md):
- * - KISS: One formula for all patterns
- * - YAGNI: No manual configuration per pattern
- * - Visual beauty: ~200px target size, patterns fill 80% of grid
- *
- * SCALING RULES:
- * - Pattern ≤3×3: Scale 3x (BLOCK, BOAT, GLIDER)
- * - Pattern 4×5: Scale 2x (BEEHIVE, TOAD, BEACON)
- * - Pattern ≥6×6: Scale 1x (PULSAR, LWSS)
- *
- * OPTION C IMPLEMENTATION:
- * - scaleMultiplier derived from cellSize slider ratio (slider / 30)
- * - Allows slider to affect static patterns proportionally
- *
- * @param {number[][]} pattern - Pattern array (row-major format)
- * @param {number} targetSize - Target sprite size in pixels (default: 200)
- * @param {number} scaleMultiplier - Scale multiplier from slider (default: 1.0)
- * @returns {Object} Configuration {scale, cellSize, gridSize}
- *
- * @example
- * const config = calculateOptimalConfig(Patterns.BLOCK, 200, 1.0)
- * // Returns: { scale: 3, cellSize: 33, gridSize: 8 }
- * // BLOCK 2×2 → scaled 6×6 → 6*33=198px sprite
- *
- * const config = calculateOptimalConfig(Patterns.BLOCK, 200, 1.5)
- * // Returns: { scale: 3, cellSize: 49, gridSize: 8 }
- * // BLOCK 2×2 → scaled 6×6 → 6*49=294px sprite (1.5x larger)
- */
-function calculateOptimalConfig(pattern, targetSize = 200, scaleMultiplier = 1.0) {
-  const patternHeight = pattern.length
-  const patternWidth = pattern[0] ? pattern[0].length : 0
-  const patternMaxDim = Math.max(patternHeight, patternWidth)
-
-  // Determine scale factor based on pattern size
-  let scale = 1
-  if (patternMaxDim <= 3) {
-    scale = 3  // Small patterns (2×2, 3×3)
-  } else if (patternMaxDim <= 5) {
-    scale = 2  // Medium patterns (4×4, 5×5)
-  }
-  // Large patterns (≥6) stay at scale 1
-
-  // Calculate scaled dimensions
-  const scaledWidth = patternWidth * scale
-  const scaledHeight = patternHeight * scale
-  const scaledMaxDim = Math.max(scaledWidth, scaledHeight)
-
-  // Calculate base cellSize to reach target size
-  const baseCellSize = Math.floor(targetSize / scaledMaxDim)
-
-  // OPTION C: Apply scaleMultiplier from slider
-  const cellSize = Math.floor(baseCellSize * scaleMultiplier)
-
-  // Grid size with 20% padding (80% fill ratio)
-  const gridSize = Math.ceil(scaledMaxDim * 1.2)
-
-  return { scale, cellSize, gridSize }
-}
-
-/**
- * Scale a pattern by a factor N using pixel-perfect 2D repetition.
- * Each cell becomes an N×N block of cells.
- *
- * @param {number[][]} pattern - Original pattern (row-major)
- * @param {number} scale - Scale factor (2, 3, 4, etc.)
- * @returns {number[][]} Scaled pattern
- *
- * @example
- * const block = [[1,1], [1,1]]  // 2×2
- * const scaled = scalePattern(block, 2)
- * // Returns: 4×4 pattern with each cell doubled
- */
-function scalePattern(pattern, scale) {
-  if (scale === 1) return pattern
-
-  const originalHeight = pattern.length
-  const originalWidth = pattern[0] ? pattern[0].length : 0
-
-  const scaledHeight = originalHeight * scale
-  const scaledWidth = originalWidth * scale
-
-  const scaled = []
-
-  for (let row = 0; row < scaledHeight; row++) {
-    scaled[row] = []
-    const originalRow = Math.floor(row / scale)
-
-    for (let col = 0; col < scaledWidth; col++) {
-      const originalCol = Math.floor(col / scale)
-      scaled[row][col] = pattern[originalRow][originalCol]
-    }
-  }
-
-  return scaled
-}
+// NOTE: calculateOptimalConfig and scalePattern functions removed.
+// Now using PatternRenderer.js for all pattern calculations.
 
 /**
  * Apply appearance override to a GoL engine during entity setup.
@@ -305,162 +205,95 @@ export function applyAppearanceOverride(gol, entityType, Patterns, seedRadialDen
     return false // Use default Modified GoL setup
   }
 
+  // REFACTORED: Use PatternRenderer for Static/Loop modes
+  const patternName = override.pattern || 'BLINKER'
+  const globalCellSize = CONFIG?.globalCellSize || 30
+  const loopUpdateRate = CONFIG?.loopUpdateRate || 10
+
   if (override.mode === APPEARANCE_MODES.STATIC_PATTERN) {
-    // OPTION A IMPROVED: Temporal grid with 20% padding for authentic B3/S23 evolution
-    const patternName = override.pattern || 'BLINKER'
-    const pattern = Patterns[patternName] || Patterns.BLINKER
-    const periodPhase = override.period !== undefined ? override.period : 0
+    const phase = override.period !== undefined ? override.period : 0
 
-    // 1. Get original pattern dimensions
-    const patternHeight = pattern.length
-    const patternWidth = pattern[0] ? pattern[0].length : 0
-    const patternMaxDim = Math.max(patternHeight, patternWidth)
+    // Use PatternRenderer to create static pattern
+    const renderer = createPatternRenderer({
+      mode: RenderMode.STATIC,
+      pattern: patternName,
+      phase: phase,
+      globalCellSize: globalCellSize
+    })
 
-    // 2. Create temporal grid with 20% PADDING (CRITICAL for border patterns like PULSAR)
-    const paddedWidth = Math.ceil(patternWidth * 1.2)
-    const paddedHeight = Math.ceil(patternHeight * 1.2)
-    const tempGol = new GoLEngine(paddedWidth, paddedHeight, 0)
+    console.log(`[DebugAppearance] Static ${patternName} phase ${phase}: ${renderer.dimensions.width}×${renderer.dimensions.height}px`)
 
-    // 3. Center pattern in temporal grid (gives border cells full 8-neighbor context)
-    const tempCenterX = Math.floor((paddedWidth - patternWidth) / 2)
-    const tempCenterY = Math.floor((paddedHeight - patternHeight) / 2)
-    tempGol.setPattern(pattern, tempCenterX, tempCenterY)
-
-    // 4. Evolve N generations in temporal grid (authentic B3/S23 at original size)
-    if (periodPhase > 0 && PATTERN_PERIODS[patternName]) {
-      const fullPeriod = PATTERN_PERIODS[patternName]
-      console.log(`[DebugAppearance] Evolving ${patternName} (period ${fullPeriod}) for ${periodPhase} generations (phase ${periodPhase + 1}/${fullPeriod + 1})`)
-
-      for (let i = 0; i < periodPhase; i++) {
-        tempGol.update()
-      }
-    }
-
-    // 5. Capture evolved pattern snapshot from temporal grid
-    const evolvedPattern = tempGol.getPattern()
-
-    // 6. Calculate cellSize to make pattern occupy ~200px (adjustable via slider)
-    let entityCellSize = 30  // Default baseline
-    if (CONFIG) {
-      const configKey = entityType === 'invaders' ? 'invader' : entityType.replace(/s$/, '')
-      if (CONFIG[configKey] && CONFIG[configKey].cellSize !== undefined) {
-        entityCellSize = CONFIG[configKey].cellSize
-      }
-    }
-    const defaultCellSize = 30
-    const scaleMultiplier = entityCellSize / defaultCellSize
-
-    // CellSize inversely proportional to pattern size (normalizes visual size)
-    const baseCellSize = Math.floor(200 / patternMaxDim)
-    const cellSize = Math.floor(baseCellSize * scaleMultiplier)
-
-    // 7. Grid size uses padded dimensions
-    const gridSize = Math.max(paddedWidth, paddedHeight)
-
-    console.log(`[DebugAppearance] ${entityType}: ${patternName} ${patternWidth}×${patternHeight} → padded ${paddedWidth}×${paddedHeight}, cellSize=${cellSize}px, scale=${scaleMultiplier.toFixed(2)}x`)
-
-    // 8. If gol is null, return config for entity to use during creation
+    // If gol is null, return config for entity to use during creation
     if (!gol) {
       return {
-        cellSize: cellSize,
-        gridSize: gridSize,
-        pattern: evolvedPattern,
+        cellSize: renderer.dimensions.cellSize,
+        gridSize: renderer.dimensions.gridSize,
+        pattern: renderer.gol.getPattern(),
         patternName: patternName,
-        periodPhase: periodPhase
+        periodPhase: phase
       }
     }
 
-    // 9. Apply evolved pattern to entity's gol (centered)
+    // Copy pattern from renderer to entity gol
     gol.clearGrid()
+    const minCols = Math.min(gol.cols, renderer.gol.cols)
+    const minRows = Math.min(gol.rows, renderer.gol.rows)
 
-    const entityCenterX = Math.floor((gol.cols - paddedWidth) / 2)
-    const entityCenterY = Math.floor((gol.rows - paddedHeight) / 2)
-
-    // Copy cells from temporal grid to entity grid
-    for (let x = 0; x < paddedWidth; x++) {
-      for (let y = 0; y < paddedHeight; y++) {
-        const targetX = entityCenterX + x
-        const targetY = entityCenterY + y
-        if (targetX >= 0 && targetX < gol.cols && targetY >= 0 && targetY < gol.rows) {
-          gol.current[targetX][targetY] = evolvedPattern[x][y]
-        }
+    for (let x = 0; x < minCols; x++) {
+      for (let y = 0; y < minRows; y++) {
+        gol.current[x][y] = renderer.gol.current[x][y]
       }
     }
 
     gol.freeze()
-
-    const spriteSize = `${gridSize * cellSize}px`
-    console.log(`[DebugAppearance] Applied ${patternName}: ${patternWidth}×${patternHeight} → ${spriteSize} sprite (phase ${periodPhase})`)
     return true
   }
 
   if (override.mode === APPEARANCE_MODES.LOOP_PATTERN) {
-    // LOOP_PATTERN: Apply pattern once, allow continuous evolution with periodic resets
-    // This shows clean oscillations without manual frame-by-frame recalculation
-    const patternName = override.pattern || 'BLINKER'
-    const pattern = Patterns[patternName] || Patterns.BLINKER
-    const fullPeriod = PATTERN_PERIODS[patternName] || 2
+    // Use PatternRenderer to create loop pattern
+    const renderer = createPatternRenderer({
+      mode: RenderMode.LOOP,
+      pattern: patternName,
+      globalCellSize: globalCellSize,
+      loopUpdateRate: loopUpdateRate
+    })
 
-    // 1. Get original pattern dimensions
-    const patternHeight = pattern.length
-    const patternWidth = pattern[0] ? pattern[0].length : 0
-    const patternMaxDim = Math.max(patternHeight, patternWidth)
+    console.log(`[DebugAppearance] Loop ${patternName} period ${renderer.metadata.period}: ${renderer.dimensions.width}×${renderer.dimensions.height}px`)
 
-    // 2. Calculate cellSize to make pattern occupy ~200px (adjustable via slider)
-    let entityCellSize = 30
-    if (CONFIG) {
-      const configKey = entityType === 'invaders' ? 'invader' : entityType.replace(/s$/, '')
-      if (CONFIG[configKey] && CONFIG[configKey].cellSize !== undefined) {
-        entityCellSize = CONFIG[configKey].cellSize
-      }
-    }
-    const defaultCellSize = 30
-    const scaleMultiplier = entityCellSize / defaultCellSize
-
-    const baseCellSize = Math.floor(200 / patternMaxDim)
-    const cellSize = Math.floor(baseCellSize * scaleMultiplier)
-
-    // 3. Grid size with 20% padding (same as static patterns)
-    const paddedWidth = Math.ceil(patternWidth * 1.2)
-    const paddedHeight = Math.ceil(patternHeight * 1.2)
-
-    console.log(`[DebugAppearance] ${entityType}: ${patternName} (Loop) ${patternWidth}×${patternHeight}, cellSize=${cellSize}px, padded=${paddedWidth}×${paddedHeight}`)
-
-    // 4. If gol is null, return config for entity to use during creation
+    // If gol is null, return config for entity to use during creation
     if (!gol) {
       return {
-        cellSize: cellSize,
-        gridSize: paddedWidth,  // Use padded dimensions
-        pattern: pattern,
+        cellSize: renderer.dimensions.cellSize,
+        gridSize: renderer.dimensions.gridSize,
+        pattern: renderer.gol.loopPattern,
         patternName: patternName,
         loop: true
       }
     }
 
-    // 5. Mark as loop pattern (Pure GoL, no lifeForce)
-    // CRITICAL: This flag prevents applyLifeForce from corrupting Pure GoL patterns
-    gol.isLoopPattern = true
-    gol.loopPeriod = fullPeriod
-    gol.loopPattern = pattern
-    gol.loopPatternWidth = patternWidth
-    gol.loopPatternHeight = patternHeight
-    gol.loopResetCounter = 0  // Tracks GoL updates since last reset
+    // Copy pattern and loop metadata from renderer to entity gol
+    gol.clearGrid()
+    const minCols = Math.min(gol.cols, renderer.gol.cols)
+    const minRows = Math.min(gol.rows, renderer.gol.rows)
 
-    // 6. Apply initial pattern (only once)
-    if (!gol.loopInitialized) {
-      gol.loopInitialized = true
-
-      gol.clearGrid()
-      const centerX = Math.floor((gol.cols - patternWidth) / 2)
-      const centerY = Math.floor((gol.rows - patternHeight) / 2)
-      gol.setPattern(pattern, centerX, centerY)
-
-      // Unfreeze to allow continuous B3/S23 evolution
-      // Speed controlled dynamically by CONFIG.loopUpdateRate → updateRateFPS in handleLoopReset
-      gol.unfreeze()
-
-      console.log(`[DebugAppearance] Initialized ${patternName} loop: period=${fullPeriod}, Pure GoL (no lifeForce)`)
+    for (let x = 0; x < minCols; x++) {
+      for (let y = 0; y < minRows; y++) {
+        gol.current[x][y] = renderer.gol.current[x][y]
+      }
     }
+
+    // Copy loop metadata (CRITICAL for LoopPatternHelpers)
+    gol.isLoopPattern = true
+    gol.loopPeriod = renderer.metadata.period
+    gol.loopPattern = renderer.gol.loopPattern
+    gol.loopPatternWidth = renderer.gol.loopPatternWidth
+    gol.loopPatternHeight = renderer.gol.loopPatternHeight
+    gol.loopResetCounter = 0
+    gol.loopLastGeneration = 0
+    gol.updateRateFPS = loopUpdateRate
+
+    // Unfreeze to allow continuous evolution
+    gol.unfreeze()
 
     return true
   }

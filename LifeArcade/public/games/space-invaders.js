@@ -16,6 +16,7 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 import { applyAppearanceOverride } from '../src/debug/DebugAppearance.js'
 import { updateLoopPattern } from '../src/utils/LoopPatternHelpers.js'
+import { createPatternRenderer, RenderMode, PatternName } from '../src/utils/PatternRenderer.js'
 
 // ============================================
 // GAME CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -41,14 +42,18 @@ const CONFIG = {
   },
 
   invader: {
-    cols: 4,      // 4 columns for balanced grid layout
-    rows: 4,      // 4 rows
+    cols: 6,      // 6 columns
+    rows: 3,      // 3 rows
     // width/height now calculated dynamically from gol.cols/rows × globalCellSize
-    spacing: 60,  // Unified spacing: 60px (same as Breakout padding)
+    spacing: 70,  // Spacing between invaders
     startX: 180,  // Same as Breakout offsetX for visual consistency
     startY: 200,  // Same as Breakout offsetY - unified starting position
-    moveInterval: 30,
-    speed: 45     // 15 × 3 = 45
+
+    // Level-based speed (NEW - 2025-11-18)
+    moveIntervalStart: 30,    // Initial move interval (slow)
+    moveIntervalMin: 3,        // Minimum move interval (very fast)
+    moveIntervalDecrement: 5,  // Reduce by 5 frames each level (faster acceleration)
+    speed: 45                  // Horizontal move distance
     // NOTE: golUpdateRate removed - now uses CONFIG.loopUpdateRate (unified for all GoL)
   },
 
@@ -73,7 +78,7 @@ const CONFIG = {
 
   // Loop pattern update rate (frames between phase changes)
   // Controls speed of Pure GoL pattern oscillations (BLINKER, PULSAR, etc.)
-  loopUpdateRate: 30,  // Default: 30 frames (~0.5s at 60fps)
+  loopUpdateRate: 10,  // 10 fps (6 frames at 60fps)
 
   // Hitbox limits (Sub-opción 1C: Clamped hitbox)
   // Ensures fair gameplay while allowing visual variety
@@ -107,6 +112,7 @@ const state = {
   level: 1,
   phase: 'PLAYING',
   frameCount: 0,
+  currentMoveInterval: 30,  // Current invader move interval (decreases per level)
   invaderDirection: 1,
   invaderMoveTimer: 0,
   playerShootCooldown: 0,
@@ -241,6 +247,7 @@ function initGame() {
   state.lives = 1
   state.level = 1
   state.frameCount = 0
+  state.currentMoveInterval = CONFIG.invader.moveIntervalStart  // Reset to starting speed
   state.invaderDirection = 1
   invaders = []
   bullets = []
@@ -281,144 +288,154 @@ function calculateClampedHitbox(spriteSize, entityType) {
 }
 
 function setupPlayer() {
-  // Check for tier configuration BEFORE creating entity
-  const tierConfig = applyAppearanceOverride(null, 'player', Patterns, seedRadialDensity, CONFIG)
+  // Check debug override
+  const debugOverride = window.APPEARANCE_OVERRIDES?.player
 
-  // PHASE 3: Use tier gridSize if provided, otherwise default to 6
-  const gridSize = tierConfig ? tierConfig.gridSize : 6
+  if (debugOverride && debugOverride.mode !== 'modified-gol') {
+    // Use debug appearance (delegated to DebugAppearance)
+    const tierConfig = applyAppearanceOverride(null, 'player', Patterns, seedRadialDensity, CONFIG)
+    const gridSize = tierConfig.gridSize
+    const golEngine = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
+    applyAppearanceOverride(golEngine, 'player', Patterns, seedRadialDensity, CONFIG)
 
-  // Create GoL engine first (needed for calculateEntityDimensions)
-  const golEngine = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
+    const tempEntity = { gol: golEngine }
+    const dims = calculateEntityDimensions(tempEntity)
+    const hitbox = calculateClampedHitbox(dims.width, 'player')
 
-  // Create temporary entity to calculate dimensions
-  const tempEntity = { gol: golEngine }
-  const dims = calculateEntityDimensions(tempEntity)
+    player = {
+      x: CONFIG.width / 2 - dims.width / 2,
+      y: CONFIG.height - 200,
+      width: dims.width,
+      height: dims.height,
+      hitbox: hitbox,
+      vx: 0,
+      gol: golEngine,
+      gradient: GRADIENT_PRESETS.PLAYER
+    }
 
-  // Calculate clamped hitbox (CLAUDE.md: separate visual from logic)
-  const hitbox = calculateClampedHitbox(dims.width, 'player')
+    console.log(`[SetupPlayer] DEBUG MODE: ${debugOverride.pattern || 'Modified GoL'}`)
+  } else {
+    // DEFAULT: Loop BLINKER (Pure GoL oscillator)
+    const renderer = createPatternRenderer({
+      mode: RenderMode.LOOP,
+      pattern: PatternName.BLINKER,
+      globalCellSize: CONFIG.globalCellSize,
+      loopUpdateRate: CONFIG.loopUpdateRate
+    })
 
-  console.log(`[SetupPlayer] PHASE 3: globalCellSize=${CONFIG.globalCellSize}, gridSize=${gridSize}`)
-  console.log(`[SetupPlayer] Calculated dimensions:`, dims)
-  console.log(`[SetupPlayer] Clamped hitbox:`, hitbox)
+    const hitbox = calculateClampedHitbox(renderer.dimensions.width, 'player')
 
-  player = {
-    x: CONFIG.width / 2 - dims.width / 2,
-    y: CONFIG.height - 200,  // Adjusted for portrait
-    width: dims.width,        // Dynamic: gridSize × globalCellSize
-    height: dims.height,      // Dynamic: gridSize × globalCellSize
+    player = {
+      x: CONFIG.width / 2 - renderer.dimensions.width / 2,
+      y: CONFIG.height - 200,
+      width: renderer.dimensions.width,
+      height: renderer.dimensions.height,
+      hitbox: hitbox,
+      vx: 0,
+      gol: renderer.gol,
+      gradient: GRADIENT_PRESETS.PLAYER
+    }
 
-    // Hitbox clamped (gameplay consistent)
-    hitbox: hitbox,
-
-    vx: 0,
-
-    // GoL engine - uses tier-specific grid size
-    gol: golEngine,
-
-    // Gradient configuration
-    gradient: GRADIENT_PRESETS.PLAYER
-  }
-
-  console.log(`[SetupPlayer] Created player:`, { width: player.width, height: player.height, hitbox: player.hitbox })
-
-  // Apply appearance override to the gol (will apply pattern if STATIC_PATTERN mode)
-  const overrideApplied = applyAppearanceOverride(
-    player.gol, 'player', Patterns, seedRadialDensity, CONFIG
-  )
-
-  if (!overrideApplied) {
-    // Default Modified GoL setup
-    seedRadialDensity(player.gol, 0.85, 0.0)
-    player.gol.setPattern(Patterns.BLINKER, 2, 2)
-  }
-
-  // PHASE 3: Recalculate dimensions after pattern applied (may have changed grid size)
-  if (overrideApplied) {
-    const finalDims = calculateEntityDimensions(player)
-    player.width = finalDims.width
-    player.height = finalDims.height
-    player.x = CONFIG.width / 2 - player.width / 2  // Re-center
-    console.log(`[SetupPlayer] Recalculated after override:`, { width: player.width, height: player.height })
+    console.log(`[SetupPlayer] DEFAULT: BLINKER Loop (period ${renderer.metadata.period})`)
   }
 }
 
 function setupInvaders() {
   const { cols, rows, spacing, startX, startY } = CONFIG.invader
 
-  // Check for tier configuration BEFORE creating entities
-  const tierConfig = applyAppearanceOverride(null, 'invaders', Patterns, seedRadialDensity, CONFIG)
+  // Check for debug appearance override
+  const debugOverride = window.APPEARANCE_OVERRIDES?.invaders
 
-  // PHASE 3: Use tier gridSize if provided, otherwise default to 6
-  const gridSize = tierConfig ? tierConfig.gridSize : 6
+  // Use debug appearance if set, otherwise default to BLINKER static random phases
+  let renderer = null
 
-  // Create temporary GoL to calculate initial dimensions
-  const tempGol = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
-  const tempEntity = { gol: tempGol }
-  const dims = calculateEntityDimensions(tempEntity)
+  if (debugOverride && debugOverride.mode !== 'modified-gol') {
+    // Debug mode: delegate to DebugAppearance
+    // Create temporary GoL to calculate dimensions
+    const tierConfig = applyAppearanceOverride(null, 'invaders', Patterns, seedRadialDensity, CONFIG)
+    const gridSize = tierConfig ? tierConfig.gridSize : 6
+    const tempGol = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
+    const tempEntity = { gol: tempGol }
+    const dims = calculateEntityDimensions(tempEntity)
+    const hitbox = calculateClampedHitbox(dims.width, 'invaders')
 
-  // Calculate clamped hitbox (CLAUDE.md: separate visual from logic)
-  const hitbox = calculateClampedHitbox(dims.width, 'invaders')
+    console.log(`[SetupInvaders] DEBUG MODE: Using appearance override`)
 
-  console.log(`[SetupInvaders] PHASE 3: globalCellSize=${CONFIG.globalCellSize}, gridSize=${gridSize}`)
-  console.log(`[SetupInvaders] Calculated dimensions:`, dims)
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const invader = {
+          x: startX + col * (dims.width + spacing),
+          y: startY + row * (dims.height + spacing),
+          width: dims.width,
+          height: dims.height,
+          hitbox: hitbox,
+          dead: false,
+          gol: new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate),
+          gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
+                    row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
+                    GRADIENT_PRESETS.ENEMY_RAINBOW
+        }
 
-  // Array of organic patterns for variety
-  const organicPatterns = [
-    { main: Patterns.PULSAR, accent: Patterns.BEACON },
-    { main: Patterns.LIGHTWEIGHT_SPACESHIP, accent: Patterns.GLIDER },
-    { main: Patterns.TOAD, accent: Patterns.BLINKER },
-    { main: Patterns.BEACON, accent: Patterns.SHIP },
-    { main: Patterns.POND, accent: Patterns.BOAT },
-    { main: Patterns.R_PENTOMINO, accent: Patterns.TUB }
-  ]
+        applyAppearanceOverride(invader.gol, 'invaders', Patterns, seedRadialDensity, CONFIG)
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const invader = {
-        x: startX + col * (dims.width + spacing),
-        y: startY + row * (dims.height + spacing),
-        width: dims.width,      // Dynamic: gridSize × globalCellSize
-        height: dims.height,    // Dynamic: gridSize × globalCellSize
-
-        // Hitbox clamped (gameplay consistent)
-        hitbox: hitbox,
-
-        dead: false,
-
-        // GoL engine - uses tier-specific grid size and unified update rate
-        gol: new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate),
-
-        // Assign gradient based on row
-        gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
-                  row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
-                  GRADIENT_PRESETS.ENEMY_RAINBOW
-      }
-
-      // Apply appearance override to the gol
-      const overrideApplied = applyAppearanceOverride(
-        invader.gol, 'invaders', Patterns, seedRadialDensity, CONFIG
-      )
-
-      if (!overrideApplied) {
-        // Default Modified GoL setup
-        seedRadialDensity(invader.gol, 0.75, 0.0)
-
-        // Pick random accent pattern (smaller grid, adjusted position)
-        const patternSet = organicPatterns[Math.floor(Math.random() * organicPatterns.length)]
-        invader.gol.setPattern(patternSet.accent, 2, 2)
-      }
-
-      // PHASE 3: Recalculate dimensions after pattern applied (may have changed grid size)
-      if (overrideApplied) {
         const finalDims = calculateEntityDimensions(invader)
         invader.width = finalDims.width
         invader.height = finalDims.height
-        // Reposition to maintain grid spacing
         invader.x = startX + col * (finalDims.width + spacing)
         invader.y = startY + row * (finalDims.height + spacing)
-      }
 
-      invaders.push(invader)
+        invaders.push(invader)
+      }
+    }
+  } else {
+    // DEFAULT: Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)
+    const stillLifePatterns = [
+      PatternName.BLOCK,
+      PatternName.BEEHIVE,
+      PatternName.LOAF,
+      PatternName.BOAT,
+      PatternName.TUB
+    ]
+
+    // Create a single renderer to get dimensions (use BLOCK as reference)
+    const testRenderer = createPatternRenderer({
+      mode: RenderMode.STATIC,
+      pattern: PatternName.BLOCK,
+      phase: 0,
+      globalCellSize: CONFIG.globalCellSize
+    })
+
+    const dims = testRenderer.dimensions
+    const hitbox = calculateClampedHitbox(dims.width, 'invaders')
+
+    console.log(`[SetupInvaders] DEFAULT MODE: Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)`)
+    console.log(`[SetupInvaders] Dimensions:`, dims)
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // Create renderer with random still life pattern
+        renderer = createPatternRenderer({
+          mode: RenderMode.STATIC,
+          pattern: stillLifePatterns,  // Array = random selection
+          phase: 0,  // Still lifes are always phase 0
+          globalCellSize: CONFIG.globalCellSize
+        })
+
+        const invader = {
+          x: startX + col * (dims.width + spacing),
+          y: startY + row * (dims.height + spacing),
+          width: dims.width,
+          height: dims.height,
+          hitbox: hitbox,
+          dead: false,
+          gol: renderer.gol,  // Use frozen GoL from PatternRenderer
+          gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
+                    row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
+                    GRADIENT_PRESETS.ENEMY_RAINBOW
+        }
+
+        invaders.push(invader)
+      }
     }
   }
 
@@ -536,24 +553,15 @@ function updatePlayer() {
 function updateInvaders() {
   state.invaderMoveTimer++
 
-  if (state.invaderMoveTimer >= CONFIG.invader.moveInterval) {
+  // Use level-based move interval (decreases each time matrix is cleared)
+  if (state.invaderMoveTimer >= state.currentMoveInterval) {
     moveInvaders()
     state.invaderMoveTimer = 0
   }
 
   invaders.forEach(inv => {
-    inv.gol.updateThrottled(state.frameCount)
-
-    // CRITICAL: Only apply lifeForce if NOT frozen AND NOT a loop pattern
-    // Loop patterns are Pure GoL (Tier 1) - must remain authentic without lifeForce
-    if (!inv.gol.isFrozen() && !inv.gol.isLoopPattern) {
-      applyLifeForce(inv)
-    }
-
-    // Handle loop pattern resets (Pure GoL oscillations)
-    if (inv.gol.isLoopPattern) {
-      handleLoopReset(inv.gol, state.frameCount)
-    }
+    // Still lifes are frozen, no update needed
+    // (BLOCK, BEEHIVE, LOAF, BOAT, TUB don't evolve)
   })
 }
 
@@ -598,7 +606,6 @@ function moveInvaders() {
 }
 
 function shootBullet() {
-  // PHASE 3: Create bullet with dynamic dimensions
   const bullet = {
     x: player.x + player.width / 2,  // Temp position, will adjust after dims calculated
     y: player.y,
@@ -607,8 +614,8 @@ function shootBullet() {
     vy: -CONFIG.bullet.speed,  // Use CONFIG value (negative = upward)
     dead: false,
 
-    // 3x3 grid for bullets (uses unified update rate)
-    gol: new GoLEngine(3, 3, CONFIG.loopUpdateRate),
+    // Small 2x2 grid for compact bullets
+    gol: new GoLEngine(2, 2, CONFIG.loopUpdateRate),
     gradient: GRADIENT_PRESETS.BULLET
   }
 
@@ -618,8 +625,8 @@ function shootBullet() {
   )
 
   if (!overrideApplied) {
-    // Default Visual Only (no evolution, maintain density)
-    seedRadialDensity(bullet.gol, 0.9, 0.0)
+    // Default: Organic pattern with radial density (compact 2x2)
+    seedRadialDensity(bullet.gol, 0.75, 0.0)
   }
 
   // PHASE 3: Calculate dimensions after pattern applied
@@ -659,8 +666,13 @@ function checkCollisions() {
 
 function checkWinLose() {
   if (invaders.length === 0) {
+    // Matrix destroyed - increase speed for next level
     state.level++
-    CONFIG.invader.moveInterval = Math.max(10, CONFIG.invader.moveInterval - 3)
+    state.currentMoveInterval = Math.max(
+      CONFIG.invader.moveIntervalMin,
+      state.currentMoveInterval - CONFIG.invader.moveIntervalDecrement
+    )
+    console.log(`[Level ${state.level}] New moveInterval: ${state.currentMoveInterval}`)
     setupInvaders()
   }
 
