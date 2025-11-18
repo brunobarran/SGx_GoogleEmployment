@@ -1,14 +1,14 @@
 # LifeArcade - Project Status Report
 
 **Date:** 2025-11-18
-**Version:** 1.4 (PatternRenderer Library + Space Invaders Iteration)
+**Version:** 1.5 (Dino Runner PNG Sprite + Parallax)
 **Status:** ✅ FEATURE COMPLETE | ✅ All Core Tests Passing
 
 ---
 
 ## 📊 Executive Summary
 
-**LifeArcade** is a physical art installation combining Conway's Game of Life with interactive arcade gaming. The project is **feature complete** with a sophisticated debug interface system, PatternRenderer library for Pure GoL patterns, and refined Space Invaders gameplay, ready for deployment.
+**LifeArcade** is a physical art installation combining Conway's Game of Life with interactive arcade gaming. The project is **feature complete** with a sophisticated debug interface system, PatternRenderer library for Pure GoL patterns, refined Space Invaders gameplay, and enhanced Dino Runner with PNG sprite player + parallax background, ready for deployment.
 
 ### Overall Grade: A+ (95/100)
 
@@ -130,7 +130,12 @@ All games follow identical architecture:
    - Level-based acceleration (5 frames/level, min: 3 frames)
    - BLINKER loop player (10fps)
    - Compact organic bullets (2×2 grid)
-2. ✅ Dino Runner (700+ lines with debug) - Endless runner
+2. ✅ Dino Runner (700+ lines with debug) - **PNG sprite player + Parallax** (Phase 3.4 ✅)
+   - PNG sprite player (dino.png 200×200px) - **CLIENT-APPROVED DEVIATION**
+   - Parallax cloud background (still life patterns at 20% opacity)
+   - GoL pattern obstacles (still lifes: BLOCK, BEEHIVE, LOAF, BOAT, TUB)
+   - Oscillating obstacles (BLINKER, TOAD, BEACON)
+   - Grids adapted to pattern size (4×4 to 6×6)
 3. ✅ Breakout (700+ lines with debug) - 3×3 bricks, paddle physics
 4. ✅ Flappy Bird (700+ lines with debug) - Tap to fly, pipe spawning
 

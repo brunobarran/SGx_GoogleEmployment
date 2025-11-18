@@ -92,6 +92,13 @@ class SimpleGradientRenderer {
     // Interpolate between colors
     const c1 = this.palette[i1]
     const c2 = this.palette[i2]
+
+    // Defensive check for undefined palette colors
+    if (!c1 || !c2) {
+      console.error('[SimpleGradientRenderer] Invalid palette access:', { i1, i2, paletteLength: this.palette.length })
+      return [255, 255, 255]  // Fallback to white
+    }
+
     const r = this.p5.lerp(c1[0], c2[0], localT)
     const g = this.p5.lerp(c1[1], c2[1], localT)
     const b = this.p5.lerp(c1[2], c2[2], localT)

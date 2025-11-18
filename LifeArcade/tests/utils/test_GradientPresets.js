@@ -59,8 +59,8 @@ describe('GradientPresets - GOOGLE_COLORS', () => {
 })
 
 describe('GradientPresets - GRADIENT_PRESETS', () => {
-  test('has 9 predefined presets', () => {
-    expect(Object.keys(GRADIENT_PRESETS)).toHaveLength(9)
+  test('has 10 predefined presets', () => {
+    expect(Object.keys(GRADIENT_PRESETS)).toHaveLength(10)
   })
 
   test('has all required preset types', () => {
@@ -73,6 +73,7 @@ describe('GradientPresets - GRADIENT_PRESETS', () => {
     expect(GRADIENT_PRESETS).toHaveProperty('BACKGROUND')
     expect(GRADIENT_PRESETS).toHaveProperty('BOSS')
     expect(GRADIENT_PRESETS).toHaveProperty('EXPLOSION')
+    expect(GRADIENT_PRESETS).toHaveProperty('SKY')
   })
 
   test('all presets have required properties', () => {
@@ -85,8 +86,14 @@ describe('GradientPresets - GRADIENT_PRESETS', () => {
     })
   })
 
-  test('all presets use Google brand colors', () => {
-    Object.values(GRADIENT_PRESETS).forEach(preset => {
+  test('most presets use 4-color Google brand palette', () => {
+    const fourColorPresets = [
+      'PLAYER', 'ENEMY_HOT', 'ENEMY_COLD', 'ENEMY_RAINBOW',
+      'BULLET', 'POWERUP', 'BACKGROUND', 'BOSS', 'EXPLOSION'
+    ]
+
+    fourColorPresets.forEach(presetName => {
+      const preset = GRADIENT_PRESETS[presetName]
       expect(preset.palette).toHaveLength(4)
       expect(preset.palette[0]).toEqual(GOOGLE_COLORS.BLUE)
       expect(preset.palette[1]).toEqual(GOOGLE_COLORS.RED)
@@ -166,7 +173,28 @@ describe('GradientPresets - Individual Presets', () => {
     expect(GRADIENT_PRESETS.EXPLOSION.controlPoints).toBe(16)
   })
 
+  test('SKY preset has blue-white-blue palette for clouds', () => {
+    expect(GRADIENT_PRESETS.SKY.name).toBe('Sky (Animated)')
+    expect(GRADIENT_PRESETS.SKY.palette).toHaveLength(3)
+    expect(GRADIENT_PRESETS.SKY.palette[0]).toEqual(GOOGLE_COLORS.BLUE)
+    expect(GRADIENT_PRESETS.SKY.palette[1]).toEqual(GOOGLE_COLORS.WHITE)
+    expect(GRADIENT_PRESETS.SKY.palette[2]).toEqual(GOOGLE_COLORS.BLUE)
+  })
+
+  test('SKY preset has slow animation for parallax', () => {
+    expect(GRADIENT_PRESETS.SKY.animationSpeed).toBe(0.2)
+    expect(GRADIENT_PRESETS.SKY.controlPoints).toBe(12)
+    expect(GRADIENT_PRESETS.SKY.perColumn).toBe(true)
+  })
+
+  test('SKY preset has slowest animation speed', () => {
+    const allSpeeds = Object.values(GRADIENT_PRESETS).map(p => p.animationSpeed)
+    const minSpeed = Math.min(...allSpeeds)
+    expect(GRADIENT_PRESETS.SKY.animationSpeed).toBe(minSpeed)
+  })
+
   test('animation speeds are ordered correctly', () => {
+    expect(GRADIENT_PRESETS.SKY.animationSpeed).toBeLessThan(GRADIENT_PRESETS.BACKGROUND.animationSpeed)
     expect(GRADIENT_PRESETS.BACKGROUND.animationSpeed).toBeLessThan(GRADIENT_PRESETS.PLAYER.animationSpeed)
     expect(GRADIENT_PRESETS.PLAYER.animationSpeed).toBeLessThan(GRADIENT_PRESETS.BULLET.animationSpeed)
     expect(GRADIENT_PRESETS.BULLET.animationSpeed).toBeLessThan(GRADIENT_PRESETS.EXPLOSION.animationSpeed)

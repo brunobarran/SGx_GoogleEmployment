@@ -78,6 +78,9 @@ LifeArcade/
 │   ├── rendering/        # SimpleGradientRenderer, GoLBackground
 │   ├── utils/            # Helpers, collision, patterns
 │   ├── validation/       # Runtime validators
+│   ├── debug/            # Development debugging tools
+│   │   ├── HitboxDebug.js       # Hitbox visualization (press H)
+│   │   └── README_HitboxDebug.md # Hitbox debug documentation
 │   ├── installation/     # Installation system managers
 │   │   ├── AppState.js         # State machine (8 screens)
 │   │   ├── StorageManager.js   # localStorage leaderboards
@@ -94,7 +97,7 @@ LifeArcade/
 │       └── QRCodeScreen.js         # Screen 8: QR + URL
 ├── games/                # 4 games implemented (portrait 1200×1920)
 │   ├── space-invaders.js      # ✅ Complete
-│   ├── dino-runner.js         # ✅ Complete
+│   ├── dino-runner.js         # ✅ Complete (with hitbox debug)
 │   ├── breakout.js            # ✅ Complete
 │   ├── flappy-bird.js         # ✅ Complete
 │   └── game-wrapper.html      # Universal iframe wrapper
@@ -102,6 +105,8 @@ LifeArcade/
 │   ├── core/
 │   ├── utils/
 │   ├── validation/
+│   ├── debug/            # Debug tool tests
+│   │   └── test_HitboxDebug.js  # Hitbox debug tests (10/10 ✓)
 │   └── installation/
 ├── installation.html     # Main SPA entry point
 └── archive/              # Archived obsolete files
@@ -680,6 +685,32 @@ When working with this codebase:
 6. **30s timeouts** (auto-loop to attract screen)
 7. **3-letter initials** (A-Z, arcade-style input)
 
+### DEBUGGING TOOLS:
+
+**HitboxDebug System** (`src/debug/HitboxDebug.js`)
+- Press `H` to toggle hitbox visualization in any game
+- Independent from Debug UI system
+- Shows collision boxes: player (green), obstacles (red)
+- Reusable across all games
+- Zero performance impact when disabled
+
+**Usage:**
+```javascript
+import { initHitboxDebug, drawHitboxRect, drawHitboxes } from '../src/debug/HitboxDebug.js'
+
+function setup() {
+  initHitboxDebug()  // Initialize once in setup
+}
+
+function draw() {
+  // Draw hitboxes (only visible when H is pressed)
+  drawHitboxRect(player.x, player.y, player.width, player.height, 'player', '#00FF00')
+  drawHitboxes(obstacles, 'obstacle', '#FF0000')
+}
+```
+
+**See also:** `src/debug/README_HitboxDebug.md` for complete API documentation
+
 ---
 
 ## 13. Project Context
@@ -748,3 +779,53 @@ const examples = await mcp__archon__rag_search_code_examples({
 **When in doubt:** Choose the solution that looks more organic and alive (GoL emergence), is more authentic (B3/S23), and is simpler to implement (KISS).
 
 The Mac M4 is overpowered. Focus on creating something visually stunning.
+
+---
+
+## 14. Known Deviations from Authenticity
+
+This section documents approved exceptions to the "no static sprites" principle.
+
+### Dino Runner - PNG Sprite Player
+
+**Date:** 2025-11-18
+**Component:** Player entity in `public/games/dino-runner.js`
+**Deviation:** Uses static PNG sprite (`dino.png` 200×200px) instead of procedural GoL pattern
+
+**Rationale:**
+- Client requirement for brand recognition and visual identity
+- Dino character must be immediately recognizable to users
+- Trade-off: Visual identity and user experience over GoL authenticity
+
+**Status:** ✅ APPROVED BY CLIENT
+
+**Implementation Details:**
+- Player rendered as static image loaded from `/public/assets/dino.png`
+- Hitbox dimensions match sprite exactly (200×200px) for accurate collision
+- **Ground obstacles**: Static GoL patterns (still lifes and oscillators in phase 0)
+  - Patterns: BLOCK, BEEHIVE, LOAF, BOAT, TUB, BLINKER, TOAD, BEACON
+  - All rendered with `RenderMode.STATIC` (no animation)
+  - Full-size hitboxes matching pattern dimensions
+- **Flying obstacles (Pterodactyls)**: LWSS spaceship patterns
+  - Patterns: LWSS Phase 2/4, Phase 3/4, Phase 4/4 (all static)
+  - Rendered with `RenderMode.STATIC` at fixed height above horizon
+  - Reduced hitboxes: 60% of visual size, centered (KISS approach)
+- **Background parallax**: Pure GoL still life patterns (BLOCK, BEEHIVE, LOAF, BOAT, TUB)
+- **Clouds**: Multicolor gradients with 20% transparency
+- **Explosion particles**: Pure GoL with radial density seeding
+
+**Hitbox Debug System:**
+- Press `H` to toggle hitbox visualization
+- Reusable module: `src/debug/HitboxDebug.js`
+- Works independently from Debug UI
+- Shows player (green) and obstacle (red) collision boxes
+
+**Code Location:**
+- `public/games/dino-runner.js` - Main game implementation
+- `src/debug/HitboxDebug.js` - Hitbox debug system
+- `tests/debug/test_HitboxDebug.js` - Unit tests (10/10 passing)
+
+**Documentation:**
+- This deviation is isolated to player entity only
+- All obstacles remain 100% GoL patterns (static rendering)
+- Future games should prioritize GoL authenticity unless client explicitly requires otherwise

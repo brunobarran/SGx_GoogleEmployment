@@ -170,6 +170,21 @@ export const GRADIENT_PRESETS = {
     controlPoints: 16,
     animationSpeed: 3.0,
     perColumn: true
+  },
+
+  /**
+   * Sky/Clouds - Animated blue to white gradient for parallax clouds
+   */
+  SKY: {
+    name: 'Sky (Animated)',
+    palette: [
+      GOOGLE_COLORS.BLUE,
+      GOOGLE_COLORS.WHITE,
+      GOOGLE_COLORS.BLUE
+    ],
+    controlPoints: 12,
+    animationSpeed: 0.2,
+    perColumn: true
   }
 }
 

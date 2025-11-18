@@ -17,6 +17,8 @@ import { Patterns } from '../src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
+import { createPatternRenderer, RenderMode, PatternName } from '../src/utils/PatternRenderer.js'
+import { initHitboxDebug, drawHitboxRect, drawHitboxes } from '../src/debug/HitboxDebug.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -38,15 +40,124 @@ const CONFIG = {
   },
 
   gravity: 2.4,   // 0.8 × 3 = 2.4 (scaled for larger player)
-  groundY: 1800,  // Keep same (relative to canvas height)
+  groundY: BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
+  horizonY: BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
   jumpForce: -54, // -18 × 3 = -54 (scaled for larger player)
 
   obstacle: {
-    spawnInterval: 90,
-    minInterval: 30,
-    speed: -27,  // -9 × 3 = -27 (scaled)
+    spawnInterval: 120,      // Increased from 90 to 120 (more spacing)
+    minInterval: 45,         // Increased from 30 to 45
+    speed: -18,              // Reduced from -27 (slower obstacles)
     speedIncrease: 0.001
-  }
+  },
+
+  parallax: {
+    cloudDensity: 8,         // Number of clouds on screen
+    cloudOpacity: 0.20,      // 20% opacity for subtle effect
+    scrollSpeed: -1.5,       // Horizontal velocity (slower than obstacles)
+    spawnInterval: 120,      // Every 2 seconds (120 frames)
+    cellSize: 30,            // Cell size for cloud patterns
+    patterns: [              // Still life patterns for clouds
+      PatternName.BLOCK,
+      PatternName.BEEHIVE,
+      PatternName.LOAF,
+      PatternName.BOAT,
+      PatternName.TUB
+    ]
+  },
+
+  obstaclePatterns: [
+    // STILL LIFES (Period 1 - never change)
+    {
+      name: 'BLOCK',
+      type: 'still-life',
+      gridSize: { cols: 4, rows: 4 },      // 2×2 pattern + padding
+      pattern: PatternName.BLOCK,
+      gradient: GRADIENT_PRESETS.ENEMY_HOT
+    },
+    {
+      name: 'BEEHIVE',
+      type: 'still-life',
+      gridSize: { cols: 6, rows: 5 },      // 4×3 pattern + padding
+      pattern: PatternName.BEEHIVE,
+      gradient: GRADIENT_PRESETS.ENEMY_COLD
+    },
+    {
+      name: 'LOAF',
+      type: 'still-life',
+      gridSize: { cols: 6, rows: 6 },      // 4×4 pattern + padding
+      pattern: PatternName.LOAF,
+      gradient: GRADIENT_PRESETS.ENEMY_RAINBOW
+    },
+    {
+      name: 'BOAT',
+      type: 'still-life',
+      gridSize: { cols: 5, rows: 5 },      // 3×3 pattern + padding
+      pattern: PatternName.BOAT,
+      gradient: GRADIENT_PRESETS.ENEMY_HOT
+    },
+    {
+      name: 'TUB',
+      type: 'still-life',
+      gridSize: { cols: 5, rows: 5 },      // 3×3 pattern + padding
+      pattern: PatternName.TUB,
+      gradient: GRADIENT_PRESETS.ENEMY_COLD
+    },
+
+    // OSCILLATORS (Static - phase 0 only, no animation)
+    {
+      name: 'BLINKER',
+      type: 'still-life',  // Changed to still-life for static rendering
+      gridSize: { cols: 5, rows: 5 },      // 3×3 pattern + padding
+      pattern: PatternName.BLINKER,
+      gradient: GRADIENT_PRESETS.ENEMY_RAINBOW
+    },
+    {
+      name: 'TOAD',
+      type: 'still-life',  // Changed to still-life for static rendering
+      gridSize: { cols: 6, rows: 6 },      // 4×4 pattern + padding
+      pattern: PatternName.TOAD,
+      gradient: GRADIENT_PRESETS.ENEMY_HOT
+    },
+    {
+      name: 'BEACON',
+      type: 'still-life',  // Changed to still-life for static rendering
+      gridSize: { cols: 6, rows: 6 },      // 4×4 pattern + padding
+      pattern: PatternName.BEACON,
+      gradient: GRADIENT_PRESETS.ENEMY_COLD
+    }
+  ],
+
+  // Pterodactyl patterns (flying obstacles)
+  pterodactylPatterns: [
+    {
+      name: 'LWSS_PHASE_2',
+      type: 'flying',
+      gridSize: { cols: 7, rows: 6 },      // LWSS is 5×4 + padding
+      pattern: PatternName.LIGHTWEIGHT_SPACESHIP,
+      phase: 2,  // Phase 2/4
+      period: 4,
+      gradient: GRADIENT_PRESETS.ENEMY_RAINBOW
+    },
+    {
+      name: 'LWSS_PHASE_3',
+      type: 'flying',
+      gridSize: { cols: 7, rows: 6 },
+      pattern: PatternName.LIGHTWEIGHT_SPACESHIP,
+      phase: 3,  // Phase 3/4
+      period: 4,
+      gradient: GRADIENT_PRESETS.ENEMY_HOT
+    },
+    {
+      name: 'LWSS_PHASE_4',
+      type: 'flying',
+      gridSize: { cols: 7, rows: 6 },
+      pattern: PatternName.LIGHTWEIGHT_SPACESHIP,
+      phase: 0,  // Phase 4/4 = Phase 0
+      period: 4,
+      gradient: GRADIENT_PRESETS.ENEMY_COLD
+    }
+  ]
 }
 
 // Store scale factor for rendering (don't modify CONFIG values)
@@ -78,6 +189,7 @@ const state = {
   phase: 'PLAYING',
   frameCount: 0,
   spawnTimer: 0,
+  cloudSpawnTimer: 0,  // Timer for cloud spawning
   gameSpeed: 1,
   dyingTimer: 0
 }
@@ -88,9 +200,13 @@ const state = {
 let player = null
 let obstacles = []
 let particles = []
+let clouds = []  // Parallax background clouds
 
 // Gradient renderer
 let maskedRenderer = null
+
+// PNG sprite for player (Phase 3.4)
+let dinoSprite = null
 
 // ============================================
 // RESPONSIVE CANVAS HELPERS
@@ -104,6 +220,18 @@ function calculateResponsiveSize() {
 function updateConfigScale() {
   // Only update scaleFactor based on canvas size
   scaleFactor = canvasHeight / BASE_HEIGHT
+}
+
+// ============================================
+// p5.js PRELOAD (Phase 3.4)
+// ============================================
+function preload() {
+  // Load PNG sprite for player
+  console.log('[Dino Runner] Loading dino sprite from /img/dino.png')
+  dinoSprite = loadImage('/img/dino.png',
+    () => console.log('[Dino Runner] Sprite loaded successfully:', dinoSprite.width, 'x', dinoSprite.height),
+    (err) => console.error('[Dino Runner] Failed to load sprite:', err)
+  )
 }
 
 // ============================================
@@ -124,6 +252,9 @@ function setup() {
   // Create gradient renderer
   maskedRenderer = new SimpleGradientRenderer(this)
 
+  // Initialize hitbox debugging (press H to toggle)
+  initHitboxDebug()
+
   initGame()
 }
 
@@ -132,32 +263,180 @@ function initGame() {
   state.phase = 'PLAYING'
   state.frameCount = 0
   state.spawnTimer = 0
+  state.cloudSpawnTimer = 0
   state.gameSpeed = 1
 
   setupPlayer()
   obstacles = []
   particles = []
+  initParallax()
 }
 
 function setupPlayer() {
+  // CRITICAL DEVIATION FROM AUTHENTICITY (Phase 3.4)
+  // Client requirement: PNG sprite for player (dino.png 200×200px)
+  // Rationale: Brand recognition over GoL authenticity
+  // Date: 2025-11-18
+  // Status: APPROVED BY CLIENT
+  // Reference: CLAUDE.md Section 14
+
   player = {
-    x: 200,  // Keep same (relative positioning)
-    y: CONFIG.groundY - 240,  // 80 × 3 = 240 (scaled height)
-    width: 240,    // 8 cells × 30px (scaled 3x from 80px)
-    height: 240,   // 8 cells × 30px
+    x: 200,
+    y: CONFIG.groundY - 200,  // groundY - height (sprite sits on physics ground)
+
+    // DIMENSIONS: Must match PNG sprite exactly for accurate hitbox
+    width: 200,               // PNG sprite width
+    height: 200,              // PNG sprite height
+
+    // Physics
     vx: 0,
     vy: 0,
     onGround: true,
-    gol: new GoLEngine(8, 8, 12),  // 8×8 grid maintained
-    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
-    gradient: GRADIENT_PRESETS.PLAYER
+
+    // PNG sprite (replaces GoL rendering)
+    sprite: dinoSprite
+
+    // NO gol property - using static PNG instead
+    // NO cellSize - not needed for PNG
+    // NO gradient - not needed for PNG
+  }
+}
+
+// ============================================
+// PARALLAX BACKGROUND SYSTEM (Phase 3.4)
+// ============================================
+
+/**
+ * Initialize parallax cloud system.
+ * Pre-populates the screen with clouds for seamless effect.
+ */
+function initParallax() {
+  clouds = []
+
+  // Pre-populate screen with clouds
+  const spacing = BASE_WIDTH / CONFIG.parallax.cloudDensity
+
+  for (let i = 0; i < CONFIG.parallax.cloudDensity; i++) {
+    const cloud = spawnCloud()
+    // Distribute clouds across screen width
+    cloud.x = i * spacing + random(-spacing * 0.3, spacing * 0.3)
+    clouds.push(cloud)
+  }
+}
+
+/**
+ * Create a new cloud with random still life pattern.
+ * @returns {Object} Cloud entity
+ */
+function spawnCloud() {
+  // Select random pattern from still lifes
+  const patternName = random(CONFIG.parallax.patterns)
+
+  // Select random multicolor gradient for variety
+  const gradients = [
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW
+  ]
+  const randomGradient = random(gradients)
+
+  // Create renderer with static mode (still lifes don't evolve)
+  const renderer = createPatternRenderer({
+    mode: RenderMode.STATIC,
+    pattern: patternName,
+    phase: 0,  // Still lifes are always phase 0
+    globalCellSize: CONFIG.parallax.cellSize,
+    loopUpdateRate: 10  // Not used for static mode, but required
+  })
+
+  const dims = renderer.dimensions
+
+  const cloud = {
+    x: BASE_WIDTH,  // Start off-screen right
+    y: random(100, 800),  // Random vertical position
+    vx: CONFIG.parallax.scrollSpeed,
+    pattern: patternName,
+    gol: renderer.gol,
+    width: dims.width,
+    height: dims.height,
+    cellSize: CONFIG.parallax.cellSize,
+    gradient: randomGradient,  // Multicolor gradient
+    dead: false
   }
 
-  // Seed with radial density for organic shape
-  seedRadialDensity(player.gol, 0.85, 0.0)
+  return cloud
+}
 
-  // Add accent pattern
-  player.gol.setPattern(Patterns.BLINKER, 3, 3)
+/**
+ * Update all clouds in parallax background.
+ * Handles movement, cleanup, and spawning.
+ */
+function updateClouds() {
+  // Move clouds
+  clouds.forEach(cloud => {
+    cloud.x += cloud.vx
+
+    // Mark as dead if off-screen left
+    if (cloud.x < -cloud.width) {
+      cloud.dead = true
+    }
+  })
+
+  // Remove dead clouds
+  clouds = clouds.filter(c => !c.dead)
+
+  // Spawn new cloud if timer reached
+  state.cloudSpawnTimer++
+  if (state.cloudSpawnTimer >= CONFIG.parallax.spawnInterval) {
+    clouds.push(spawnCloud())
+    state.cloudSpawnTimer = 0
+  }
+}
+
+/**
+ * Render parallax clouds with opacity.
+ * Must be called BEFORE rendering other entities (background layer).
+ */
+function renderClouds() {
+  push()
+
+  // Create a graphics buffer for clouds with opacity
+  const cloudGraphics = createGraphics(BASE_WIDTH, BASE_HEIGHT)
+  cloudGraphics.clear()
+
+  clouds.forEach(cloud => {
+    // Render each cell with multicolor gradient and transparency
+    const grid = cloud.gol.current
+    const cols = cloud.gol.cols
+    const rows = cloud.gol.rows
+
+    cloudGraphics.noStroke()
+
+    for (let x = 0; x < cols; x++) {
+      for (let y = 0; y < rows; y++) {
+        if (grid[x][y] === 1) {
+          const px = cloud.x + x * cloud.cellSize
+          const py = cloud.y + y * cloud.cellSize
+
+          // Get gradient color from maskedRenderer (uses Perlin noise)
+          const [r, g, b] = maskedRenderer.getGradientColor(
+            px + cloud.cellSize / 2,
+            py + cloud.cellSize / 2
+          )
+
+          // Apply opacity to the gradient color
+          cloudGraphics.fill(r, g, b, CONFIG.parallax.cloudOpacity * 255)
+          cloudGraphics.rect(px, py, cloud.cellSize, cloud.cellSize)
+        }
+      }
+    }
+  })
+
+  // Draw the buffer to main canvas
+  image(cloudGraphics, 0, 0)
+  cloudGraphics.remove()  // Clean up
+
+  pop()
 }
 
 // ============================================
@@ -208,6 +487,9 @@ function draw() {
 }
 
 function updateGame() {
+  // Update parallax background (BEFORE other entities)
+  updateClouds()
+
   // Update player
   updatePlayer()
 
@@ -223,14 +505,17 @@ function updateGame() {
     state.spawnTimer = 0
   }
 
-  // Update obstacles (Visual Only GoL)
+  // Update obstacles (Phase 3.4: GoL patterns + static pterodactyls)
   obstacles.forEach(obs => {
     obs.x += obs.vx * state.gameSpeed
 
-    // Visual Only: maintain density without evolution
-    if (state.frameCount % 8 === 0) {
-      maintainDensity(obs, 0.65)
+    // Update GoL according to type
+    if (obs.type === 'oscillator') {
+      // Only oscillators animate (BLINKER, TOAD, BEACON)
+      obs.gol.updateThrottled(state.frameCount)
     }
+    // Still lifes and flying pterodactyls are static
+    // They are frozen by PatternRenderer with RenderMode.STATIC
 
     if (obs.x < -150) {  // Scaled: -50 × 3 = -150
       obs.dead = true
@@ -277,53 +562,69 @@ function updatePlayer() {
     player.onGround = false
   }
 
-  // Update GoL (Modified GoL with life force)
-  player.gol.updateThrottled(state.frameCount)
-  applyLifeForce(player)
+  // NO GoL update - player uses static PNG sprite (Phase 3.4)
 }
 
 function spawnObstacle() {
-  // Diverse obstacle types with different sizes and forms (all scaled 3x)
-  const types = [
-    // Small cactus
-    { name: 'small', width: 90, height: 120, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },  // 30×40 × 3
+  // Phase 3.4: Randomly choose between ground obstacles and flying pterodactyls
+  const spawnFlying = random() < 0.3  // 30% chance of pterodactyl
+  const patternConfig = spawnFlying
+    ? random(CONFIG.pterodactylPatterns)
+    : random(CONFIG.obstaclePatterns)
 
-    // Medium cactus
-    { name: 'medium', width: 180, height: 180, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.75 },  // 60×60 × 3
+  // Create renderer using PatternRenderer
+  const renderer = createPatternRenderer({
+    mode: (patternConfig.type === 'still-life' || patternConfig.type === 'flying') ? RenderMode.STATIC : RenderMode.LOOP,
+    pattern: patternConfig.pattern,
+    phase: patternConfig.phase !== undefined ? patternConfig.phase : undefined,
+    globalCellSize: 30,
+    loopUpdateRate: 10  // 10fps for oscillators only
+  })
 
-    // Tall thin cactus
-    { name: 'tall', width: 120, height: 240, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.7 },  // 40×80 × 3
+  const dims = renderer.dimensions
 
-    // Wide short cactus
-    { name: 'wide', width: 240, height: 120, gradient: GRADIENT_PRESETS.ENEMY_HOT, density: 0.8 },  // 80×40 × 3
+  // Position based on obstacle type
+  let obstacleY
+  if (spawnFlying) {
+    // Flying obstacles: random height above horizon line
+    obstacleY = CONFIG.horizonY - 300
+  } else {
+    // Ground obstacles: centered on horizon line
+    obstacleY = CONFIG.horizonY - dims.height * 0.5
+  }
 
-    // Double cactus
-    { name: 'double', width: 150, height: 210, gradient: GRADIENT_PRESETS.ENEMY_COLD, density: 0.65 },  // 50×70 × 3
+  // Reduce hitbox for flying pterodactyls (KISS: 60% of visual size)
+  let hitboxWidth = dims.width
+  let hitboxHeight = dims.height
+  let hitboxOffsetX = 0
+  let hitboxOffsetY = 0
 
-    // Tiny obstacle
-    { name: 'tiny', width: 60, height: 90, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW, density: 0.85 }  // 20×30 × 3
-  ]
-
-  const typeInfo = random(types)
+  if (spawnFlying) {
+    // LWSS has padding - reduce hitbox to 60% and center it
+    hitboxWidth = dims.width * 0.6
+    hitboxHeight = dims.height * 0.6
+    hitboxOffsetX = (dims.width - hitboxWidth) / 2
+    hitboxOffsetY = (dims.height - hitboxHeight) / 2
+  }
 
   const obstacle = {
     x: BASE_WIDTH,
-    y: CONFIG.groundY - typeInfo.height,
-    width: typeInfo.width,
-    height: typeInfo.height,
+    y: obstacleY,
+    width: dims.width,      // Visual width (full pattern)
+    height: dims.height,    // Visual height (full pattern)
+    hitboxWidth,            // Collision width (tighter for pterodactyls)
+    hitboxHeight,           // Collision height (tighter for pterodactyls)
+    hitboxOffsetX,          // Hitbox offset from x
+    hitboxOffsetY,          // Hitbox offset from y
     vx: CONFIG.obstacle.speed,
-    gol: new GoLEngine(
-      Math.floor(typeInfo.width / 30),   // cellSize 30 (scaled from 10)
-      Math.floor(typeInfo.height / 30),
-      15
-    ),
-    cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
-    gradient: typeInfo.gradient,
-    dead: false
+    gol: renderer.gol,
+    cellSize: 30,
+    gradient: patternConfig.gradient,
+    type: patternConfig.type,  // 'still-life', 'oscillator', or 'flying'
+    name: patternConfig.name,
+    dead: false,
+    isFlying: spawnFlying  // Track if this is a flying obstacle
   }
-
-  // Seed with variable radial density for diverse shapes
-  seedRadialDensity(obstacle.gol, typeInfo.density, 0.0)
 
   obstacles.push(obstacle)
 }
@@ -334,9 +635,15 @@ function updateParticlesOnly() {
 
 function checkCollisions() {
   obstacles.forEach(obs => {
+    // Use custom hitbox dimensions if available (for pterodactyls)
+    const obsHitboxX = obs.x + (obs.hitboxOffsetX || 0)
+    const obsHitboxY = obs.y + (obs.hitboxOffsetY || 0)
+    const obsHitboxWidth = obs.hitboxWidth || obs.width
+    const obsHitboxHeight = obs.hitboxHeight || obs.height
+
     if (Collision.rectRect(
       player.x, player.y, player.width, player.height,
-      obs.x, obs.y, obs.width, obs.height
+      obsHitboxX, obsHitboxY, obsHitboxWidth, obsHitboxHeight
     )) {
       // Game over
       if (state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
@@ -382,19 +689,23 @@ function renderGame() {
   push()
   scale(scaleFactor)
 
-  // Ground line
+  // Render parallax clouds (BEFORE all other entities - background layer)
+  renderClouds()
+
+  // Horizon line (aesthetic - drawn above physics ground)
   stroke(CONFIG.ui.textColor)
   strokeWeight(2)
-  line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
+  line(0, CONFIG.horizonY, BASE_WIDTH, CONFIG.horizonY)
 
-  // Render player with gradient (hide during DYING and GAMEOVER)
-  if (state.phase === 'PLAYING') {
-    maskedRenderer.renderMaskedGrid(
-      player.gol,
+  // Render player with PNG sprite (hide during DYING and GAMEOVER)
+  // Phase 3.4: Using static PNG instead of GoL
+  if (state.phase === 'PLAYING' && player.sprite) {
+    image(
+      player.sprite,
       player.x,
       player.y,
-      player.cellSize,
-      player.gradient
+      player.width,   // 200px - matches hitbox exactly
+      player.height   // 200px - matches hitbox exactly
     )
   }
 
@@ -410,7 +721,21 @@ function renderGame() {
   })
 
   // Render particles with gradients and alpha
-  renderParticles(particles, maskedRenderer)
+  // Note: ParticleHelpers uses globalCellSize parameter, but particles have individual cellSize
+  // We pass 30 as the standard cellSize for dino-runner particles
+  renderParticles(particles, maskedRenderer, 30)
+
+  // Debug: Draw hitboxes (press H to toggle)
+  drawHitboxRect(player.x, player.y, player.width, player.height, 'player', '#00FF00')
+
+  // Draw obstacle hitboxes (using custom hitbox dimensions for pterodactyls)
+  obstacles.forEach((obs, index) => {
+    const obsHitboxX = obs.x + (obs.hitboxOffsetX || 0)
+    const obsHitboxY = obs.y + (obs.hitboxOffsetY || 0)
+    const obsHitboxWidth = obs.hitboxWidth || obs.width
+    const obsHitboxHeight = obs.hitboxHeight || obs.height
+    drawHitboxRect(obsHitboxX, obsHitboxY, obsHitboxWidth, obsHitboxHeight, `obstacle ${index}`, '#FF0000')
+  })
 
   pop()
 }
@@ -452,6 +777,7 @@ function windowResized() {
 }
 
 // Export for p5.js
+window.preload = preload
 window.setup = setup
 window.draw = draw
 window.keyPressed = keyPressed
