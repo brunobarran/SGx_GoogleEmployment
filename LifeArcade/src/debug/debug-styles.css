@@ -353,16 +353,18 @@
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
 }
 
+/* ===== PRESET BUTTON STYLES (Phase 3.2) ===== */
+
+/* Button layout - 2x2 grid */
 .debug-preset-buttons {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 10px;
 }
 
 .debug-preset-buttons .debug-button {
-  flex: 1;
   padding: 8px 12px;
-  background: #1a73e8;
   color: white;
   border: none;
   border-radius: 4px;
@@ -372,10 +374,42 @@
   transition: background 0.2s;
 }
 
-.debug-preset-buttons .debug-button:hover {
-  background: #1557b0;
+/* Save button - primary action (Google Green) */
+.debug-button-save {
+  background: #34A853;  /* Google Green */
 }
 
-.debug-preset-buttons .debug-button:active {
-  background: #0d47a1;
+.debug-button-save:hover {
+  background: #2E9348;  /* Darker green */
+}
+
+.debug-button-save:active {
+  background: #268039;  /* Even darker */
+}
+
+/* Reset button - warning action (Google Yellow) */
+.debug-button-reset {
+  background: #FBBC04;  /* Google Yellow */
+  color: #333333;       /* Dark text for contrast */
+}
+
+.debug-button-reset:hover {
+  background: #E1A704;  /* Darker yellow */
+}
+
+.debug-button-reset:active {
+  background: #C79603;  /* Even darker */
+}
+
+/* Import/Export buttons - secondary (Google Blue) */
+.debug-button-secondary {
+  background: #4285F4;  /* Google Blue */
+}
+
+.debug-button-secondary:hover {
+  background: #3367D6;  /* Darker blue */
+}
+
+.debug-button-secondary:active {
+  background: #2C5AB6;  /* Even darker */
 }

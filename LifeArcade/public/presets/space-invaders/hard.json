@@ -6,25 +6,44 @@
   "description": "Expert challenge with fast enemies and smaller cells",
   "config": {
     "globalCellSize": 25,
+    "loopUpdateRate": 35,
     "invader": {
-      "rows": 5,
       "cols": 10,
+      "rows": 5,
       "spacing": 40,
       "moveInterval": 15,
-      "speed": 60,
-      "golUpdateRate": 20
+      "speed": 60
     },
     "player": {
       "speed": 12,
-      "shootCooldown": 25,
-      "golUpdateRate": 10
+      "shootCooldown": 25
     },
     "bullet": {
-      "speed": -6,
-      "golUpdateRate": 0
+      "speed": -6
     },
     "explosion": {
-      "golUpdateRate": 10
+    }
+  },
+  "appearances": {
+    "player": {
+      "mode": "modified-gol",
+      "pattern": null,
+      "period": null
+    },
+    "invaders": {
+      "mode": "oscillator",
+      "pattern": "blinker",
+      "period": 2
+    },
+    "bullets": {
+      "mode": "static",
+      "pattern": null,
+      "period": null
+    },
+    "explosions": {
+      "mode": "pure-gol",
+      "pattern": null,
+      "period": null
     }
   }
 }

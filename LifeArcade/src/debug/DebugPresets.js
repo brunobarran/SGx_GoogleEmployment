@@ -116,14 +116,18 @@ export function validatePresetFormat(preset) {
  *
  * IMPORTANT: This mutates the CONFIG object.
  * Caller must trigger entity recreation callbacks after loading.
+ * Returns appearances object for caller to apply separately.
  *
  * @param {Object} preset - Validated preset object
  * @param {Object} config - Game CONFIG object (will be mutated)
- * @returns {boolean} Success status
+ * @returns {{ success: boolean, appearances: Object|null }} Load result
  *
  * @example
- * const success = loadPreset(preset, CONFIG)
- * if (success) {
+ * const result = loadPreset(preset, CONFIG)
+ * if (result.success) {
+ *   if (result.appearances) {
+ *     applyAppearanceOverrides(result.appearances)  // Caller handles
+ *   }
  *   callbacks.onInvadersChange()
  *   callbacks.onPlayerChange()
  * }
@@ -146,10 +150,15 @@ export function loadPreset(preset, config) {
     }
 
     console.log(`[DebugPresets] Loaded preset: ${preset.name}`)
-    return true
+
+    // Return appearances for caller to apply
+    return {
+      success: true,
+      appearances: preset.appearances || null
+    }
   } catch (error) {
     console.error('[DebugPresets] Failed to load preset:', error)
-    return false
+    return { success: false, appearances: null }
   }
 }
 
@@ -159,26 +168,38 @@ export function loadPreset(preset, config) {
  * @param {string} presetName - Name for the preset
  * @param {Object} config - Current game CONFIG
  * @param {string} gameName - Game identifier
+ * @param {Object} appearances - Appearance settings (optional)
  * @returns {Object} Preset object ready for export
  *
  * @example
- * const preset = saveCurrentPreset('my-custom', CONFIG, 'space-invaders')
+ * const appearances = {
+ *   player: { mode: 'modified-gol', pattern: null, period: null }
+ * }
+ * const preset = saveCurrentPreset('custom', CONFIG, 'space-invaders', appearances)
  * exportPresetToJSON(preset)
  */
-export function saveCurrentPreset(presetName, config, gameName) {
-  return {
+export function saveCurrentPreset(presetName, config, gameName, appearances = null) {
+  const preset = {
     name: presetName,
     version: 3,
     game: gameName,
     timestamp: new Date().toISOString(),
     config: {
       globalCellSize: config.globalCellSize,
+      loopUpdateRate: config.loopUpdateRate,  // Unified GoL update rate
       invader: { ...config.invader },
       player: { ...config.player },
       bullet: { ...config.bullet },
       explosion: { ...config.explosion }
     }
   }
+
+  // Add appearances if provided
+  if (appearances && Object.keys(appearances).length > 0) {
+    preset.appearances = { ...appearances }
+  }
+
+  return preset
 }
 
 // ============================================
@@ -234,20 +255,34 @@ export function isBuiltInPreset(presetName) {
  * Export preset as JSON file (download).
  *
  * @param {Object} preset - Preset object to export
+ * @param {boolean} usePresetName - Use simple preset name (for Save button)
  *
  * @example
- * const preset = saveCurrentPreset('custom', CONFIG, 'space-invaders')
- * exportPresetToJSON(preset)
+ * // Custom preset with timestamp
+ * exportPresetToJSON(preset, false)
  * // Downloads: space-invaders-custom-20251118-143522.json
+ *
+ * // Built-in preset for replacement
+ * exportPresetToJSON(preset, true)
+ * // Downloads: default.json
  */
-export function exportPresetToJSON(preset) {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, '')
-    .replace('T', '-')
-    .substring(0, 15) // YYYYMMDD-HHMMSS
+export function exportPresetToJSON(preset, usePresetName = false) {
+  let filename
 
-  const filename = `${preset.game}-${preset.name}-${timestamp}.json`
+  if (usePresetName && isBuiltInPreset(preset.name)) {
+    // For built-in presets: simple name for easy file replacement
+    filename = `${preset.name}.json`
+  } else {
+    // For custom presets: timestamped name
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '')
+      .replace('T', '-')
+      .substring(0, 15) // YYYYMMDD-HHMMSS
+
+    filename = `${preset.game}-${preset.name}-${timestamp}.json`
+  }
+
   const json = JSON.stringify(preset, null, 2)
 
   // Create download

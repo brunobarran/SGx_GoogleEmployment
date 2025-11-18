@@ -6,25 +6,44 @@
   "description": "Maximum difficulty with overwhelming enemy count",
   "config": {
     "globalCellSize": 20,
+    "loopUpdateRate": 40,
     "invader": {
-      "rows": 6,
       "cols": 12,
+      "rows": 6,
       "spacing": 30,
       "moveInterval": 10,
-      "speed": 75,
-      "golUpdateRate": 25
+      "speed": 75
     },
     "player": {
       "speed": 10,
-      "shootCooldown": 30,
-      "golUpdateRate": 8
+      "shootCooldown": 30
     },
     "bullet": {
-      "speed": -5,
-      "golUpdateRate": 0
+      "speed": -5
     },
     "explosion": {
-      "golUpdateRate": 12
+    }
+  },
+  "appearances": {
+    "player": {
+      "mode": "modified-gol",
+      "pattern": null,
+      "period": null
+    },
+    "invaders": {
+      "mode": "oscillator",
+      "pattern": "pulsar",
+      "period": 3
+    },
+    "bullets": {
+      "mode": "static",
+      "pattern": null,
+      "period": null
+    },
+    "explosions": {
+      "mode": "pure-gol",
+      "pattern": null,
+      "period": null
     }
   }
 }

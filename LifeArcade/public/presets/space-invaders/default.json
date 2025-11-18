@@ -2,29 +2,38 @@
   "name": "default",
   "version": 3,
   "game": "space-invaders",
-  "timestamp": "2025-11-18T10:00:00.000Z",
-  "description": "Balanced gameplay with original settings",
+  "timestamp": "2025-11-18T15:58:14.961Z",
   "config": {
     "globalCellSize": 30,
+    "loopUpdateRate": 10,
     "invader": {
-      "rows": 4,
-      "cols": 4,
+      "cols": 2,
+      "rows": 2,
       "spacing": 60,
+      "startX": 180,
+      "startY": 200,
       "moveInterval": 30,
-      "speed": 45,
-      "golUpdateRate": 15
+      "speed": 45
     },
     "player": {
       "speed": 18,
-      "shootCooldown": 15,
-      "golUpdateRate": 12
+      "shootCooldown": 15
     },
     "bullet": {
-      "speed": -8,
-      "golUpdateRate": 0
+      "speed": -8
     },
-    "explosion": {
-      "golUpdateRate": 8
+    "explosion": {}
+  },
+  "appearances": {
+    "player": {
+      "mode": "oscillator",
+      "pattern": "lightweight_spaceship",
+      "period": 4
+    },
+    "invaders": {
+      "mode": "oscillator",
+      "pattern": "blinker",
+      "period": 2
     }
   }
 }

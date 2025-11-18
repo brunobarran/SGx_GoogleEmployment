@@ -349,9 +349,8 @@ async function createPresetGroup(gameName, config, callbacks) {
       <span class="debug-label-text">Load Preset</span>
     </label>
     <select id="preset-selector" class="debug-select">
-      <option value="">-- Select Preset --</option>
       ${Object.keys(presets).map(name =>
-        `<option value="${name}">${name.charAt(0).toUpperCase() + name.slice(1)}</option>`
+        `<option value="${name}" ${name === 'default' ? 'selected' : ''}>${name.charAt(0).toUpperCase() + name.slice(1)}</option>`
       ).join('')}
     </select>
   `
@@ -363,22 +362,30 @@ async function createPresetGroup(gameName, config, callbacks) {
     handlePresetChange(e.target.value, presets, config, callbacks, gameName)
   })
 
-  // Create button container
+  // Load default preset on initialization (after DOM is ready)
+  if (presets['default']) {
+    // Use setTimeout to ensure all dropdowns are rendered first
+    setTimeout(() => {
+      handlePresetChange('default', presets, config, callbacks, gameName)
+    }, 100)
+  }
+
+  // Create button container (only Save and Reset)
   const buttonContainer = document.createElement('div')
   buttonContainer.className = 'debug-preset-buttons'
   buttonContainer.innerHTML = `
-    <button id="import-preset-btn" class="debug-button">Import JSON</button>
-    <button id="export-preset-btn" class="debug-button">Export JSON</button>
+    <button id="save-preset-btn" class="debug-button debug-button-save">Save</button>
+    <button id="reset-preset-btn" class="debug-button debug-button-reset">Reset</button>
   `
   group.appendChild(buttonContainer)
 
   // Add button event listeners
-  buttonContainer.querySelector('#import-preset-btn').addEventListener('click', () => {
-    handleImportPreset(config, callbacks, gameName, selector)
+  buttonContainer.querySelector('#save-preset-btn').addEventListener('click', () => {
+    handleSavePreset(config, callbacks, gameName, selector)
   })
 
-  buttonContainer.querySelector('#export-preset-btn').addEventListener('click', () => {
-    handleExportPreset(config, gameName)
+  buttonContainer.querySelector('#reset-preset-btn').addEventListener('click', () => {
+    handleResetPreset(config, callbacks, gameName, selector)
   })
 
   return group
@@ -694,10 +701,15 @@ function handlePresetChange(presetName, presets, config, callbacks, gameName) {
   }
 
   // Load preset
-  const success = loadPreset(preset, config)
-  if (!success) {
+  const result = loadPreset(preset, config)
+  if (!result.success) {
     alert('Failed to load preset')
     return
+  }
+
+  // Apply appearances if present
+  if (result.appearances) {
+    applyAppearanceOverrides(result.appearances)
   }
 
   // Sync UI with new values
@@ -737,10 +749,15 @@ async function handleImportPreset(config, callbacks, gameName, selector) {
     }
 
     // Load preset
-    const success = loadPreset(preset, config)
-    if (!success) {
+    const result = loadPreset(preset, config)
+    if (!result.success) {
       alert('Failed to load preset')
       return
+    }
+
+    // Apply appearances if present
+    if (result.appearances) {
+      applyAppearanceOverrides(result.appearances)
     }
 
     // Sync UI
@@ -783,6 +800,289 @@ function handleExportPreset(config, gameName) {
   exportPresetToJSON(preset)
 
   console.log(`[DebugInterface] Exported preset: ${presetName}`)
+}
+
+/**
+ * Capture current appearance settings from UI dropdowns.
+ *
+ * @returns {Object} Appearances object compatible with preset format
+ *
+ * @example
+ * const appearances = captureCurrentAppearances()
+ * // {
+ * //   player: { mode: 'modified-gol', pattern: null, period: null },
+ * //   invaders: { mode: 'oscillator', pattern: 'blinker', period: 2 }
+ * // }
+ */
+function captureCurrentAppearances() {
+  const appearances = {}
+
+  // Get dropdown values for each entity
+  const entities = ['player', 'invaders', 'bullets', 'explosions']
+
+  for (const entity of entities) {
+    const dropdown = document.getElementById(`appearance-${entity}`)
+    if (!dropdown) continue
+
+    const value = dropdown.value
+
+    // Parse dropdown value using DebugAppearance's parser
+    // Examples: "modified-gol", "loop-BLINKER", "static-BLOCK-0"
+    const parsed = parseAppearanceValue(value)
+
+    // Convert appearance system format to preset format
+    // Appearance system: mode="loop-pattern", pattern="BLINKER", period=null
+    // Preset format: mode="oscillator", pattern="blinker", period=2
+    let presetMode = parsed.mode
+    let presetPattern = parsed.pattern
+    let presetPeriod = parsed.period
+
+    if (parsed.mode === 'loop-pattern') {
+      // Convert loop-pattern to oscillator
+      presetMode = 'oscillator'
+      presetPattern = parsed.pattern ? parsed.pattern.toLowerCase() : null
+      // Get full period (not phase number)
+      presetPeriod = getPatternPeriod(presetPattern)
+    } else if (parsed.mode === 'static-pattern') {
+      // Convert static-pattern to static
+      presetMode = 'static'
+      presetPattern = parsed.pattern ? parsed.pattern.toLowerCase() : null
+      // Keep period as-is (it's the phase number)
+      presetPeriod = parsed.period
+    } else if (parsed.mode === 'modified-gol') {
+      // Keep as-is
+      presetMode = 'modified-gol'
+      presetPattern = null
+      presetPeriod = null
+    }
+
+    appearances[entity] = {
+      mode: presetMode,
+      pattern: presetPattern,
+      period: presetPeriod
+    }
+  }
+
+  return appearances
+}
+
+/**
+ * Get period for known oscillator and spaceship patterns.
+ *
+ * @param {string} pattern - Pattern name (lowercase)
+ * @returns {number|null} Pattern period or null
+ */
+function getPatternPeriod(pattern) {
+  const periods = {
+    // Oscillators
+    'blinker': 2,
+    'toad': 2,
+    'beacon': 2,
+    'pulsar': 3,
+    // Spaceships
+    'glider': 4,
+    'lightweight_spaceship': 4
+  }
+  return periods[pattern] || null
+}
+
+/**
+ * Handle Save button click - overwrites current preset JSON.
+ *
+ * Workflow:
+ * 1. Validate preset selection
+ * 2. Confirm overwrite with user
+ * 3. Capture current CONFIG + appearances
+ * 4. Export JSON with preset name (no timestamp)
+ * 5. Instruct user to manually replace file
+ *
+ * IMPORTANT: File writing requires manual step (Vite cannot write files).
+ *
+ * @param {Object} config - Game CONFIG object
+ * @param {Object} callbacks - Optional callbacks
+ * @param {string} gameName - Game identifier
+ * @param {HTMLSelectElement} selector - Preset dropdown element
+ */
+function handleSavePreset(config, callbacks, gameName, selector) {
+  const presetName = selector.value
+
+  // Validate selection
+  if (!presetName) {
+    alert('Please select a preset to save')
+    return
+  }
+
+  // Confirm overwrite for built-in presets
+  const builtInPresets = ['default', 'easy', 'hard', 'chaos']
+  if (builtInPresets.includes(presetName)) {
+    const confirmSave = confirm(
+      `Overwrite built-in preset "${presetName}"?\n\n` +
+      `This will export a JSON file that you must manually replace:\n` +
+      `public/presets/${gameName}/${presetName}.json\n\n` +
+      `Click OK to continue.`
+    )
+    if (!confirmSave) return
+  }
+
+  try {
+    // Capture current state
+    const appearances = captureCurrentAppearances()
+    const preset = saveCurrentPreset(presetName, config, gameName, appearances)
+
+    // Validate before export
+    const validation = validatePresetFormat(preset)
+    if (!validation.valid) {
+      alert(`Cannot save: ${validation.reason}`)
+      return
+    }
+
+    // Export with preset name (usePresetName = true)
+    exportPresetToJSON(preset, true)
+
+    console.log(`[DebugInterface] Exported ${presetName}.json for manual replacement`)
+
+    // Instructions for user
+    alert(
+      `Preset exported as "${presetName}.json"\n\n` +
+      `To complete save:\n` +
+      `1. Locate the downloaded file in your Downloads folder\n` +
+      `2. Move/copy to: public/presets/${gameName}/${presetName}.json\n` +
+      `3. Replace the existing file\n` +
+      `4. Vite will auto-reload the page\n\n` +
+      `Your changes are now saved!`
+    )
+
+  } catch (error) {
+    console.error('[DebugInterface] Save failed:', error)
+    alert(`Failed to save preset: ${error.message}`)
+  }
+}
+
+/**
+ * Handle Reset button click - reload preset from JSON file.
+ *
+ * Workflow:
+ * 1. Validate preset selection
+ * 2. Confirm reset with user
+ * 3. Fetch fresh preset from public/presets/{game}/{preset}.json
+ * 4. Validate preset format
+ * 5. Load into CONFIG
+ * 6. Apply appearances (if present)
+ * 7. Sync UI controls
+ * 8. Trigger entity recreation
+ *
+ * @param {Object} config - Game CONFIG object
+ * @param {Object} callbacks - Optional callbacks
+ * @param {string} gameName - Game identifier
+ * @param {HTMLSelectElement} selector - Preset dropdown element
+ */
+async function handleResetPreset(config, callbacks, gameName, selector) {
+  const presetName = selector.value
+
+  // Validate selection
+  if (!presetName) {
+    alert('Please select a preset to reset')
+    return
+  }
+
+  // Confirm reset
+  const confirmReset = confirm(
+    `Reset to original "${presetName}" preset?\n\n` +
+    `This will discard all unsaved changes.`
+  )
+  if (!confirmReset) return
+
+  try {
+    // Fetch fresh preset from JSON file
+    const response = await fetch(`/presets/${gameName}/${presetName}.json`)
+    if (!response.ok) {
+      throw new Error(`Failed to load preset: ${response.statusText}`)
+    }
+
+    const preset = await response.json()
+
+    // Validate preset format
+    const validation = validatePresetFormat(preset)
+    if (!validation.valid) {
+      throw new Error(`Invalid preset format: ${validation.reason}`)
+    }
+
+    // Load config into CONFIG
+    const result = loadPreset(preset, config)
+    if (!result.success) {
+      throw new Error('Failed to load preset configuration')
+    }
+
+    // Apply appearances if present
+    if (result.appearances) {
+      applyAppearanceOverrides(result.appearances)
+    }
+
+    // Sync UI controls with new CONFIG values
+    syncUIWithConfig(config)
+
+    // Trigger entity recreation callbacks
+    if (callbacks.onInvadersChange) callbacks.onInvadersChange()
+    if (callbacks.onPlayerChange) callbacks.onPlayerChange()
+    if (callbacks.onBulletSpeedChange) callbacks.onBulletSpeedChange()
+
+    console.log(`[DebugInterface] Reset to preset: ${presetName}`)
+    alert(`Preset "${presetName}" reset successfully`)
+
+  } catch (error) {
+    console.error('[DebugInterface] Reset failed:', error)
+    alert(`Failed to reset preset: ${error.message}`)
+  }
+}
+
+/**
+ * Apply appearance overrides to all entities from preset.
+ *
+ * Converts preset format to dropdown value format:
+ * - Preset: mode="oscillator", pattern="blinker", period=2
+ * - Dropdown: value="loop-BLINKER"
+ * - Preset: mode="static", pattern="block", period=0
+ * - Dropdown: value="static-BLOCK-0"
+ *
+ * @param {Object} appearances - Appearances object from preset
+ */
+function applyAppearanceOverrides(appearances) {
+  console.log('[DebugInterface] Applying appearance overrides:', appearances)
+
+  for (const [entity, appearance] of Object.entries(appearances)) {
+    const dropdown = document.getElementById(`appearance-${entity}`)
+    if (!dropdown) {
+      console.log(`[DebugInterface] Dropdown not found for entity: ${entity}`)
+      continue
+    }
+
+    // Convert preset format to dropdown value format
+    let value = 'modified-gol' // Default fallback
+
+    if (appearance.mode === 'oscillator' && appearance.pattern) {
+      // Preset: mode="oscillator", pattern="blinker"
+      // Dropdown: value="loop-BLINKER"
+      const patternUpper = appearance.pattern.toUpperCase()
+      value = `loop-${patternUpper}`
+    } else if (appearance.mode === 'static' && appearance.pattern) {
+      // Preset: mode="static", pattern="block", period=0
+      // Dropdown: value="static-BLOCK-0"
+      const patternUpper = appearance.pattern.toUpperCase()
+      const period = appearance.period !== null ? appearance.period : 0
+      value = `static-${patternUpper}-${period}`
+    } else if (appearance.mode === 'modified-gol') {
+      value = 'modified-gol'
+    } else if (appearance.mode === 'pure-gol') {
+      // pure-gol not in dropdown, fallback to modified-gol
+      value = 'modified-gol'
+    }
+
+    console.log(`[DebugInterface] Setting ${entity} appearance to: ${value}`)
+
+    // Set dropdown value and trigger change
+    dropdown.value = value
+    dropdown.dispatchEvent(new Event('change'))
+  }
 }
 
 /**
