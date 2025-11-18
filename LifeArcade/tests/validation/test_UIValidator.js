@@ -13,7 +13,7 @@ import { dirname, join } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const gamesDir = join(__dirname, '..', '..', 'games')
+const gamesDir = join(__dirname, '..', '..', 'public', 'games')
 
 describe('UIValidator - Static Analysis', () => {
   describe('Score display check', () => {

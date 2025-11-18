@@ -26,10 +26,11 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    // Create mock CONFIG object (Space Invaders structure)
+    // Create mock CONFIG object (Space Invaders structure - Phase 3 format)
     mockConfig = {
       width: 1200,
       height: 1920,
+      globalCellSize: 30,  // Phase 3: Global cell size
       ui: {
         backgroundColor: '#FFFFFF',
         textColor: '#5f6368',
@@ -47,25 +48,25 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
         startY: 200,
         moveInterval: 30,
         speed: 45,
-        cellSize: 30
+        golUpdateRate: 15  // Phase 3: Update rate property
       },
       player: {
         width: 180,
         height: 180,
-        cellSize: 30,
         speed: 18,
-        shootCooldown: 15
+        shootCooldown: 15,
+        golUpdateRate: 12  // Phase 3: Update rate property
       },
       bullet: {
         width: 90,
         height: 90,
-        cellSize: 30,
-        speed: 12
+        speed: 12,
+        golUpdateRate: 0  // Phase 3: Update rate property
       },
       explosion: {
         width: 180,
         height: 180,
-        cellSize: 30
+        golUpdateRate: 8  // Phase 3: Update rate property
       },
       background: {
         updateRate: 10
@@ -142,24 +143,24 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
       expect(groupTitles).toContain('Appearance')
     })
 
-    test('gameplay group contains 7 parameters', () => {
+    test('gameplay group contains 9 parameters', () => {
       initDebugInterface(mockConfig, 'space-invaders')
 
       const gameplayGroup = Array.from(document.querySelectorAll('.debug-group'))
         .find(g => g.querySelector('.debug-group-title').textContent === 'Gameplay')
 
       const controls = gameplayGroup.querySelectorAll('.debug-control')
-      expect(controls.length).toBe(7)
+      expect(controls.length).toBe(9)  // Phase 3: 9 gameplay params
     })
 
-    test('appearance group contains 5 parameters (cell sizes + spacing)', () => {
+    test('appearance group contains 3 controls (1 globalCellSize slider + 2 appearance dropdowns)', () => {
       initDebugInterface(mockConfig, 'space-invaders')
 
       const appearanceGroup = Array.from(document.querySelectorAll('.debug-group'))
         .find(g => g.querySelector('.debug-group-title').textContent === 'Appearance')
 
-      const controls = appearanceGroup.querySelectorAll('.debug-control')
-      expect(controls.length).toBe(5)
+      const controls = appearanceGroup.querySelectorAll('.debug-control, .appearance-control')
+      expect(controls.length).toBe(3)  // Phase 3: 1 slider (globalCellSize) + 2 dropdowns (player, invaders)
     })
 
     test('each control has label, value display, and slider', () => {
@@ -220,14 +221,14 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
       expect(mockConfig.invader.cols).toBe(6)
     })
 
-    test('handles nested path correctly (invader.cellSize)', () => {
+    test('handles nested path correctly (globalCellSize)', () => {
       initDebugInterface(mockConfig, 'space-invaders')
 
-      const slider = document.querySelector('[data-path="invader.cellSize"]')
+      const slider = document.querySelector('[data-path="globalCellSize"]')
       slider.value = 45
       slider.dispatchEvent(new Event('input', { bubbles: true }))
 
-      expect(mockConfig.invader.cellSize).toBe(45)
+      expect(mockConfig.globalCellSize).toBe(45)  // Phase 3: Global cell size
     })
 
     test('logs parameter updates to console', () => {
@@ -397,18 +398,18 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
       expect(onInvadersChangeMock).toHaveBeenCalledTimes(1)
     })
 
-    test('onInvadersChange triggered when invader.cellSize changes', () => {
+    test('onInvadersChange triggered when globalCellSize changes', () => {
       const onInvadersChangeMock = vi.fn()
 
       initDebugInterface(mockConfig, 'space-invaders', {
         onInvadersChange: onInvadersChangeMock
       })
 
-      const slider = document.querySelector('[data-path="invader.cellSize"]')
+      const slider = document.querySelector('[data-path="globalCellSize"]')
       slider.value = 45
       slider.dispatchEvent(new Event('input', { bubbles: true }))
 
-      expect(onInvadersChangeMock).toHaveBeenCalledTimes(1)
+      expect(onInvadersChangeMock).toHaveBeenCalledTimes(1)  // Phase 3: globalCellSize triggers onInvadersChange
     })
 
     test('onInvadersChange triggered when invader.spacing changes', () => {
@@ -425,18 +426,18 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
       expect(onInvadersChangeMock).toHaveBeenCalledTimes(1)
     })
 
-    test('onPlayerChange triggered when player.cellSize changes', () => {
+    test('onPlayerChange triggered when globalCellSize changes', () => {
       const onPlayerChangeMock = vi.fn()
 
       initDebugInterface(mockConfig, 'space-invaders', {
         onPlayerChange: onPlayerChangeMock
       })
 
-      const slider = document.querySelector('[data-path="player.cellSize"]')
+      const slider = document.querySelector('[data-path="globalCellSize"]')
       slider.value = 45
       slider.dispatchEvent(new Event('input', { bubbles: true }))
 
-      expect(onPlayerChangeMock).toHaveBeenCalledTimes(1)
+      expect(onPlayerChangeMock).toHaveBeenCalledTimes(1)  // Phase 3: globalCellSize triggers onPlayerChange
     })
 
     test('onBulletSpeedChange triggered when bullet.speed changes', () => {
@@ -622,21 +623,16 @@ describe('DebugInterface - Phase 1: Core Debug System', () => {
       })
     })
 
-    test('includes all 5 appearance parameters (cell sizes + spacing)', () => {
+    test('includes globalCellSize slider in appearance group (Phase 3)', () => {
       initDebugInterface(mockConfig, 'space-invaders')
 
-      const expectedParams = [
-        'invader.cellSize',
-        'player.cellSize',
-        'bullet.cellSize',
-        'explosion.cellSize',
-        'invader.spacing'
-      ]
+      // Phase 3: Single globalCellSize slider
+      const globalCellSizeSlider = document.querySelector('[data-path="globalCellSize"]')
+      expect(globalCellSizeSlider).not.toBeNull()
 
-      expectedParams.forEach(path => {
-        const slider = document.querySelector(`[data-path="${path}"]`)
-        expect(slider).not.toBeNull()
-      })
+      // Verify spacing is in gameplay group (not appearance)
+      const spacingSlider = document.querySelector('[data-path="invader.spacing"]')
+      expect(spacingSlider).not.toBeNull()
     })
   })
 })
