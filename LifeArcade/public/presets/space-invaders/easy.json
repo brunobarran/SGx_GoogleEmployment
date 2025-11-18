@@ -1,0 +1,30 @@
+{
+  "name": "easy",
+  "version": 3,
+  "game": "space-invaders",
+  "timestamp": "2025-11-18T10:00:00.000Z",
+  "description": "Beginner-friendly with slower enemies and larger cells",
+  "config": {
+    "globalCellSize": 35,
+    "invader": {
+      "rows": 2,
+      "cols": 6,
+      "spacing": 80,
+      "moveInterval": 45,
+      "speed": 30,
+      "golUpdateRate": 10
+    },
+    "player": {
+      "speed": 25,
+      "shootCooldown": 10,
+      "golUpdateRate": 15
+    },
+    "bullet": {
+      "speed": -12,
+      "golUpdateRate": 0
+    },
+    "explosion": {
+      "golUpdateRate": 6
+    }
+  }
+}

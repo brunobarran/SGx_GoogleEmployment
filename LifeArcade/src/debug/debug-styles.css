@@ -328,13 +328,54 @@
   /* To be added in Phase 2 */
 }
 
-/* Preset management (PHASE 3) */
-.debug-preset-controls {
-  /* Styles for preset save/load/delete buttons */
-  /* To be added in Phase 3 */
+/* ===== PRESET CONTROLS (PHASE 3.1) ===== */
+
+.debug-select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-family: 'Google Sans', Arial, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
 }
 
-.debug-preset-list {
-  /* Styles for preset list display */
-  /* To be added in Phase 3 */
+.debug-select:hover {
+  border-color: #1a73e8;
+}
+
+.debug-select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.debug-preset-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.debug-preset-buttons .debug-button {
+  flex: 1;
+  padding: 8px 12px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Google Sans', Arial, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.debug-preset-buttons .debug-button:hover {
+  background: #1557b0;
+}
+
+.debug-preset-buttons .debug-button:active {
+  background: #0d47a1;
 }

@@ -13,8 +13,9 @@ describe('DebugPresets - Format Validation', () => {
   describe('validatePresetFormat', () => {
     test('accepts valid Phase 3 preset', () => {
       const preset = {
-        name: 'Test Preset',
+        name: 'test-preset',
         version: 3,
+        game: 'space-invaders',
         config: {
           globalCellSize: 30,
           invader: { golUpdateRate: 15 },
@@ -29,8 +30,9 @@ describe('DebugPresets - Format Validation', () => {
 
     test('rejects Phase 2 preset with invader.cellSize', () => {
       const preset = {
-        name: 'Old Preset',
+        name: 'old-preset',
         version: 2,
+        game: 'space-invaders',
         config: {
           invader: { cellSize: 30, golUpdateRate: 15 }
         }
@@ -38,12 +40,16 @@ describe('DebugPresets - Format Validation', () => {
 
       const result = validatePresetFormat(preset)
       expect(result.valid).toBe(false)
-      expect(result.reason).toContain('Phase 2 format')
+      expect(result.reason).toContain('version 3')
     })
 
     test('rejects Phase 2 preset with player.cellSize', () => {
       const preset = {
+        name: 'old-preset-2',
+        version: 3,
+        game: 'space-invaders',
         config: {
+          globalCellSize: 30,
           player: { cellSize: 30, speed: 18 }
         }
       }
@@ -55,7 +61,11 @@ describe('DebugPresets - Format Validation', () => {
 
     test('rejects Phase 2 preset with bullet.cellSize', () => {
       const preset = {
+        name: 'old-preset-3',
+        version: 3,
+        game: 'space-invaders',
         config: {
+          globalCellSize: 30,
           bullet: { cellSize: 30, speed: -8 }
         }
       }
@@ -67,7 +77,9 @@ describe('DebugPresets - Format Validation', () => {
 
     test('rejects preset missing globalCellSize', () => {
       const preset = {
-        name: 'Invalid Preset',
+        name: 'invalid-preset',
+        version: 3,
+        game: 'space-invaders',
         config: {
           invader: { golUpdateRate: 15 }
           // Missing globalCellSize
@@ -76,11 +88,14 @@ describe('DebugPresets - Format Validation', () => {
 
       const result = validatePresetFormat(preset)
       expect(result.valid).toBe(false)
-      expect(result.reason).toContain('missing globalCellSize')
+      expect(result.reason).toContain('globalCellSize')
     })
 
     test('accepts preset with globalCellSize and no per-entity cellSize', () => {
       const preset = {
+        name: 'valid-preset',
+        version: 3,
+        game: 'space-invaders',
         config: {
           globalCellSize: 45,
           invader: { golUpdateRate: 10 },
@@ -95,6 +110,9 @@ describe('DebugPresets - Format Validation', () => {
 
     test('rejects mixed format (has both globalCellSize and per-entity)', () => {
       const preset = {
+        name: 'mixed-preset',
+        version: 3,
+        game: 'space-invaders',
         config: {
           globalCellSize: 30,
           invader: { cellSize: 25, golUpdateRate: 15 }  // Conflict!
@@ -108,8 +126,9 @@ describe('DebugPresets - Format Validation', () => {
 
     test('accepts preset with all entity types configured', () => {
       const preset = {
-        name: 'Full Config',
+        name: 'full-config',
         version: 3,
+        game: 'space-invaders',
         config: {
           globalCellSize: 35,
           invader: { golUpdateRate: 12 },
@@ -124,6 +143,9 @@ describe('DebugPresets - Format Validation', () => {
 
     test('rejects preset with explosion.cellSize (old format)', () => {
       const preset = {
+        name: 'explosion-preset',
+        version: 3,
+        game: 'space-invaders',
         config: {
           globalCellSize: 30,
           explosion: { cellSize: 25 }  // Old format

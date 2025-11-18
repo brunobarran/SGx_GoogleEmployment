@@ -35,6 +35,15 @@ import {
   updateAppearanceOverride
 } from './DebugAppearance.js'
 
+import {
+  validatePresetFormat,
+  loadPreset,
+  saveCurrentPreset,
+  getBuiltInPresets,
+  exportPresetToJSON,
+  importPresetFromJSON
+} from './DebugPresets.js'
+
 /**
  * Initialize debug interface for a game.
  *
@@ -118,8 +127,12 @@ function createDebugPanel(gameName) {
  * @param {string} gameName - Game identifier
  * @param {Object} callbacks - Optional callbacks for parameter changes
  */
-function populateControls(panel, config, gameName, callbacks) {
+async function populateControls(panel, config, gameName, callbacks) {
   const controlsContainer = panel.querySelector('#debug-controls')
+
+  // Add preset controls at the top (Phase 3.1)
+  const presetGroup = await createPresetGroup(gameName, config, callbacks)
+  controlsContainer.appendChild(presetGroup)
 
   // Get parameter definitions for this game
   const params = getGameParameters(gameName)
@@ -303,6 +316,69 @@ function createAppearanceGroup(gameName, config, callbacks, sliderParams = []) {
   entityTypes.forEach(entityType => {
     const dropdown = createAppearanceDropdown(entityType, callbacks)
     group.appendChild(dropdown)
+  })
+
+  return group
+}
+
+/**
+ * Create preset control group (Phase 3.1).
+ *
+ * @param {string} gameName - Game identifier
+ * @param {Object} config - Game CONFIG object
+ * @param {Object} callbacks - Optional callbacks
+ * @returns {Promise<HTMLElement>} Preset group element
+ */
+async function createPresetGroup(gameName, config, callbacks) {
+  const group = document.createElement('div')
+  group.className = 'debug-group'
+
+  const title = document.createElement('h3')
+  title.className = 'debug-group-title'
+  title.textContent = 'Presets'
+  group.appendChild(title)
+
+  // Load built-in presets
+  const presets = await getBuiltInPresets(gameName)
+
+  // Create dropdown
+  const dropdownContainer = document.createElement('div')
+  dropdownContainer.className = 'debug-control'
+  dropdownContainer.innerHTML = `
+    <label class="debug-label">
+      <span class="debug-label-text">Load Preset</span>
+    </label>
+    <select id="preset-selector" class="debug-select">
+      <option value="">-- Select Preset --</option>
+      ${Object.keys(presets).map(name =>
+        `<option value="${name}">${name.charAt(0).toUpperCase() + name.slice(1)}</option>`
+      ).join('')}
+    </select>
+  `
+  group.appendChild(dropdownContainer)
+
+  // Add event listener
+  const selector = dropdownContainer.querySelector('#preset-selector')
+  selector.addEventListener('change', (e) => {
+    handlePresetChange(e.target.value, presets, config, callbacks, gameName)
+  })
+
+  // Create button container
+  const buttonContainer = document.createElement('div')
+  buttonContainer.className = 'debug-preset-buttons'
+  buttonContainer.innerHTML = `
+    <button id="import-preset-btn" class="debug-button">Import JSON</button>
+    <button id="export-preset-btn" class="debug-button">Export JSON</button>
+  `
+  group.appendChild(buttonContainer)
+
+  // Add button event listeners
+  buttonContainer.querySelector('#import-preset-btn').addEventListener('click', () => {
+    handleImportPreset(config, callbacks, gameName, selector)
+  })
+
+  buttonContainer.querySelector('#export-preset-btn').addEventListener('click', () => {
+    handleExportPreset(config, gameName)
   })
 
   return group
@@ -586,4 +662,150 @@ function formatGroupName(groupName) {
   }
 
   return groupName.charAt(0).toUpperCase() + groupName.slice(1)
+}
+
+// ============================================
+// PRESET HANDLERS (Phase 3.1)
+// ============================================
+
+/**
+ * Handle preset dropdown change.
+ *
+ * @param {string} presetName - Selected preset name
+ * @param {Object} presets - Map of available presets
+ * @param {Object} config - Game CONFIG object
+ * @param {Object} callbacks - Optional callbacks
+ * @param {string} gameName - Game identifier
+ */
+function handlePresetChange(presetName, presets, config, callbacks, gameName) {
+  if (!presetName) return
+
+  const preset = presets[presetName]
+  if (!preset) {
+    console.error(`[DebugInterface] Preset not found: ${presetName}`)
+    return
+  }
+
+  // Validate preset
+  const validation = validatePresetFormat(preset)
+  if (!validation.valid) {
+    alert(`Cannot load preset: ${validation.reason}`)
+    return
+  }
+
+  // Load preset
+  const success = loadPreset(preset, config)
+  if (!success) {
+    alert('Failed to load preset')
+    return
+  }
+
+  // Sync UI with new values
+  syncUIWithConfig(config)
+
+  // Trigger callbacks to recreate entities
+  if (callbacks.onInvadersChange) callbacks.onInvadersChange()
+  if (callbacks.onPlayerChange) callbacks.onPlayerChange()
+  if (callbacks.onBulletSpeedChange) callbacks.onBulletSpeedChange()
+
+  console.log(`[DebugInterface] Loaded preset: ${presetName}`)
+}
+
+/**
+ * Handle import preset button.
+ *
+ * @param {Object} config - Game CONFIG object
+ * @param {Object} callbacks - Optional callbacks
+ * @param {string} gameName - Game identifier
+ * @param {HTMLSelectElement} selector - Preset dropdown element
+ */
+async function handleImportPreset(config, callbacks, gameName, selector) {
+  try {
+    const preset = await importPresetFromJSON()
+
+    // Validate game match
+    if (preset.game !== gameName) {
+      alert(`This preset is for '${preset.game}' but current game is '${gameName}'`)
+      return
+    }
+
+    // Validate format
+    const validation = validatePresetFormat(preset)
+    if (!validation.valid) {
+      alert(`Invalid preset: ${validation.reason}`)
+      return
+    }
+
+    // Load preset
+    const success = loadPreset(preset, config)
+    if (!success) {
+      alert('Failed to load preset')
+      return
+    }
+
+    // Sync UI
+    syncUIWithConfig(config)
+
+    // Trigger callbacks
+    if (callbacks.onInvadersChange) callbacks.onInvadersChange()
+    if (callbacks.onPlayerChange) callbacks.onPlayerChange()
+    if (callbacks.onBulletSpeedChange) callbacks.onBulletSpeedChange()
+
+    // Reset dropdown
+    selector.value = ''
+
+    console.log(`[DebugInterface] Imported preset: ${preset.name}`)
+  } catch (error) {
+    alert(`Import failed: ${error.message}`)
+  }
+}
+
+/**
+ * Handle export preset button.
+ *
+ * @param {Object} config - Game CONFIG object
+ * @param {string} gameName - Game identifier
+ */
+function handleExportPreset(config, gameName) {
+  const presetName = prompt('Enter preset name (alphanumeric + hyphens only):', 'custom')
+  if (!presetName) return
+
+  // Validate name
+  if (!/^[a-zA-Z0-9-]{3,50}$/.test(presetName)) {
+    alert('Invalid preset name. Use 3-50 alphanumeric characters (hyphens allowed)')
+    return
+  }
+
+  // Create preset
+  const preset = saveCurrentPreset(presetName, config, gameName)
+
+  // Export
+  exportPresetToJSON(preset)
+
+  console.log(`[DebugInterface] Exported preset: ${presetName}`)
+}
+
+/**
+ * Sync all UI sliders with CONFIG values.
+ *
+ * @param {Object} config - Game CONFIG object
+ */
+function syncUIWithConfig(config) {
+  // Update all sliders
+  document.querySelectorAll('.debug-slider').forEach(slider => {
+    const path = slider.dataset.path
+    const value = getNestedValue(config, path)
+
+    if (value !== undefined) {
+      slider.value = value
+
+      // Update value display
+      const valueDisplay = document.getElementById(`value-${slider.id.replace('slider-', '')}`)
+      if (valueDisplay) {
+        valueDisplay.textContent = value
+      }
+    }
+  })
+
+  console.log('[DebugInterface] UI synced with CONFIG')
 }

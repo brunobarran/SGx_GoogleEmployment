@@ -1,0 +1,30 @@
+{
+  "name": "default",
+  "version": 3,
+  "game": "space-invaders",
+  "timestamp": "2025-11-18T10:00:00.000Z",
+  "description": "Balanced gameplay with original settings",
+  "config": {
+    "globalCellSize": 30,
+    "invader": {
+      "rows": 4,
+      "cols": 4,
+      "spacing": 60,
+      "moveInterval": 30,
+      "speed": 45,
+      "golUpdateRate": 15
+    },
+    "player": {
+      "speed": 18,
+      "shootCooldown": 15,
+      "golUpdateRate": 12
+    },
+    "bullet": {
+      "speed": -8,
+      "golUpdateRate": 0
+    },
+    "explosion": {
+      "golUpdateRate": 8
+    }
+  }
+}

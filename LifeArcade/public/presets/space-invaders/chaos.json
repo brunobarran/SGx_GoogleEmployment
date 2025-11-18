@@ -1,0 +1,30 @@
+{
+  "name": "chaos",
+  "version": 3,
+  "game": "space-invaders",
+  "timestamp": "2025-11-18T10:00:00.000Z",
+  "description": "Maximum difficulty with overwhelming enemy count",
+  "config": {
+    "globalCellSize": 20,
+    "invader": {
+      "rows": 6,
+      "cols": 12,
+      "spacing": 30,
+      "moveInterval": 10,
+      "speed": 75,
+      "golUpdateRate": 25
+    },
+    "player": {
+      "speed": 10,
+      "shootCooldown": 30,
+      "golUpdateRate": 8
+    },
+    "bullet": {
+      "speed": -5,
+      "golUpdateRate": 0
+    },
+    "explosion": {
+      "golUpdateRate": 12
+    }
+  }
+}

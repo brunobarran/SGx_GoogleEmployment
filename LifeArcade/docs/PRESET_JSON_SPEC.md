@@ -223,9 +223,11 @@ interface Preset {
 "description": ""                // ✅ Valid (empty is allowed)
 ```
 
-### 4. `appearances` (object)
+### 4. `appearances` (object) - OPTIONAL AND NOT CURRENTLY USED
 
 **Description:** Entity appearance configuration using GoL patterns.
+
+**IMPORTANT:** This section is optional and is currently NOT included in the built-in presets. Appearance management is handled separately from configuration presets. Including an `appearances` section in your preset JSON is allowed but not recommended for Phase 3.1.
 
 **Structure:**
 ```typescript
