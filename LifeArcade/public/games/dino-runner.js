@@ -32,16 +32,16 @@ import {
 // ============================================
 
 const CONFIG = createGameConfig({
-  gravity: 2.4,   // 0.8 × 3 = 2.4 (scaled for larger player)
+  gravity: 4,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
   groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
   horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
-  jumpForce: -54, // -18 × 3 = -54 (scaled for larger player)
+  jumpForce: -60, // -14 × 3 = -42 (Lower force = shorter jump)
 
   obstacle: {
-    spawnInterval: 120,      // Increased from 90 to 120 (more spacing)
-    minInterval: 45,         // Increased from 30 to 45
-    speed: -18,              // Reduced from -27 (slower obstacles)
-    speedIncrease: 0.001
+    spawnInterval: 100,      // Slightly more generous (Option 2)
+    minInterval: 50,         // Option 2
+    speed: -15,              // Slower start (Option 2)
+    speedIncrease: 0.0015    // Steady ramp (Option 2)
   },
 
   parallax: {
@@ -185,8 +185,11 @@ let clouds = []  // Parallax background clouds
 // Gradient renderer
 let maskedRenderer = null
 
-// PNG sprite for player (Phase 3.4)
-let dinoSprite = null
+// PNG sprites for player (Phase 3.4)
+let dinoSprites = {
+  run: [],   // run_0.png, run_1.png
+  duck: []   // duck_run_0.png, duck_run_1.png
+}
 
 // ============================================
 // RESPONSIVE CANVAS HELPERS
@@ -206,12 +209,30 @@ function updateConfigScale() {
 // p5.js PRELOAD (Phase 3.4)
 // ============================================
 function preload() {
-  // Load PNG sprite for player
-  console.log('[Dino Runner] Loading dino sprite from /img/dino.png')
-  dinoSprite = loadImage('/img/dino.png',
-    () => console.log('[Dino Runner] Sprite loaded successfully:', dinoSprite.width, 'x', dinoSprite.height),
-    (err) => console.error('[Dino Runner] Failed to load sprite:', err)
+  // Load PNG sprites for player (run + duck animations)
+  console.log('[Dino Runner] Loading dino sprites...')
+
+  // Running sprites (200×200px)
+  dinoSprites.run[0] = loadImage('/img/dino-sprites/run_0.png',
+    () => console.log('[Dino Runner] run_0.png loaded:', dinoSprites.run[0].width, 'x', dinoSprites.run[0].height),
+    (err) => console.error('[Dino Runner] Failed to load run_0.png:', err)
   )
+  dinoSprites.run[1] = loadImage('/img/dino-sprites/run_1.png',
+    () => console.log('[Dino Runner] run_1.png loaded:', dinoSprites.run[1].width, 'x', dinoSprites.run[1].height),
+    (err) => console.error('[Dino Runner] Failed to load run_1.png:', err)
+  )
+
+  // Ducking sprites (265×121px)
+  dinoSprites.duck[0] = loadImage('/img/dino-sprites/duck_run_0.png',
+    () => console.log('[Dino Runner] duck_run_0.png loaded:', dinoSprites.duck[0].width, 'x', dinoSprites.duck[0].height),
+    (err) => console.error('[Dino Runner] Failed to load duck_run_0.png:', err)
+  )
+  dinoSprites.duck[1] = loadImage('/img/dino-sprites/duck_run_1.png',
+    () => console.log('[Dino Runner] duck_run_1.png loaded:', dinoSprites.duck[1].width, 'x', dinoSprites.duck[1].height),
+    (err) => console.error('[Dino Runner] Failed to load duck_run_1.png:', err)
+  )
+
+  console.log('[Dino Runner] All sprites loaded successfully')
 }
 
 // ============================================
@@ -254,9 +275,9 @@ function initGame() {
 
 function setupPlayer() {
   // CRITICAL DEVIATION FROM AUTHENTICITY (Phase 3.4)
-  // Client requirement: PNG sprite for player (dino.png 200×200px)
+  // Client requirement: PNG sprites for player with duck animation
   // Rationale: Brand recognition over GoL authenticity
-  // Date: 2025-11-18
+  // Date: 2025-11-19
   // Status: APPROVED BY CLIENT
   // Reference: CLAUDE.md Section 14
 
@@ -264,17 +285,24 @@ function setupPlayer() {
     x: 200,
     y: CONFIG.groundY - 200,  // groundY - height (sprite sits on physics ground)
 
-    // DIMENSIONS: Must match PNG sprite exactly for accurate hitbox
-    width: 200,               // PNG sprite width
-    height: 200,              // PNG sprite height
+    // DIMENSIONS: Change based on ducking state
+    width: 200,               // Run: 200px, Duck: 265px
+    height: 200,              // Run: 200px, Duck: 121px
 
     // Physics
     vx: 0,
     vy: 0,
     onGround: true,
 
-    // PNG sprite (replaces GoL rendering)
-    sprite: dinoSprite
+    // Duck state
+    isDucking: false,
+
+    // Animation
+    frameIndex: 0,
+    animationSpeed: 6,        // Change sprite every 6 frames (10fps at 60fps)
+
+    // PNG sprites (replaces GoL rendering)
+    sprites: dinoSprites      // { run: [img0, img1], duck: [img0, img1] }
 
     // NO gol property - using static PNG instead
     // NO cellSize - not needed for PNG
@@ -526,28 +554,57 @@ function updateGame() {
 }
 
 function updatePlayer() {
-  // Jump input
-  if (keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87)) {  // SPACE, UP, or W
-    if (player.onGround) {
-      player.vy = CONFIG.jumpForce
-      player.onGround = false
-    }
-  }
-
-  // Apply gravity
+  // Apply gravity FIRST
   player.vy += CONFIG.gravity
   player.y += player.vy
 
-  // Ground collision
-  if (player.y >= CONFIG.groundY - player.height) {
-    player.y = CONFIG.groundY - player.height
+  // Ground collision (MUST happen BEFORE duck state update to avoid oscillation)
+  if (player.y >= CONFIG.groundY - 200) {  // Use standing height for ground check
     player.vy = 0
     player.onGround = true
   } else {
     player.onGround = false
   }
 
-  // NO GoL update - player uses static PNG sprite (Phase 3.4)
+  // Read input states
+  const isDuckPressed = keyIsDown(DOWN_ARROW)
+  const isJumpPressed = keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87)  // SPACE, UP, or W
+
+  // Jump input (jump has priority over duck)
+  if (isJumpPressed && player.onGround && !isDuckPressed) {
+    player.vy = CONFIG.jumpForce
+    player.onGround = false
+    player.isDucking = false  // Cancel duck on jump
+  }
+
+  // Duck input (only on ground when not jumping)
+  if (isDuckPressed && player.onGround && !isJumpPressed) {
+    player.isDucking = true
+  } else {
+    player.isDucking = false
+  }
+
+  // Update dimensions based on ducking state
+  if (player.isDucking) {
+    player.width = 265
+    player.height = 121
+    // Adjust Y ONLY if on ground (don't interfere with jumping/falling)
+    if (player.onGround) {
+      player.y = CONFIG.groundY - 121
+    }
+  } else {
+    player.width = 200
+    player.height = 200
+    // Adjust Y ONLY if on ground (don't interfere with jumping/falling)
+    if (player.onGround) {
+      player.y = CONFIG.groundY - 200
+    }
+  }
+
+  // Update animation frame
+  player.frameIndex = Math.floor(state.frameCount / player.animationSpeed) % 2
+
+  // NO GoL update - player uses static PNG sprites (Phase 3.4)
 }
 
 function spawnObstacle() {
@@ -571,8 +628,11 @@ function spawnObstacle() {
   // Position based on obstacle type
   let obstacleY
   if (spawnFlying) {
-    // Flying obstacles: random height above horizon line
-    obstacleY = CONFIG.horizonY - 300
+    // Flying obstacles: High enough for ducking dino to pass underneath
+    // Duck height: 121px, need clearance above
+    // Bottom of pterodactyl should be at least 135px above ground (15px clearance)
+    const minHeightAboveGround = 135  // Enough for 121px dino + 14px clearance
+    obstacleY = CONFIG.groundY - dims.height - minHeightAboveGround
   } else {
     // Ground obstacles: centered on horizon line
     obstacleY = CONFIG.horizonY - dims.height * 0.5
@@ -626,8 +686,11 @@ function checkCollisions() {
     const obsHitboxWidth = obs.hitboxWidth || obs.width
     const obsHitboxHeight = obs.hitboxHeight || obs.height
 
+    // Apply same offset as visual rendering for accurate collision
+    const playerHitboxOffsetX = player.isDucking ? -32.5 : 0
+
     if (Collision.rectRect(
-      player.x, player.y, player.width, player.height,
+      player.x + playerHitboxOffsetX, player.y, player.width, player.height,
       obsHitboxX, obsHitboxY, obsHitboxWidth, obsHitboxHeight
     )) {
       // Game over
@@ -682,16 +745,37 @@ function renderGame() {
   strokeWeight(2)
   line(0, CONFIG.horizonY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.horizonY)
 
-  // Render player with PNG sprite (hide during DYING and GAMEOVER)
-  // Phase 3.4: Using static PNG instead of GoL
-  if (state.phase === 'PLAYING' && player.sprite) {
-    image(
-      player.sprite,
-      player.x,
-      player.y,
-      player.width,   // 200px - matches hitbox exactly
-      player.height   // 200px - matches hitbox exactly
-    )
+  // Render player with PNG sprite animation (hide during DYING and GAMEOVER)
+  // Phase 3.4: Using animated PNG sprites (run + duck)
+  if (state.phase === 'PLAYING' && player.sprites) {
+    // Select sprite set based on ducking state
+    const spriteSet = player.isDucking ? player.sprites.duck : player.sprites.run
+
+    // Verify sprite set exists and has frames
+    if (spriteSet && spriteSet.length > 0) {
+      // Get current animation frame
+      const currentSprite = spriteSet[player.frameIndex]
+
+      // Render sprite (dimensions match hitbox exactly)
+      if (currentSprite && currentSprite.width > 0) {
+        // When ducking, center the wider sprite horizontally
+        // Duck sprite: 265px wide (65px wider than run 200px)
+        // Offset by half the difference to keep dino centered
+        const offsetX = player.isDucking ? -32.5 : 0  // (265-200)/2 = 32.5px
+
+        push()
+        imageMode(CORNER)
+        noSmooth()  // Pixel-perfect rendering for sprites
+        image(
+          currentSprite,
+          player.x + offsetX,
+          player.y,
+          player.width,   // 200px (run) or 265px (duck)
+          player.height   // 200px (run) or 121px (duck)
+        )
+        pop()
+      }
+    }
   }
 
   // Render obstacles with gradients
@@ -711,7 +795,9 @@ function renderGame() {
   renderParticles(particles, maskedRenderer, 30)
 
   // Debug: Draw hitboxes (press H to toggle)
-  drawHitboxRect(player.x, player.y, player.width, player.height, 'player', '#00FF00')
+  // Apply same offset as visual rendering for accurate hitbox display
+  const playerHitboxOffsetX = player.isDucking ? -32.5 : 0
+  drawHitboxRect(player.x + playerHitboxOffsetX, player.y, player.width, player.height, 'player', '#00FF00')
 
   // Draw obstacle hitboxes (using custom hitbox dimensions for pterodactyls)
   obstacles.forEach((obs, index) => {
