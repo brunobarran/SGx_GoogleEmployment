@@ -12,6 +12,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class ScoreEntryScreen {
   constructor(appState, inputManager, storageManager) {
     this.appState = appState
@@ -59,10 +61,8 @@ export class ScoreEntryScreen {
     this.element = document.createElement('div')
     this.element.id = 'score-entry-screen'
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Add styles with responsive dimensions
     this.element.style.cssText = `

@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class IdleScreen {
   constructor(appState, inputManager) {
     this.appState = appState
@@ -32,10 +34,8 @@ export class IdleScreen {
     console.log('IdleScreen: Show')
     this.isActive = true
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Create main container
     this.element = document.createElement('div')

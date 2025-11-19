@@ -18,25 +18,18 @@ import { Patterns } from '../src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver, renderWin } from '../src/utils/UIHelpers.js'
+import {
+  GAME_DIMENSIONS,
+  GAMEOVER_CONFIG,
+  createGameState,
+  calculateCanvasDimensions,
+  createGameConfig
+} from '../src/utils/GameBaseConfig.js'
 
 // ============================================
-// CONFIGURATION - BASE REFERENCE (10:16 ratio)
+// CONFIGURATION - Using GameBaseConfig
 // ============================================
-const BASE_WIDTH = 1200
-const BASE_HEIGHT = 1920
-const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
-
-const CONFIG = {
-  width: 1200,   // Will be updated dynamically
-  height: 1920,  // Will be updated dynamically
-
-  ui: {
-    backgroundColor: '#FFFFFF',
-    textColor: '#5f6368',
-    accentColor: '#1a73e8',
-    font: 'Google Sans, Arial, sans-serif',
-    fontSize: 16
-  },
+const CONFIG = createGameConfig({
 
   paddle: {
     width: 450,   // 150 × 3 = 450
@@ -60,20 +53,10 @@ const CONFIG = {
     offsetX: 180, // Centered: 3×240 + 2×60 = 720 + 120 = 840px, (1200-840)/2 = 180px
     offsetY: 200  // Unified starting position with Space Invaders (same as startY)
   }
-}
+})
 
-// Store scale factor for rendering (don't modify CONFIG values)
-let scaleFactor = 1
-let canvasWidth = BASE_WIDTH
-let canvasHeight = BASE_HEIGHT
-
-// Google Brand Colors
-const GOOGLE_COLORS = {
-  BLUE: { r: 49, g: 134, b: 255 },
-  RED: { r: 252, g: 65, b: 61 },
-  GREEN: { r: 0, g: 175, b: 87 },
-  YELLOW: { r: 255, g: 204, b: 0 }
-}
+// Store scale factor for rendering (using GameBaseConfig)
+let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
 // Brick patterns with gradients
 const BRICK_PATTERNS = [
@@ -83,25 +66,13 @@ const BRICK_PATTERNS = [
 ]
 
 // ============================================
-// GAME OVER CONFIGURATION
+// GAME STATE (using GameBaseConfig)
 // ============================================
-const GAMEOVER_CONFIG = {
-  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
-  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
-}
-
-// ============================================
-// GAME STATE
-// ============================================
-const state = {
-  score: 0,
-  lives: 1,
+const state = createGameState({
   level: 1,
-  phase: 'PLAYING',
-  frameCount: 0,
   dyingTimer: 0,
   isWin: false
-}
+})
 
 // ============================================
 // ENTITIES
@@ -115,17 +86,17 @@ let particles = []
 let maskedRenderer = null
 
 // ============================================
-// RESPONSIVE CANVAS HELPERS
+// RESPONSIVE CANVAS HELPERS (using GameBaseConfig)
 // ============================================
 function calculateResponsiveSize() {
   const canvasHeight = windowHeight
-  const canvasWidth = canvasHeight * ASPECT_RATIO
+  const canvasWidth = canvasHeight * GAME_DIMENSIONS.ASPECT_RATIO
   return { width: canvasWidth, height: canvasHeight }
 }
 
 function updateConfigScale() {
   // Only update scaleFactor based on canvas size, don't modify CONFIG values
-  scaleFactor = canvasHeight / BASE_HEIGHT
+  scaleFactor = canvasHeight / GAME_DIMENSIONS.BASE_HEIGHT
 }
 
 // ============================================

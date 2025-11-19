@@ -19,29 +19,22 @@ import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.j
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 import { createPatternRenderer, RenderMode, PatternName } from '../src/utils/PatternRenderer.js'
 import { initHitboxDebug, drawHitboxRect, drawHitboxes } from '../src/debug/HitboxDebug.js'
+import {
+  GAME_DIMENSIONS,
+  GAMEOVER_CONFIG,
+  createGameState,
+  calculateCanvasDimensions,
+  createGameConfig
+} from '../src/utils/GameBaseConfig.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
-const BASE_WIDTH = 1200
-const BASE_HEIGHT = 1920
-const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
 
-const CONFIG = {
-  width: 1200,   // Will be updated dynamically
-  height: 1920,  // Will be updated dynamically
-
-  ui: {
-    backgroundColor: '#FFFFFF',
-    textColor: '#5f6368',
-    accentColor: '#1a73e8',
-    font: 'Google Sans, Arial, sans-serif',
-    fontSize: 16
-  },
-
+const CONFIG = createGameConfig({
   gravity: 2.4,   // 0.8 × 3 = 2.4 (scaled for larger player)
-  groundY: BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
-  horizonY: BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
+  groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
+  horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
   jumpForce: -54, // -18 × 3 = -54 (scaled for larger player)
 
   obstacle: {
@@ -158,12 +151,10 @@ const CONFIG = {
       gradient: GRADIENT_PRESETS.ENEMY_COLD
     }
   ]
-}
+})
 
 // Store scale factor for rendering (don't modify CONFIG values)
-let scaleFactor = 1
-let canvasWidth = BASE_WIDTH
-let canvasHeight = BASE_HEIGHT
+let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
 // Google Brand Colors
 const GOOGLE_COLORS = {
@@ -174,25 +165,14 @@ const GOOGLE_COLORS = {
 }
 
 // ============================================
-// GAME OVER CONFIGURATION
-// ============================================
-const GAMEOVER_CONFIG = {
-  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
-  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
-}
-
-// ============================================
 // GAME STATE
 // ============================================
-const state = {
-  score: 0,
-  phase: 'PLAYING',
-  frameCount: 0,
+const state = createGameState({
   spawnTimer: 0,
   cloudSpawnTimer: 0,  // Timer for cloud spawning
   gameSpeed: 1,
   dyingTimer: 0
-}
+})
 
 // ============================================
 // ENTITIES
@@ -213,13 +193,13 @@ let dinoSprite = null
 // ============================================
 function calculateResponsiveSize() {
   const canvasHeight = windowHeight
-  const canvasWidth = canvasHeight * ASPECT_RATIO
+  const canvasWidth = canvasHeight * GAME_DIMENSIONS.ASPECT_RATIO
   return { width: canvasWidth, height: canvasHeight }
 }
 
 function updateConfigScale() {
   // Only update scaleFactor based on canvas size
-  scaleFactor = canvasHeight / BASE_HEIGHT
+  scaleFactor = canvasHeight / GAME_DIMENSIONS.BASE_HEIGHT
 }
 
 // ============================================
@@ -314,7 +294,7 @@ function initParallax() {
   clouds = []
 
   // Pre-populate screen with clouds
-  const spacing = BASE_WIDTH / CONFIG.parallax.cloudDensity
+  const spacing = GAME_DIMENSIONS.BASE_WIDTH / CONFIG.parallax.cloudDensity
 
   for (let i = 0; i < CONFIG.parallax.cloudDensity; i++) {
     const cloud = spawnCloud()
@@ -352,7 +332,7 @@ function spawnCloud() {
   const dims = renderer.dimensions
 
   const cloud = {
-    x: BASE_WIDTH,  // Start off-screen right
+    x: GAME_DIMENSIONS.BASE_WIDTH,  // Start off-screen right
     y: random(100, 800),  // Random vertical position
     vx: CONFIG.parallax.scrollSpeed,
     pattern: patternName,
@@ -401,7 +381,7 @@ function renderClouds() {
   push()
 
   // Create a graphics buffer for clouds with opacity
-  const cloudGraphics = createGraphics(BASE_WIDTH, BASE_HEIGHT)
+  const cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
   cloudGraphics.clear()
 
   clouds.forEach(cloud => {
@@ -608,7 +588,7 @@ function spawnObstacle() {
   }
 
   const obstacle = {
-    x: BASE_WIDTH,
+    x: GAME_DIMENSIONS.BASE_WIDTH,
     y: obstacleY,
     width: dims.width,      // Visual width (full pattern)
     height: dims.height,    // Visual height (full pattern)
@@ -695,7 +675,7 @@ function renderGame() {
   // Horizon line (aesthetic - drawn above physics ground)
   stroke(CONFIG.ui.textColor)
   strokeWeight(2)
-  line(0, CONFIG.horizonY, BASE_WIDTH, CONFIG.horizonY)
+  line(0, CONFIG.horizonY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.horizonY)
 
   // Render player with PNG sprite (hide during DYING and GAMEOVER)
   // Phase 3.4: Using static PNG instead of GoL

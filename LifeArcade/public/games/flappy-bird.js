@@ -20,26 +20,19 @@ import { Patterns } from '../src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
+import {
+  GAME_DIMENSIONS,
+  GAMEOVER_CONFIG,
+  createGameState,
+  calculateCanvasDimensions,
+  createGameConfig
+} from '../src/utils/GameBaseConfig.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
-const BASE_WIDTH = 1200
-const BASE_HEIGHT = 1920
-const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
 
-const CONFIG = {
-  width: 1200,   // Will be updated dynamically
-  height: 1920,  // Will be updated dynamically
-
-  ui: {
-    backgroundColor: '#FFFFFF',
-    textColor: '#5f6368',
-    accentColor: '#1a73e8',
-    font: 'Google Sans, Arial, sans-serif',
-    fontSize: 16
-  },
-
+const CONFIG = createGameConfig({
   player: {
     width: 240,    // 80 × 3 = 240
     height: 240,   // 80 × 3 = 240
@@ -60,32 +53,18 @@ const CONFIG = {
     spawnInterval: 100,
     cellSize: 30     // Scaled to 30px (3x from 10px baseline)
   }
-}
+})
 
 // Store scale factor for rendering (don't modify CONFIG values)
-let scaleFactor = 1
-let canvasWidth = BASE_WIDTH
-let canvasHeight = BASE_HEIGHT
-
-// ============================================
-// GAME OVER CONFIGURATION
-// ============================================
-const GAMEOVER_CONFIG = {
-  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
-  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
-}
+let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
 // ============================================
 // GAME STATE
 // ============================================
-const state = {
-  score: 0,
-  lives: 1,
-  phase: 'PLAYING',
-  frameCount: 0,
+const state = createGameState({
   spawnTimer: 0,
   dyingTimer: 0
-}
+})
 
 // ============================================
 // ENTITIES
@@ -102,13 +81,13 @@ let maskedRenderer = null
 // ============================================
 function calculateResponsiveSize() {
   const canvasHeight = windowHeight
-  const canvasWidth = canvasHeight * ASPECT_RATIO
+  const canvasWidth = canvasHeight * GAME_DIMENSIONS.ASPECT_RATIO
   return { width: canvasWidth, height: canvasHeight }
 }
 
 function updateConfigScale() {
   // Only update scaleFactor based on canvas size
-  scaleFactor = canvasHeight / BASE_HEIGHT
+  scaleFactor = canvasHeight / GAME_DIMENSIONS.BASE_HEIGHT
 }
 
 // ============================================
@@ -260,7 +239,7 @@ function spawnPipes() {
 
     // Top pipe
     const topPipe = {
-      x: BASE_WIDTH,
+      x: GAME_DIMENSIONS.BASE_WIDTH,
       y: CONFIG.ceilingY,
       width: CONFIG.pipe.width,
       height: gapTop - CONFIG.ceilingY,
@@ -278,7 +257,7 @@ function spawnPipes() {
 
     // Bottom pipe
     const bottomPipe = {
-      x: BASE_WIDTH,
+      x: GAME_DIMENSIONS.BASE_WIDTH,
       y: gapTop + CONFIG.pipe.gap,
       width: CONFIG.pipe.width,
       height: CONFIG.groundY - (gapTop + CONFIG.pipe.gap),
@@ -374,8 +353,8 @@ function renderGame() {
   // Draw ceiling and ground lines
   stroke(CONFIG.ui.textColor)
   strokeWeight(2)
-  line(0, CONFIG.ceilingY, BASE_WIDTH, CONFIG.ceilingY)
-  line(0, CONFIG.groundY, BASE_WIDTH, CONFIG.groundY)
+  line(0, CONFIG.ceilingY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.ceilingY)
+  line(0, CONFIG.groundY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.groundY)
 
   // Render player with gradient (hide during DYING and GAMEOVER)
   if (state.phase === 'PLAYING') {

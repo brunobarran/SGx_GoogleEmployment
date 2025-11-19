@@ -9,6 +9,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class GameScreen {
   /**
    * Maximum game time (30 minutes) before timeout
@@ -53,10 +55,8 @@ export class GameScreen {
     this.element = document.createElement('div')
     this.element.id = 'game-screen'
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Create iframe
     this.iframe = document.createElement('iframe')

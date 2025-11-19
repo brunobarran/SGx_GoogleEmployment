@@ -9,6 +9,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class LeaderboardScreen {
   /**
    * Auto-advance timeout (30 seconds)
@@ -83,10 +85,8 @@ export class LeaderboardScreen {
 
     console.log('- Display scores:', JSON.stringify(scores.map(e => ({ name: e.name, score: e.score, rank: e.displayRank || '(index)' })), null, 2))
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Create screen element
     this.element = document.createElement('div')

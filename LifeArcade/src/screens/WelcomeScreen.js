@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class WelcomeScreen {
   constructor(appState, inputManager) {
     this.appState = appState
@@ -26,10 +28,8 @@ export class WelcomeScreen {
   show() {
     console.log('WelcomeScreen: Show')
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Create screen element
     this.element = document.createElement('div')

@@ -17,29 +17,22 @@ import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
 import { applyAppearanceOverride } from '../src/debug/DebugAppearance.js'
 import { updateLoopPattern } from '../src/utils/LoopPatternHelpers.js'
 import { createPatternRenderer, RenderMode, PatternName } from '../src/utils/PatternRenderer.js'
+import {
+  GAME_DIMENSIONS,
+  GAMEOVER_CONFIG,
+  createGameState,
+  calculateCanvasDimensions,
+  createGameConfig
+} from '../src/utils/GameBaseConfig.js'
 
 // ============================================
 // GAME CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // All values are proportional to 1200×1920 reference resolution
 // ============================================
-const BASE_WIDTH = 1200
-const BASE_HEIGHT = 1920
-const ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT  // 10:16 = 0.625
 
-const CONFIG = {
-  width: 1200,   // Will be updated dynamically
-  height: 1920,  // Will be updated dynamically
-
+const CONFIG = createGameConfig({
   // PHASE 3: Global cell size for all entities
   globalCellSize: 30,  // Pixel size of all GoL cells (range: 15-60)
-
-  ui: {
-    backgroundColor: '#FFFFFF',
-    textColor: '#5f6368',
-    accentColor: '#1a73e8',
-    font: 'Google Sans, Arial, sans-serif',
-    fontSize: 16
-  },
 
   invader: {
     cols: 6,      // 6 columns
@@ -88,36 +81,22 @@ const CONFIG = {
     bullets: { min: 60, max: 120, default: 90 },
     explosions: { min: 120, max: 240, default: 180 }
   }
-}
+})
 
 // Store scale factor for rendering (don't modify CONFIG values)
-let scaleFactor = 1
-let canvasWidth = BASE_WIDTH
-let canvasHeight = BASE_HEIGHT
-
-// ============================================
-// GAME OVER CONFIGURATION
-// ============================================
-const GAMEOVER_CONFIG = {
-  MIN_DELAY: 30,   // 0.5s minimum feedback (30 frames at 60fps)
-  MAX_WAIT: 150    // 2.5s maximum wait (150 frames at 60fps)
-}
+let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
 // ============================================
 // GAME STATE
 // ============================================
-const state = {
-  score: 0,
-  lives: 1,
+const state = createGameState({
   level: 1,
-  phase: 'PLAYING',
-  frameCount: 0,
   currentMoveInterval: 30,  // Current invader move interval (decreases per level)
   invaderDirection: 1,
   invaderMoveTimer: 0,
   playerShootCooldown: 0,
   dyingTimer: 0
-}
+})
 
 // ============================================
 // ENTITIES
@@ -136,13 +115,13 @@ let maskedRenderer = null
 function calculateResponsiveSize() {
   // Use window height as reference, calculate width maintaining 10:16 aspect ratio
   const canvasHeight = windowHeight
-  const canvasWidth = canvasHeight * ASPECT_RATIO
+  const canvasWidth = canvasHeight * GAME_DIMENSIONS.ASPECT_RATIO
   return { width: canvasWidth, height: canvasHeight }
 }
 
 function updateConfigScale() {
   // Only update scaleFactor based on canvas size, don't modify CONFIG values
-  scaleFactor = canvasHeight / BASE_HEIGHT
+  scaleFactor = canvasHeight / GAME_DIMENSIONS.BASE_HEIGHT
 }
 
 /**

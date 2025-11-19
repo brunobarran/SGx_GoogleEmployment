@@ -10,6 +10,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class QRCodeScreen {
   /**
    * Auto-advance timeout (15 seconds)
@@ -18,9 +20,13 @@ export class QRCodeScreen {
 
   /**
    * Base URL for web version
-   * TODO: Update with actual deployment URL
+   * Dynamically determined based on current origin
    */
-  static BASE_URL = 'http://localhost:5173/games/'
+  static BASE_URL = (() => {
+    // Use current window origin for deployed version
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${origin}/games/`
+  })()
 
   constructor(appState, inputManager) {
     this.appState = appState
@@ -60,10 +66,8 @@ export class QRCodeScreen {
     this.element = document.createElement('div')
     this.element.id = 'qr-screen'
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Add styles with responsive dimensions
     this.element.style.cssText = `

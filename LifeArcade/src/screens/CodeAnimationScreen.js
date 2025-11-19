@@ -10,6 +10,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class CodeAnimationScreen {
   constructor(appState, inputManager) {
     this.appState = appState
@@ -63,10 +65,8 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
       </div>
     `
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Add styles with responsive dimensions
     this.element.style.cssText = `

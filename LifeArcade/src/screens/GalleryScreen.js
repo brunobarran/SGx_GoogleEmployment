@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+
 export class GalleryScreen {
   // Games with their AI creation prompts
   static GAMES = [
@@ -95,10 +97,8 @@ Score increases with each pipe successfully passed. Game ends on collision with 
   show() {
     console.log('GalleryScreen: Show')
 
-    // Calculate responsive dimensions
-    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
-    const containerHeight = window.innerHeight
-    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    // Calculate responsive dimensions (using ScreenHelper)
+    const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Create main container
     this.element = document.createElement('div')
