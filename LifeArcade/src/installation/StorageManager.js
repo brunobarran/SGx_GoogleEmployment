@@ -1,7 +1,7 @@
 /**
  * StorageManager - localStorage wrapper for leaderboard persistence
  *
- * Manages score persistence with top 10 leaderboards per game
+ * Manages score persistence with top 50 leaderboards per game
  * Handles quota exceeded errors gracefully
  *
  * @author Game of Life Arcade
@@ -17,7 +17,7 @@ export class StorageManager {
   /**
    * Maximum scores to keep per game
    */
-  static MAX_SCORES = 10
+  static MAX_SCORES = 50
 
   constructor() {
     // Test localStorage availability
@@ -87,12 +87,12 @@ export class StorageManager {
       // Sort descending by score
       scores.sort((a, b) => b.score - a.score)
 
-      // Keep only top 10
-      const top10 = scores.slice(0, StorageManager.MAX_SCORES)
+      // Keep only top 50
+      const top50 = scores.slice(0, StorageManager.MAX_SCORES)
 
       // Save to localStorage
       const key = StorageManager.KEY_PREFIX + gameName
-      localStorage.setItem(key, JSON.stringify(top10))
+      localStorage.setItem(key, JSON.stringify(top50))
 
       console.log(`Score saved: ${gameName} - ${playerName}: ${score}`)
       return true
@@ -112,9 +112,9 @@ export class StorageManager {
             date: new Date().toISOString()
           })
           scores.sort((a, b) => b.score - a.score)
-          const top10 = scores.slice(0, StorageManager.MAX_SCORES)
+          const top50 = scores.slice(0, StorageManager.MAX_SCORES)
           const key = StorageManager.KEY_PREFIX + gameName
-          localStorage.setItem(key, JSON.stringify(top10))
+          localStorage.setItem(key, JSON.stringify(top50))
           console.log('Score saved after quota cleanup')
           return true
         } catch (retryError) {
@@ -129,7 +129,7 @@ export class StorageManager {
   }
 
   /**
-   * Get top 10 scores for game
+   * Get top 50 scores for game
    * @param {string} gameName - Game identifier
    * @returns {Array} - Array of {name, score, date} objects, sorted descending
    */
@@ -179,10 +179,10 @@ export class StorageManager {
   }
 
   /**
-   * Check if score makes top 10
+   * Check if score makes top 50
    * @param {string} gameName - Game identifier
    * @param {number} score - Score to check
-   * @returns {boolean} - True if score makes top 10
+   * @returns {boolean} - True if score makes top 50
    */
   isHighScore(gameName, score) {
     if (typeof score !== 'number' || score < 0) {
@@ -191,12 +191,12 @@ export class StorageManager {
 
     const scores = this.getScores(gameName)
 
-    // If less than 10 scores, always a high score
+    // If less than 50 scores, always a high score
     if (scores.length < StorageManager.MAX_SCORES) {
       return true
     }
 
-    // Check if score beats lowest top 10 score
+    // Check if score beats lowest top 50 score
     const lowestTopScore = scores[scores.length - 1].score
     return score > lowestTopScore
   }

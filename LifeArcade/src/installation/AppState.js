@@ -41,6 +41,7 @@ export class AppState {
     this.selectedGame = null      // Selected game object: { id, name, path }
     this.currentScore = null       // Final score from game
     this.playerName = null         // 3-letter name (A-Z)
+    this.scoreTimestamp = null     // Timestamp of saved score (for exact identification)
 
     // Timeout handles for auto-advance
     this.timeoutHandles = {}
@@ -123,6 +124,19 @@ export class AppState {
   }
 
   /**
+   * Set score timestamp (for exact score identification)
+   * @param {string} timestamp - ISO timestamp from saved score
+   */
+  setScoreTimestamp(timestamp) {
+    if (typeof timestamp !== 'string') {
+      console.error('Invalid score timestamp:', timestamp)
+      return
+    }
+    this.scoreTimestamp = timestamp
+    console.log('Score timestamp set:', timestamp)
+  }
+
+  /**
    * Reset all session data and return to idle
    */
   reset() {
@@ -132,6 +146,7 @@ export class AppState {
     this.selectedGame = null
     this.currentScore = null
     this.playerName = null
+    this.scoreTimestamp = null
 
     // Clear all timeouts
     this.clearAllTimeouts()
@@ -255,7 +270,8 @@ export class AppState {
       currentScreen: this.currentScreen,
       selectedGame: this.selectedGame,
       currentScore: this.currentScore,
-      playerName: this.playerName
+      playerName: this.playerName,
+      scoreTimestamp: this.scoreTimestamp
     }
   }
 }

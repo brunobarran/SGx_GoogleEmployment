@@ -98,12 +98,6 @@ export class QRCodeScreen {
             <img src="./img/qr.png" alt="QR Code" class="qr-code-image" />
           </div>
         </div>
-
-        <!-- Corner decorations (GoL patterns) -->
-        <div class="qr-decoration qr-decoration-top-left"></div>
-        <div class="qr-decoration qr-decoration-top-right"></div>
-        <div class="qr-decoration qr-decoration-bottom-left"></div>
-        <div class="qr-decoration qr-decoration-bottom-right"></div>
       </div>
     `
 
