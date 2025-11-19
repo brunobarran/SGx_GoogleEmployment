@@ -254,6 +254,31 @@ If you need to understand:
 
 ---
 
-**Last Updated:** 2025-11-14
+**Last Updated:** 2025-11-19
 **Refactor Status:** ✅ Complete
 **Project State:** Production-ready for 4-game installation
+
+### 4. Debug Interface System (debug-system/)
+
+**Debug UI for parameter tuning** (archived 2025-11-19):
+
+Components archived:
+- DebugInterface.js (350 lines) - Main debug UI controller  
+- DebugAppearance.js (172 lines) - Pattern override system
+- DebugPresets.js (180 lines) - Preset loading/validation
+- debug-styles.css (186 lines) - Debug panel styling
+- 4 test files (38 tests, all passing)
+- Feature documentation and planning docs
+- All JSON preset files for Space Invaders
+
+**Why archived:**
+- Gameplay parameters now finalized and hardcoded
+- Other 3 games never used debug UI
+- Maintenance burden with no benefit (YAGNI)
+- HitboxDebug.js remains active (universally useful)
+
+**Note:** Debug system successfully helped tune Space Invaders. Once optimal values were found, the debug UI became obsolete.
+
+See archive/debug-system/README.md for complete documentation.
+
+---

@@ -14,7 +14,6 @@ import { Patterns } from '../src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
 import { renderGameUI, renderGameOver } from '../src/utils/UIHelpers.js'
-import { applyAppearanceOverride } from '../src/debug/DebugAppearance.js'
 import { updateLoopPattern } from '../src/utils/LoopPatternHelpers.js'
 import { createPatternRenderer, RenderMode, PatternName } from '../src/utils/PatternRenderer.js'
 import {
@@ -171,53 +170,6 @@ function setup() {
   // Create simple gradient renderer (KISS)
   maskedRenderer = new SimpleGradientRenderer(this)
 
-  // Debug interface initialization (Phase 1)
-  const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.get('debug') === 'true') {
-    import('/src/debug/DebugInterface.js').then(module => {
-      // Inject CSS
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = '/src/debug/debug-styles.css'
-      document.head.appendChild(link)
-
-      // Initialize debug interface with callbacks
-      module.initDebugInterface(CONFIG, 'space-invaders', {
-        // Parameter callbacks (Phase 1)
-        onInvadersChange: () => {
-          // Recreate invaders when any invader property changes
-          invaders = []
-          setupInvaders()
-        },
-        onPlayerChange: () => {
-          // Recreate player when player properties change
-          setupPlayer()
-        },
-        onBulletSpeedChange: () => {
-          // Bullet speed is stored in CONFIG.bullet.speed
-          // No action needed - bullets read from CONFIG each frame
-          console.log('[SpaceInvaders] Bullet speed updated (live)')
-        },
-        // Appearance callbacks (Phase 2)
-        onPlayerAppearanceChange: () => {
-          // Recreate player with new appearance
-          console.log('[SpaceInvaders] Player appearance changed, recreating...')
-          setupPlayer()
-        },
-        onInvadersAppearanceChange: () => {
-          // Recreate all invaders with new appearance
-          console.log('[SpaceInvaders] Invaders appearance changed, recreating...')
-          invaders = []
-          setupInvaders()
-        }
-        // NOTE: onBulletsAppearanceChange removed - bullets are always Modified GoL
-        // NOTE: onExplosionsAppearanceChange removed - explosions are always Pure GoL
-      })
-    }).catch(err => {
-      console.error('[SpaceInvaders] Failed to load debug interface:', err)
-    })
-  }
-
   initGame()
 }
 
@@ -267,154 +219,80 @@ function calculateClampedHitbox(spriteSize, entityType) {
 }
 
 function setupPlayer() {
-  // Check debug override
-  const debugOverride = window.APPEARANCE_OVERRIDES?.player
+  // Loop BLINKER (Pure GoL oscillator)
+  const renderer = createPatternRenderer({
+    mode: RenderMode.LOOP,
+    pattern: PatternName.BLINKER,
+    globalCellSize: CONFIG.globalCellSize,
+    loopUpdateRate: CONFIG.loopUpdateRate
+  })
 
-  if (debugOverride && debugOverride.mode !== 'modified-gol') {
-    // Use debug appearance (delegated to DebugAppearance)
-    const tierConfig = applyAppearanceOverride(null, 'player', Patterns, seedRadialDensity, CONFIG)
-    const gridSize = tierConfig.gridSize
-    const golEngine = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
-    applyAppearanceOverride(golEngine, 'player', Patterns, seedRadialDensity, CONFIG)
+  const hitbox = calculateClampedHitbox(renderer.dimensions.width, 'player')
 
-    const tempEntity = { gol: golEngine }
-    const dims = calculateEntityDimensions(tempEntity)
-    const hitbox = calculateClampedHitbox(dims.width, 'player')
-
-    player = {
-      x: CONFIG.width / 2 - dims.width / 2,
-      y: CONFIG.height - 200,
-      width: dims.width,
-      height: dims.height,
-      hitbox: hitbox,
-      vx: 0,
-      gol: golEngine,
-      gradient: GRADIENT_PRESETS.PLAYER
-    }
-
-    console.log(`[SetupPlayer] DEBUG MODE: ${debugOverride.pattern || 'Modified GoL'}`)
-  } else {
-    // DEFAULT: Loop BLINKER (Pure GoL oscillator)
-    const renderer = createPatternRenderer({
-      mode: RenderMode.LOOP,
-      pattern: PatternName.BLINKER,
-      globalCellSize: CONFIG.globalCellSize,
-      loopUpdateRate: CONFIG.loopUpdateRate
-    })
-
-    const hitbox = calculateClampedHitbox(renderer.dimensions.width, 'player')
-
-    player = {
-      x: CONFIG.width / 2 - renderer.dimensions.width / 2,
-      y: CONFIG.height - 200,
-      width: renderer.dimensions.width,
-      height: renderer.dimensions.height,
-      hitbox: hitbox,
-      vx: 0,
-      gol: renderer.gol,
-      gradient: GRADIENT_PRESETS.PLAYER
-    }
-
-    console.log(`[SetupPlayer] DEFAULT: BLINKER Loop (period ${renderer.metadata.period})`)
+  player = {
+    x: CONFIG.width / 2 - renderer.dimensions.width / 2,
+    y: CONFIG.height - 200,
+    width: renderer.dimensions.width,
+    height: renderer.dimensions.height,
+    hitbox: hitbox,
+    vx: 0,
+    gol: renderer.gol,
+    gradient: GRADIENT_PRESETS.PLAYER
   }
+
+  console.log(`[SetupPlayer] BLINKER Loop (period ${renderer.metadata.period})`)
 }
 
 function setupInvaders() {
   const { cols, rows, spacing, startX, startY } = CONFIG.invader
 
-  // Check for debug appearance override
-  const debugOverride = window.APPEARANCE_OVERRIDES?.invaders
+  // Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)
+  const stillLifePatterns = [
+    PatternName.BLOCK,
+    PatternName.BEEHIVE,
+    PatternName.LOAF,
+    PatternName.BOAT,
+    PatternName.TUB
+  ]
 
-  // Use debug appearance if set, otherwise default to BLINKER static random phases
-  let renderer = null
+  // Create a single renderer to get dimensions (use BLOCK as reference)
+  const testRenderer = createPatternRenderer({
+    mode: RenderMode.STATIC,
+    pattern: PatternName.BLOCK,
+    phase: 0,
+    globalCellSize: CONFIG.globalCellSize
+  })
 
-  if (debugOverride && debugOverride.mode !== 'modified-gol') {
-    // Debug mode: delegate to DebugAppearance
-    // Create temporary GoL to calculate dimensions
-    const tierConfig = applyAppearanceOverride(null, 'invaders', Patterns, seedRadialDensity, CONFIG)
-    const gridSize = tierConfig ? tierConfig.gridSize : 6
-    const tempGol = new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate)
-    const tempEntity = { gol: tempGol }
-    const dims = calculateEntityDimensions(tempEntity)
-    const hitbox = calculateClampedHitbox(dims.width, 'invaders')
+  const dims = testRenderer.dimensions
+  const hitbox = calculateClampedHitbox(dims.width, 'invaders')
 
-    console.log(`[SetupInvaders] DEBUG MODE: Using appearance override`)
+  console.log(`[SetupInvaders] Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)`)
+  console.log(`[SetupInvaders] Dimensions:`, dims)
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const invader = {
-          x: startX + col * (dims.width + spacing),
-          y: startY + row * (dims.height + spacing),
-          width: dims.width,
-          height: dims.height,
-          hitbox: hitbox,
-          dead: false,
-          gol: new GoLEngine(gridSize, gridSize, CONFIG.loopUpdateRate),
-          gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
-                    row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
-                    GRADIENT_PRESETS.ENEMY_RAINBOW
-        }
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      // Create renderer with random still life pattern
+      const renderer = createPatternRenderer({
+        mode: RenderMode.STATIC,
+        pattern: stillLifePatterns,  // Array = random selection
+        phase: 0,  // Still lifes are always phase 0
+        globalCellSize: CONFIG.globalCellSize
+      })
 
-        applyAppearanceOverride(invader.gol, 'invaders', Patterns, seedRadialDensity, CONFIG)
-
-        const finalDims = calculateEntityDimensions(invader)
-        invader.width = finalDims.width
-        invader.height = finalDims.height
-        invader.x = startX + col * (finalDims.width + spacing)
-        invader.y = startY + row * (finalDims.height + spacing)
-
-        invaders.push(invader)
+      const invader = {
+        x: startX + col * (dims.width + spacing),
+        y: startY + row * (dims.height + spacing),
+        width: dims.width,
+        height: dims.height,
+        hitbox: hitbox,
+        dead: false,
+        gol: renderer.gol,  // Use frozen GoL from PatternRenderer
+        gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
+                  row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
+                  GRADIENT_PRESETS.ENEMY_RAINBOW
       }
-    }
-  } else {
-    // DEFAULT: Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)
-    const stillLifePatterns = [
-      PatternName.BLOCK,
-      PatternName.BEEHIVE,
-      PatternName.LOAF,
-      PatternName.BOAT,
-      PatternName.TUB
-    ]
 
-    // Create a single renderer to get dimensions (use BLOCK as reference)
-    const testRenderer = createPatternRenderer({
-      mode: RenderMode.STATIC,
-      pattern: PatternName.BLOCK,
-      phase: 0,
-      globalCellSize: CONFIG.globalCellSize
-    })
-
-    const dims = testRenderer.dimensions
-    const hitbox = calculateClampedHitbox(dims.width, 'invaders')
-
-    console.log(`[SetupInvaders] DEFAULT MODE: Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)`)
-    console.log(`[SetupInvaders] Dimensions:`, dims)
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        // Create renderer with random still life pattern
-        renderer = createPatternRenderer({
-          mode: RenderMode.STATIC,
-          pattern: stillLifePatterns,  // Array = random selection
-          phase: 0,  // Still lifes are always phase 0
-          globalCellSize: CONFIG.globalCellSize
-        })
-
-        const invader = {
-          x: startX + col * (dims.width + spacing),
-          y: startY + row * (dims.height + spacing),
-          width: dims.width,
-          height: dims.height,
-          hitbox: hitbox,
-          dead: false,
-          gol: renderer.gol,  // Use frozen GoL from PatternRenderer
-          gradient: row % 3 === 0 ? GRADIENT_PRESETS.ENEMY_HOT :
-                    row % 3 === 1 ? GRADIENT_PRESETS.ENEMY_COLD :
-                    GRADIENT_PRESETS.ENEMY_RAINBOW
-        }
-
-        invaders.push(invader)
-      }
+      invaders.push(invader)
     }
   }
 
@@ -598,15 +476,8 @@ function shootBullet() {
     gradient: GRADIENT_PRESETS.BULLET
   }
 
-  // Check for debug appearance override
-  const overrideApplied = applyAppearanceOverride(
-    bullet.gol, 'bullets', Patterns, seedRadialDensity, CONFIG
-  )
-
-  if (!overrideApplied) {
-    // Default: Organic pattern with radial density (compact 2x2)
-    seedRadialDensity(bullet.gol, 0.75, 0.0)
-  }
+  // Organic pattern with radial density (compact 2x2)
+  seedRadialDensity(bullet.gol, 0.75, 0.0)
 
   // PHASE 3: Calculate dimensions after pattern applied
   const dims = calculateEntityDimensions(bullet)
@@ -770,20 +641,13 @@ function spawnExplosion(invader) {
       gradient: GRADIENT_PRESETS.EXPLOSION
     }
 
-    // Check for debug appearance override
-    const overrideApplied = applyAppearanceOverride(
-      particle.gol, 'explosions', Patterns, seedRadialDensity, CONFIG
-    )
+    // Pure GoL setup (Tier 1: no lifeForce)
+    seedRadialDensity(particle.gol, 0.7, 0.0)
 
-    if (!overrideApplied) {
-      // Default Pure GoL setup (Tier 1: no lifeForce)
-      seedRadialDensity(particle.gol, 0.7, 0.0)
-
-      // Add a small pattern in center for chaos
-      const explosionPatterns = [Patterns.BLINKER, Patterns.TOAD, Patterns.BEACON]
-      const pattern = explosionPatterns[Math.floor(Math.random() * explosionPatterns.length)]
-      particle.gol.setPattern(pattern, 1, 1)
-    }
+    // Add a small pattern in center for chaos
+    const explosionPatterns = [Patterns.BLINKER, Patterns.TOAD, Patterns.BEACON]
+    const pattern = explosionPatterns[Math.floor(Math.random() * explosionPatterns.length)]
+    particle.gol.setPattern(pattern, 1, 1)
 
     // PHASE 3: Calculate dimensions after pattern applied
     const dims = calculateEntityDimensions(particle)

@@ -110,6 +110,7 @@ LifeArcade/
 │   └── installation/
 ├── installation.html     # Main SPA entry point
 └── archive/              # Archived obsolete files
+    ├── debug-system/     # Debug UI (archived 2025-11-19)
     ├── old-versions/     # Old HTML files (gallery.html, games.html, index.html)
     ├── planning/         # Installation planning docs (implemented)
     └── reports/          # Old status reports

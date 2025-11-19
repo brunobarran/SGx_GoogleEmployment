@@ -33,14 +33,27 @@ import { createPatternRenderer, RenderMode } from '../utils/PatternRenderer.js'
 /**
  * Available canonical GoL patterns from Patterns.js
  * Following LifeWiki standards (CLAUDE.md requirement)
- *
- * Auto-generated from Patterns.js to avoid duplication.
- * If new patterns are added to Patterns.js, they automatically appear here.
  */
-export const STATIC_PATTERNS = Object.keys(Patterns).reduce((acc, key) => {
-  acc[key] = key
-  return acc
-}, {})
+export const STATIC_PATTERNS = {
+  // Still Lifes (stable, no change)
+  BLOCK: 'BLOCK',
+  BEEHIVE: 'BEEHIVE',
+  LOAF: 'LOAF',
+  BOAT: 'BOAT',
+  TUB: 'TUB',
+  POND: 'POND',
+  SHIP: 'SHIP',
+
+  // Oscillators (period patterns)
+  BLINKER: 'BLINKER',
+  TOAD: 'TOAD',
+  BEACON: 'BEACON',
+  PULSAR: 'PULSAR',
+
+  // Spaceships (moving patterns)
+  GLIDER: 'GLIDER',
+  LIGHTWEIGHT_SPACESHIP: 'LIGHTWEIGHT_SPACESHIP'
+}
 
 /**
  * Pattern periods for oscillators and spaceships.
