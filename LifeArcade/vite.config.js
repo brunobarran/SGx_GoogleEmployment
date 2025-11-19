@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
   server: {
@@ -12,5 +13,15 @@ export default defineConfig({
         main: resolve(__dirname, 'installation.html')
       }
     }
-  }
+  },
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'src',
+          dest: '.'
+        }
+      ]
+    })
+  ]
 })

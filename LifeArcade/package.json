@@ -6,10 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run copy:src",
     "build": "vite build",
-    "copy:src": "node -e \"require('fs').cpSync('src', 'public/src', {recursive: true})\"",
-    "clean": "node -e \"try { require('fs').rmSync('public/src', {recursive: true, force: true}); require('fs').rmSync('dist', {recursive: true, force: true}); } catch(e) {}\"",
+    "clean": "node -e \"try { require('fs').rmSync('dist', {recursive: true, force: true}); } catch(e) {}\"",
     "preview": "vite preview",
     "test": "vitest",
     "test:coverage": "vitest --coverage"
@@ -27,6 +25,7 @@
   "homepage": "https://github.com/brunobarran/SGx_GoogleEmployment#readme",
   "devDependencies": {
     "vite": "^7.2.2",
+    "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.8"
   },
   "dependencies": {

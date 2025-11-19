@@ -10,21 +10,21 @@
  * @license ISC
  */
 
-import { GoLEngine } from '/src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js'
-import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
-import { Collision } from '/src/utils/Collision.js'
-import { Patterns } from '/src/utils/Patterns.js'
-import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
-import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
-import { renderGameUI, renderGameOver, renderWin } from '/src/utils/UIHelpers.js'
+import { GoLEngine } from '../src/core/GoLEngine.js'
+import { SimpleGradientRenderer } from '../src/rendering/SimpleGradientRenderer.js'
+import { GRADIENT_PRESETS } from '../src/utils/GradientPresets.js'
+import { Collision } from '../src/utils/Collision.js'
+import { Patterns } from '../src/utils/Patterns.js'
+import { seedRadialDensity, applyLifeForce, maintainDensity } from '../src/utils/GoLHelpers.js'
+import { updateParticles, renderParticles } from '../src/utils/ParticleHelpers.js'
+import { renderGameUI, renderGameOver, renderWin } from '../src/utils/UIHelpers.js'
 import {
   GAME_DIMENSIONS,
   GAMEOVER_CONFIG,
   createGameState,
   calculateCanvasDimensions,
   createGameConfig
-} from '/src/utils/GameBaseConfig.js'
+} from '../src/utils/GameBaseConfig.js'
 
 // ============================================
 // CONFIGURATION - Using GameBaseConfig

@@ -19,7 +19,7 @@
  * ])
  */
 export function renderGameUI(config, state, controls) {
-  fill(config.ui.textColor)
+  fill(config.ui.textColor)  // Can be hex string or RGB array
   noStroke()
   textFont(config.ui.font)
   textStyle(NORMAL)
