@@ -44,14 +44,17 @@ export function updateParticles(particles, frameCount, loopUpdateRate = 30) {
 /**
  * Render particles with alpha transparency.
  *
- * PHASE 3: Uses CONFIG.globalCellSize for all particle rendering.
+ * Uses each particle's own cellSize, or optional globalCellSize parameter.
  *
  * @param {Array} particles - Array of particle objects
  * @param {SimpleGradientRenderer} renderer - Gradient renderer instance
- * @param {number} globalCellSize - Global cell size from CONFIG
+ * @param {number} [globalCellSize] - Optional global cell size (uses particle.cellSize if not provided)
  *
  * @example
- * // In your renderGame() function:
+ * // With individual particle cellSize:
+ * renderParticles(particles, maskedRenderer)
+ *
+ * // With global cellSize:
  * renderParticles(particles, maskedRenderer, CONFIG.globalCellSize)
  */
 export function renderParticles(particles, renderer, globalCellSize) {
@@ -59,7 +62,9 @@ export function renderParticles(particles, renderer, globalCellSize) {
     if (p.alpha > 0) {
       push()
       drawingContext.globalAlpha = p.alpha / 255
-      renderer.renderMaskedGrid(p.gol, p.x, p.y, globalCellSize, p.gradient)
+      // Use globalCellSize if provided, otherwise use particle's own cellSize
+      const cellSize = globalCellSize !== undefined ? globalCellSize : p.cellSize
+      renderer.renderMaskedGrid(p.gol, p.x, p.y, cellSize, p.gradient)
       pop()
     }
   })

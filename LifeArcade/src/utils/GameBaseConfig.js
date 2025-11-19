@@ -19,6 +19,8 @@ export const GAME_DIMENSIONS = {
 // GAME OVER CONFIGURATION
 // ============================================
 export const GAMEOVER_CONFIG = {
+  MIN_DELAY: 30,           // Minimum frames to wait before showing game over (0.5 seconds at 60fps)
+  MAX_WAIT: 180,           // Maximum frames to wait for particle animation (3 seconds at 60fps)
   PARTICLE_DURATION: 120,  // Frames to show particles before game over message
   MESSAGE_DURATION: 180,   // Frames to show game over message
   FADE_START: 150          // Frame to start fade out

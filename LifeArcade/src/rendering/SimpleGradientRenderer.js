@@ -35,7 +35,9 @@ class SimpleGradientRenderer {
    * }
    */
   constructor(p5Instance) {
-    this.p5 = p5Instance
+    // In p5.js GLOBAL mode, all p5 functions are in window scope
+    // Accept p5Instance for compatibility, but use window in global mode
+    this.p5 = p5Instance || window
 
     // Animation offset for gradient scrolling
     this.animationOffset = 0
@@ -80,6 +82,17 @@ class SimpleGradientRenderer {
       this.animationOffset * 0.5  // Time dimension for smooth animation
     )
 
+    // Defensive check: if noise returns NaN, use simple fallback
+    if (isNaN(noiseValue)) {
+      console.warn('[SimpleGradientRenderer] noise() returned NaN at', screenX, screenY, '- using first palette color')
+      // Return first palette color as safe fallback
+      if (this.palette && this.palette.length > 0 && this.palette[0]) {
+        return this.palette[0]
+      }
+      // Ultimate fallback: white
+      return [255, 255, 255]
+    }
+
     // Map noise (0.0 to 1.0) to color palette with smooth interpolation
     const t = noiseValue  // Direct use of noise value
 
@@ -93,10 +106,22 @@ class SimpleGradientRenderer {
     const c1 = this.palette[i1]
     const c2 = this.palette[i2]
 
-    // Defensive check for undefined palette colors
-    if (!c1 || !c2) {
-      console.error('[SimpleGradientRenderer] Invalid palette access:', { i1, i2, paletteLength: this.palette.length })
-      return [255, 255, 255]  // Fallback to white
+    // Defensive check for undefined palette colors or invalid array access
+    if (!c1 || !c2 || !Array.isArray(c1) || !Array.isArray(c2) ||
+        c1.length < 3 || c2.length < 3 ||
+        typeof c1[0] !== 'number' || typeof c2[0] !== 'number') {
+      console.error('[SimpleGradientRenderer] Invalid palette data:', {
+        i1, i2,
+        paletteLength: this.palette.length,
+        c1, c2,
+        screenX, screenY,
+        noiseValue: t
+      })
+      // Return first valid color or white
+      if (this.palette && this.palette.length > 0 && this.palette[0] && Array.isArray(this.palette[0])) {
+        return this.palette[0].slice()  // Clone to avoid mutations
+      }
+      return [255, 255, 255]  // Ultimate fallback: white
     }
 
     const r = this.p5.lerp(c1[0], c2[0], localT)
