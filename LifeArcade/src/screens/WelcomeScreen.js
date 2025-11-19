@@ -26,6 +26,11 @@ export class WelcomeScreen {
   show() {
     console.log('WelcomeScreen: Show')
 
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
     // Create screen element
     this.element = document.createElement('div')
     this.element.id = 'welcome-screen'
@@ -37,17 +42,17 @@ export class WelcomeScreen {
       </div>
     `
 
-    // Add styles
+    // Add styles with responsive dimensions
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       background: #FFFFFF;
       display: flex;
       align-items: center;
@@ -76,22 +81,22 @@ export class WelcomeScreen {
         }
 
         .welcome-title {
-          font-size: 64px;
+          font-size: clamp(24px, 3.33vh, 64px);
           font-weight: 700;
           color: #4285F4;
-          margin: 0 0 20px 0;
+          margin: 0 0 clamp(8px, 1.04vh, 20px) 0;
           letter-spacing: 2px;
         }
 
         .welcome-subtitle {
-          font-size: 24px;
+          font-size: clamp(14px, 1.25vh, 24px);
           color: #5f6368;
-          margin: 0 0 60px 0;
+          margin: 0 0 clamp(24px, 3.13vh, 60px) 0;
           font-weight: 400;
         }
 
         .welcome-prompt {
-          font-size: 28px;
+          font-size: clamp(16px, 1.46vh, 28px);
           color: #5f6368;
           margin: 0;
           animation: pulse 2s infinite;

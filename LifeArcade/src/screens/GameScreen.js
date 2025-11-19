@@ -53,6 +53,11 @@ export class GameScreen {
     this.element = document.createElement('div')
     this.element.id = 'game-screen'
 
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
     // Create iframe
     this.iframe = document.createElement('iframe')
     this.iframe.src = game.path
@@ -62,11 +67,11 @@ export class GameScreen {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       border: none;
       object-fit: contain;
       z-index: 100;

@@ -64,17 +64,22 @@ export class ScoreEntryScreen {
       </div>
     `
 
-    // Add styles
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
+    // Add styles with responsive dimensions
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
@@ -99,43 +104,43 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-title {
-          font-size: 72px;
+          font-size: clamp(28px, 3.75vh, 72px);
           font-weight: 700;
           color: #EA4335;
-          margin: 0 0 40px 0;
+          margin: 0 0 clamp(16px, 2.08vh, 40px) 0;
           letter-spacing: 4px;
         }
 
         .score-entry-score {
-          font-size: 96px;
+          font-size: clamp(36px, 5vh, 96px);
           font-weight: 700;
           color: #4285F4;
-          margin: 0 0 80px 0;
+          margin: 0 0 clamp(32px, 4.17vh, 80px) 0;
         }
 
         .score-entry-prompt {
-          font-size: 32px;
+          font-size: clamp(16px, 1.67vh, 32px);
           color: #5f6368;
-          margin: 0 0 40px 0;
+          margin: 0 0 clamp(16px, 2.08vh, 40px) 0;
           font-weight: 600;
         }
 
         .score-entry-letters {
           display: flex;
-          gap: 30px;
-          margin-bottom: 60px;
+          gap: clamp(12px, 1.56vh, 30px);
+          margin-bottom: clamp(24px, 3.13vh, 60px);
         }
 
         .score-entry-letter {
-          width: 120px;
-          height: 160px;
+          width: clamp(60px, 6.25vh, 120px);
+          height: clamp(80px, 8.33vh, 160px);
           background: #f8f9fa;
           border: 4px solid #dadce0;
           border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 96px;
+          font-size: clamp(36px, 5vh, 96px);
           font-weight: 700;
           color: #202124;
           transition: all 0.3s ease;
@@ -149,7 +154,7 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-instructions {
-          font-size: 24px;
+          font-size: clamp(14px, 1.25vh, 24px);
           color: #5f6368;
           margin: 0;
         }

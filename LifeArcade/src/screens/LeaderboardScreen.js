@@ -74,17 +74,22 @@ export class LeaderboardScreen {
       </div>
     `
 
-    // Add styles
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
+    // Add styles with responsive dimensions
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
@@ -102,34 +107,34 @@ export class LeaderboardScreen {
         .leaderboard-container {
           max-width: 900px;
           margin: 0 auto;
-          padding: 80px 50px;
+          padding: clamp(32px, 4.17vh, 80px) clamp(20px, 2.6vh, 50px);
           font-family: 'Google Sans', Arial, sans-serif;
         }
 
         .leaderboard-title {
-          font-size: 48px;
+          font-size: clamp(20px, 2.5vh, 48px);
           font-weight: 700;
           color: #4285F4;
           text-align: center;
-          margin: 0 0 60px 0;
+          margin: 0 0 clamp(24px, 3.13vh, 60px) 0;
           letter-spacing: 2px;
         }
 
         .leaderboard-table {
           background: #f8f9fa;
           border-radius: 16px;
-          padding: 40px;
-          margin-bottom: 40px;
+          padding: clamp(16px, 2.08vh, 40px);
+          margin-bottom: clamp(16px, 2.08vh, 40px);
         }
 
         .leaderboard-header {
           display: grid;
           grid-template-columns: 100px 1fr 200px;
-          gap: 20px;
-          padding-bottom: 20px;
+          gap: clamp(8px, 1.04vh, 20px);
+          padding-bottom: clamp(8px, 1.04vh, 20px);
           border-bottom: 3px solid #dadce0;
-          margin-bottom: 20px;
-          font-size: 20px;
+          margin-bottom: clamp(8px, 1.04vh, 20px);
+          font-size: clamp(12px, 1.04vh, 20px);
           font-weight: 700;
           color: #5f6368;
         }
@@ -137,10 +142,10 @@ export class LeaderboardScreen {
         .leaderboard-row {
           display: grid;
           grid-template-columns: 100px 1fr 200px;
-          gap: 20px;
-          padding: 16px 0;
+          gap: clamp(8px, 1.04vh, 20px);
+          padding: clamp(8px, 0.83vh, 16px) 0;
           border-bottom: 1px solid #e8eaed;
-          font-size: 24px;
+          font-size: clamp(14px, 1.25vh, 24px);
           transition: all 0.3s ease;
         }
 

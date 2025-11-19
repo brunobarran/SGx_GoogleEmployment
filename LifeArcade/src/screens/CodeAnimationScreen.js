@@ -69,17 +69,22 @@ export class CodeAnimationScreen {
       </div>
     `
 
-    // Add styles
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
+    // Add styles with responsive dimensions
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.3s ease-in;
@@ -95,7 +100,7 @@ export class CodeAnimationScreen {
       style.id = 'code-screen-styles'
       style.textContent = `
         .code-container {
-          padding: 60px;
+          padding: clamp(24px, 3.13vh, 60px);
           font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
           height: 100%;
           display: flex;
@@ -117,7 +122,7 @@ export class CodeAnimationScreen {
         }
 
         .code-content {
-          font-size: 20px;
+          font-size: clamp(12px, 1.04vh, 20px);
           line-height: 1.8;
           color: #202124;
           white-space: pre-wrap;

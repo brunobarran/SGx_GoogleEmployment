@@ -81,17 +81,22 @@ export class QRCodeScreen {
       </div>
     `
 
-    // Add styles
+    // Calculate responsive dimensions
+    const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+
+    // Add styles with responsive dimensions
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1200px;
-      height: 1920px;
+      width: ${containerWidth}px;
+      height: ${containerHeight}px;
       max-width: 100vw;
       max-height: 100vh;
-      aspect-ratio: auto 1200 / 1920;
+      aspect-ratio: 10 / 16;
       background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.3s ease-in;
@@ -113,20 +118,20 @@ export class QRCodeScreen {
           justify-content: center;
           height: 100%;
           font-family: 'Google Sans', Arial, sans-serif;
-          padding: 60px;
+          padding: clamp(24px, 3.13vh, 60px);
         }
 
         .qr-title {
-          font-size: 56px;
+          font-size: clamp(24px, 2.92vh, 56px);
           font-weight: 700;
           color: #4285F4;
-          margin: 0 0 80px 0;
+          margin: 0 0 clamp(32px, 4.17vh, 80px) 0;
           letter-spacing: 3px;
         }
 
         .qr-placeholder {
-          width: 400px;
-          height: 400px;
+          width: clamp(200px, 20.83vh, 400px);
+          height: clamp(200px, 20.83vh, 400px);
           background: #f8f9fa;
           border: 4px solid #dadce0;
           border-radius: 24px;
@@ -134,16 +139,16 @@ export class QRCodeScreen {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          margin-bottom: 60px;
+          margin-bottom: clamp(24px, 3.13vh, 60px);
           box-shadow: 0 4px 16px rgba(0,0,0,0.1);
         }
 
         .qr-icon {
-          margin-bottom: 20px;
+          margin-bottom: clamp(8px, 1.04vh, 20px);
         }
 
         .qr-note {
-          font-size: 16px;
+          font-size: clamp(10px, 0.83vh, 16px);
           color: #5f6368;
           margin: 0;
           font-style: italic;
@@ -152,13 +157,13 @@ export class QRCodeScreen {
         .qr-url-box {
           background: #f8f9fa;
           border-radius: 12px;
-          padding: 30px 40px;
-          margin-bottom: 60px;
+          padding: clamp(16px, 1.56vh, 30px) clamp(16px, 2.08vh, 40px);
+          margin-bottom: clamp(24px, 3.13vh, 60px);
           max-width: 800px;
         }
 
         .qr-url-label {
-          font-size: 20px;
+          font-size: clamp(12px, 1.04vh, 20px);
           color: #5f6368;
           margin: 0 0 12px 0;
           font-weight: 600;
