@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Dino Runner - Mobile version powered by Conway's Game of Life">
+  <title>Dino Runner - Game of Life Edition</title>
+
+  <!-- p5.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #FFFFFF;  /* Google White */
+      font-family: 'Roboto', 'Arial', sans-serif;
+      overflow: hidden;
+      touch-action: none;  /* Prevent iOS Safari gestures */
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F8F9FA;  /* Google Light Gray */
+    }
+
+    #score-display {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #4285F4;  /* Google Blue */
+      z-index: 10;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+      font-family: monospace;
+    }
+
+    #touch-hint {
+      position: absolute;
+      bottom: 30px;
+      width: 100%;
+      text-align: center;
+      font-size: 16px;
+      color: #5F6368;  /* Google Gray */
+      opacity: 0.7;
+      z-index: 10;
+      animation: fadeInOut 3s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.9; }
+    }
+
+    canvas {
+      display: block;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    /* Game Over Overlay */
+    #game-over-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;  /* Hidden by default */
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    #game-over-overlay.visible {
+      display: flex;
+    }
+
+    #game-over-text {
+      font-size: 48px;
+      font-weight: bold;
+      color: #EA4335;  /* Google Red */
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+    }
+
+    #final-score {
+      font-size: 32px;
+      color: #FFFFFF;
+      margin-bottom: 30px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    #restart-button {
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #FFFFFF;
+      background: #34A853;  /* Google Green */
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+      min-width: 200px;
+      min-height: 60px;
+    }
+
+    #restart-button:hover {
+      background: #2D9049;
+    }
+
+    #restart-button:active {
+      transform: scale(0.95);
+    }
+
+    /* Loading indicator */
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: #4285F4;
+      z-index: 5;
+    }
+
+    #loading.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Loading indicator -->
+    <div id="loading">Loading...</div>
+
+    <!-- Score Display -->
+    <div id="score-display">Score: <span id="score">0</span></div>
+
+    <!-- Touch Hint -->
+    <div id="touch-hint">Tap to Jump • Hold to Duck</div>
+
+    <!-- Canvas will be inserted here by p5.js -->
+
+    <!-- Game Over Overlay -->
+    <div id="game-over-overlay">
+      <div id="game-over-text">GAME OVER</div>
+      <div id="final-score">Score: <span id="final-score-value">0</span></div>
+      <button id="restart-button">TAP TO RESTART</button>
+    </div>
+  </div>
+
+  <!-- Main game script (ES6 module) -->
+  <script type="module" src="game.js"></script>
+</body>
+</html>
