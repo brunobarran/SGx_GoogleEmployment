@@ -129,7 +129,8 @@ export class QRCodeScreen {
         .qr-title-wrapper {
           width: 100%;
           max-width: clamp(500px, 84.7vw, 1016px);
-          margin-bottom: clamp(60px, 10vh, 192px);
+          margin-bottom: 0;
+          flex-shrink: 0;
         }
 
         .qr-title {
@@ -154,6 +155,7 @@ export class QRCodeScreen {
           justify-content: center;
           flex: 1;
           width: 100%;
+          gap: clamp(20px, 3vh, 60px);
         }
 
         .qr-scan-prompt {
@@ -162,7 +164,7 @@ export class QRCodeScreen {
           color: #7D7D7D;
           text-align: center;
           line-height: 1;
-          margin-bottom: clamp(10px, 1vh, 20px);
+          margin: 0;
           padding: 0;
           background: transparent;
           z-index: 2;
