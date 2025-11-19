@@ -95,7 +95,7 @@ export class ScoreEntryScreen {
           align-items: center;
           justify-content: center;
           height: 100%;
-          font-family: 'Google Sans', Arial, sans-serif;
+          font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .score-entry-gameover {
@@ -114,7 +114,7 @@ export class ScoreEntryScreen {
           justify-content: space-between;
           height: 100%;
           padding: clamp(60px, 7.6vh, 146px) clamp(45px, 9vw, 108px);
-          font-family: 'Google Sans', Arial, sans-serif;
+          font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .score-entry-header {
@@ -176,7 +176,7 @@ export class ScoreEntryScreen {
           justify-content: space-between;
           height: 100%;
           padding: clamp(60px, 7.6vh, 146px) clamp(45px, 9.4vw, 113px);
-          font-family: 'Google Sans', Arial, sans-serif;
+          font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .score-entry-letters-row {

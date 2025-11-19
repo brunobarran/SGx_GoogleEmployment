@@ -124,7 +124,7 @@ export class QRCodeScreen {
           display: flex;
           flex-direction: column;
           align-items: center;
-          font-family: 'Google Sans Flex', 'Google Sans', Arial, sans-serif;
+          font-family: 'Google Sans Flex', Arial, sans-serif;
           padding: clamp(60px, 6vh, 115px) clamp(45px, 7.7vw, 92px);
         }
 

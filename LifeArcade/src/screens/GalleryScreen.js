@@ -120,7 +120,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
 
     // Create title
     const title = document.createElement('div')
-    title.innerHTML = `<span style="font-family: 'Google Sans Mono', monospace;">Prompt</span><span style="font-family: 'Google Sans', sans-serif;"> Library</span>`
+    title.innerHTML = `<span style="font-family: 'Google Sans Mono', monospace; font-weight: 600;">Prompt Library</span>`
     title.style.cssText = `
       position: absolute;
       top: clamp(60px, 6.1vh, 117px);
@@ -216,7 +216,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       text-align: center;
       color: #7D7D7D;
       font-size: clamp(20px, 2.12vh, 40.67px);
-      font-family: 'Google Sans', sans-serif;
+      font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
       margin-bottom: clamp(30px, 3.44vh, 66px);

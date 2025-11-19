@@ -78,7 +78,7 @@ export class IdleScreen {
       text-align: center;
       color: #202124;
       font-size: clamp(48px, 7vh, 134px);
-      font-family: 'Google Sans', sans-serif;
+      font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
       white-space: pre-line;
@@ -105,7 +105,7 @@ export class IdleScreen {
       text-align: center;
       color: #7D7D7D;
       font-size: clamp(24px, 2.9vh, 55px);
-      font-family: 'Google Sans', sans-serif;
+      font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
       word-wrap: break-word;

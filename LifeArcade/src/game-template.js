@@ -54,7 +54,7 @@ const CONFIG = {
     backgroundColor: '#FFFFFF',
     textColor: '#5f6368',
     accentColor: '#1a73e8',
-    font: 'Google Sans, Arial, sans-serif',
+    font: 'Google Sans Flex, Arial, sans-serif',
     fontSize: 16
   },
 

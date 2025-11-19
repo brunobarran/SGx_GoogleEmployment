@@ -87,7 +87,7 @@ export class WelcomeScreen {
         .welcome-container {
           width: 100%;
           padding: 0 clamp(40px, 9vw, 108px);
-          font-family: 'Google Sans', Arial, sans-serif;
+          font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .welcome-title {
