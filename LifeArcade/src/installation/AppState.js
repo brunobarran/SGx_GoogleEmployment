@@ -29,7 +29,7 @@ export class AppState {
     code: ['game', 'idle'],
     game: ['score', 'idle'],
     score: ['leaderboard', 'idle'],
-    leaderboard: ['qr', 'idle'],
+    leaderboard: ['qr', 'gallery', 'idle'],
     qr: ['idle']
   }
 

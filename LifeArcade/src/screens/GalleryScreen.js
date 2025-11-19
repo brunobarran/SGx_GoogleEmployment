@@ -120,7 +120,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
 
     // Create title
     const title = document.createElement('div')
-    title.innerHTML = `<span style="font-family: 'Google Sans Mono', monospace; font-weight: 600;">Prompt Library</span>`
+    title.innerHTML = `<span style="font-family: 'Google Sans Mono', monospace; font-weight: 500;">Prompt</span><span style="font-family: 'Google Sans Flex', sans-serif; font-weight: 500;"> Library</span>`
     title.style.cssText = `
       position: absolute;
       top: clamp(60px, 6.1vh, 117px);
@@ -138,11 +138,11 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     this.cardsContainer = document.createElement('div')
     this.cardsContainer.style.cssText = `
       position: absolute;
-      top: 50%;
+      top: 58%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
-      height: clamp(400px, 52vh, 1000px);
+      height: clamp(600px, 75vh, 1440px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -227,7 +227,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     promptContainer.className = 'gallery-card-prompt-container'
     promptContainer.style.cssText = `
       position: relative;
-      max-height: clamp(300px, 31.25vh, 600px);
+      max-height: clamp(450px, 54vh, 1036px);
       overflow: hidden;
     `
 
@@ -245,15 +245,15 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       word-wrap: break-word;
     `
 
-    // Gradient overlay for fade effect
+    // Extended gradient overlay for smoother fade effect
     const gradientOverlay = document.createElement('div')
     gradientOverlay.style.cssText = `
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      height: clamp(80px, 10.42vh, 200px);
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
+      height: clamp(150px, 20vh, 384px);
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 1) 100%);
       pointer-events: none;
     `
 
