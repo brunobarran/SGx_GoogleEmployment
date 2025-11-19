@@ -1,10 +1,9 @@
 /**
- * CodeAnimationScreen v2 - Terminal-style code animation (Figma design)
+ * CodeAnimationScreen - Code animation with typewriter effect
  *
- * Displays LLM-style text generation with colored keywords
- * Dark terminal background (#33333E)
- * Rectangular blinking cursor
- * Auto-scrolls as text appears
+ * Displays "GENERATING: {game-name}.js" header
+ * Shows simple code snippet with typewriter animation
+ * Auto-advances when complete (~3-5 seconds)
  *
  * @author Game of Life Arcade
  * @license ISC
@@ -43,23 +42,30 @@ export class CodeAnimationScreen {
       return
     }
 
-    // Mock text with colored keywords (from Figma)
-    this.targetText = `My primary goal was to deconstruct the user's hybrid concept into a precise and unambiguous technical specification for a coding AI.
+    // Load game code dynamically from .js file
+    // Use game.id to construct path (e.g., "space-invaders" -> "games/space-invaders.js")
+    const jsPath = `games/${game.id}.js`
 
-I began by isolating the <span class="highlight red">core mechanics</span> of "Space Invaders"—the bottom-screen player ship, upward single-shot, destructible bunkers, and the regimented alien grid with its movement and shooting.
+    try {
+      const response = await fetch(jsPath)
+      if (!response.ok) {
+        throw new Error(`Failed to load ${jsPath}`)
+      }
+      const fullText = await response.text()
 
-I then defined the <span class="highlight green">"Cellular Automata"</span> component, explicitly choosing Conway's <span class="highlight blue">Game of Life</span> (GofL) with its B3/S23 rules to provide concrete logic, noting the necessity of a <span class="highlight yellow">discrete grid</span> and a "tick" rate.
-
-The critical phase was the "translation" mapping: I decided the "aliens" would not be individuals, but a single...`
+      // Take only first 2000 characters for shorter animation
+      this.targetText = fullText.substring(0, 2000)
+    } catch (error) {
+      console.error('Error loading game code:', error)
+      this.targetText = `// Error loading game code\n// ${error.message}`
+    }
 
     // Create screen element
     this.element = document.createElement('div')
     this.element.id = 'code-screen'
     this.element.innerHTML = `
       <div class="code-container">
-        <div class="code-display">
-          <div class="code-content"></div>
-        </div>
+        <pre class="code-display"><code class="code-content"></code></pre>
       </div>
     `
 
@@ -79,7 +85,7 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #33333E;
+      background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.3s ease-in;
       overflow: hidden;
@@ -94,14 +100,16 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
       style.id = 'code-screen-styles'
       style.textContent = `
         .code-container {
-          padding: clamp(80px, 10.3vh, 198px) clamp(30px, 5vw, 60px);
-          font-family: 'Google Sans Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+          padding: clamp(24px, 3.13vh, 60px);
+          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
           height: 100%;
           display: flex;
           flex-direction: column;
         }
 
         .code-display {
+          margin: 0;
+          padding: 0;
           flex: 1;
           overflow-y: auto;
           /* Hide scrollbar for all browsers */
@@ -114,42 +122,19 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
         }
 
         .code-content {
-          font-size: clamp(18px, 2.34vh, 45px);
-          line-height: 1.2;
-          color: #FFFFFF;
+          font-size: clamp(12px, 1.04vh, 20px);
+          line-height: 1.8;
+          color: #202124;
           white-space: pre-wrap;
           word-wrap: break-word;
           font-weight: 400;
         }
 
-        .code-content .highlight {
-          font-weight: 600;
-        }
-
-        .code-content .highlight.red {
-          color: #FF5145;
-        }
-
-        .code-content .highlight.green {
-          color: #38A952;
-        }
-
-        .code-content .highlight.blue {
-          color: #438FF0;
-        }
-
-        .code-content .highlight.yellow {
-          color: #F7B200;
-        }
-
-        .code-content .cursor {
-          display: inline-block;
-          width: 0.6em;
-          height: 1em;
-          background: #FFFFFF;
+        .code-content::after {
+          content: '|';
+          color: #4285F4;
           animation: blink 0.8s infinite;
-          vertical-align: text-bottom;
-          margin-left: 2px;
+          font-weight: 300;
         }
 
         @keyframes blink {
@@ -210,7 +195,7 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
     this.currentChar = 0
     this.currentText = ''
 
-    // Update every 30ms (~33 chars/sec, slower terminal effect)
+    // Update every 10ms (~100 chars/sec, similar to LLM streaming)
     this.intervalHandle = setInterval(() => {
       if (this.currentChar < this.targetText.length) {
         this.currentText += this.targetText[this.currentChar]
@@ -219,12 +204,12 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
         // Update display
         const codeContent = this.element.querySelector('.code-content')
         if (codeContent) {
-          // Set HTML to preserve span tags for colored text
-          codeContent.innerHTML = this.currentText + '<span class="cursor"></span>'
+          codeContent.textContent = this.currentText
 
-          // Auto-scroll like terminal (keep bottom visible)
+          // Auto-scroll like MS-DOS terminal (keep bottom visible)
           const codeDisplay = this.element.querySelector('.code-display')
           if (codeDisplay) {
+            // Scroll to bottom automatically as text is added
             codeDisplay.scrollTop = codeDisplay.scrollHeight
           }
         }
@@ -233,21 +218,12 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
         clearInterval(this.intervalHandle)
         this.intervalHandle = null
 
-        // Keep cursor blinking at end for 1 second, then remove and auto-advance
+        // Auto-advance after 2 seconds (wait for user to see complete code)
         this.timeoutHandle = setTimeout(() => {
-          const codeContent = this.element.querySelector('.code-content')
-          if (codeContent) {
-            // Remove cursor
-            codeContent.innerHTML = this.currentText
-          }
-
-          // Auto-advance after cursor disappears
-          setTimeout(() => {
-            this.advanceToGame()
-          }, 500)
-        }, 1000)
+          this.advanceToGame()
+        }, 2000)
       }
-    }, 30)
+    }, 10)
   }
 
   /**

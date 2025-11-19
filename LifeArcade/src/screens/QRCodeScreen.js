@@ -1,9 +1,9 @@
 /**
- * QRCodeScreen - QR code display for web version
+ * QRCodeScreen v2 - Thank you screen with QR code (Figma design)
  *
- * Header: "PLAY ON THE WEB"
- * QR Code: Large, centered (placeholder for now)
- * URL: Display below QR code
+ * Title: "Thank you LFC for playing Conway's Arcade!"
+ * QR Code: Centered with blur circle background
+ * Decorations: GoL patterns in corners
  * Auto-timeout: 15 seconds to Idle
  *
  * @author Game of Life Arcade
@@ -34,14 +34,18 @@ export class QRCodeScreen {
   }
 
   /**
-   * Show screen - Display QR code and URL
+   * Show screen - Display QR code and thank you message
    */
   show() {
     console.log('QRCodeScreen: Show')
 
-    // Get selected game
+    // Get selected game and player name
     const state = this.appState.getState()
     const game = state.selectedGame
+    const playerName = state.playerName || 'LFC'  // Fallback to 'LFC' if no name
+
+    console.log('QRCodeScreen DEBUG: playerName =', playerName)
+    console.log('QRCodeScreen DEBUG: full state =', state)
 
     if (!game) {
       console.error('No game selected')
@@ -55,31 +59,6 @@ export class QRCodeScreen {
     // Create screen element
     this.element = document.createElement('div')
     this.element.id = 'qr-screen'
-    this.element.innerHTML = `
-      <div class="qr-container">
-        <h1 class="qr-title">PLAY ON THE WEB</h1>
-        <div class="qr-placeholder">
-          <div class="qr-icon">
-            <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-              <rect x="20" y="20" width="70" height="70" fill="#4285F4"/>
-              <rect x="110" y="20" width="70" height="70" fill="#EA4335"/>
-              <rect x="20" y="110" width="70" height="70" fill="#34A853"/>
-              <rect x="110" y="110" width="70" height="70" fill="#FBBC04"/>
-              <rect x="50" y="50" width="10" height="10" fill="white"/>
-              <rect x="140" y="50" width="10" height="10" fill="white"/>
-              <rect x="50" y="140" width="10" height="10" fill="white"/>
-              <rect x="140" y="140" width="10" height="10" fill="white"/>
-            </svg>
-          </div>
-          <p class="qr-note">QR Code generation available in production</p>
-        </div>
-        <div class="qr-url-box">
-          <p class="qr-url-label">Game URL:</p>
-          <p class="qr-url">${gameUrl}</p>
-        </div>
-        <p class="qr-footer">Scan with your phone • Press SPACE to restart • Auto-restart in 15s</p>
-      </div>
-    `
 
     // Calculate responsive dimensions
     const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
@@ -99,8 +78,31 @@ export class QRCodeScreen {
       aspect-ratio: 10 / 16;
       background: #FFFFFF;
       z-index: 100;
-      animation: fadeIn 0.3s ease-in;
+      animation: fadeIn 0.5s ease-in;
       overflow: hidden;
+    `
+
+    this.element.innerHTML = `
+      <div class="qr-container">
+        <!-- Title at top -->
+        <div class="qr-title-wrapper">
+          <div class="qr-title">
+            <span class="qr-title-text">Thank you </span><span class="qr-title-highlight">${playerName}</span><span class="qr-title-text"> for playing<br/>Conway's Arcade!</span>
+          </div>
+        </div>
+
+        <!-- Center section with QR -->
+        <div class="qr-center">
+          <!-- Scan prompt above QR -->
+          <div class="qr-scan-prompt">Scan to create your game</div>
+
+          <!-- QR Code with blur circle -->
+          <div class="qr-code-wrapper">
+            <div class="qr-blur-circle"></div>
+            <img src="./img/qr.png" alt="QR Code" class="qr-code-image" />
+          </div>
+        </div>
+      </div>
     `
 
     // Add to DOM
@@ -112,77 +114,126 @@ export class QRCodeScreen {
       style.id = 'qr-screen-styles'
       style.textContent = `
         .qr-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          height: 100%;
-          font-family: 'Google Sans', Arial, sans-serif;
-          padding: clamp(24px, 3.13vh, 60px);
+          font-family: 'Google Sans Flex', 'Google Sans', Arial, sans-serif;
+          padding: clamp(60px, 6vh, 115px) clamp(45px, 7.7vw, 92px);
+        }
+
+        .qr-title-wrapper {
+          width: 100%;
+          max-width: clamp(350px, 60vw, 720px);
+          margin-bottom: 0;
+          flex-shrink: 0;
         }
 
         .qr-title {
-          font-size: clamp(24px, 2.92vh, 56px);
-          font-weight: 700;
-          color: #4285F4;
-          margin: 0 0 clamp(32px, 4.17vh, 80px) 0;
-          letter-spacing: 3px;
+          font-size: clamp(36px, 4.43vh, 85px);
+          font-weight: 500;
+          line-height: 1.1;
+          text-align: left;
         }
 
-        .qr-placeholder {
-          width: clamp(200px, 20.83vh, 400px);
-          height: clamp(200px, 20.83vh, 400px);
-          background: #f8f9fa;
-          border: 4px solid #dadce0;
-          border-radius: 24px;
+        .qr-title-text {
+          color: #202124;
+        }
+
+        .qr-title-highlight {
+          color: #FF5145;
+        }
+
+        .qr-center {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          margin-bottom: clamp(24px, 3.13vh, 60px);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+          flex: 1;
+          width: 100%;
+          gap: clamp(20px, 3vh, 60px);
         }
 
-        .qr-icon {
-          margin-bottom: clamp(8px, 1.04vh, 20px);
-        }
-
-        .qr-note {
-          font-size: clamp(10px, 0.83vh, 16px);
-          color: #5f6368;
-          margin: 0;
-          font-style: italic;
-        }
-
-        .qr-url-box {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: clamp(16px, 1.56vh, 30px) clamp(16px, 2.08vh, 40px);
-          margin-bottom: clamp(24px, 3.13vh, 60px);
-          max-width: 800px;
-        }
-
-        .qr-url-label {
-          font-size: clamp(12px, 1.04vh, 20px);
-          color: #5f6368;
-          margin: 0 0 12px 0;
-          font-weight: 600;
-        }
-
-        .qr-url {
-          font-size: 24px;
-          font-family: 'Consolas', 'Monaco', monospace;
-          color: #4285F4;
-          margin: 0;
-          word-break: break-all;
-          font-weight: 600;
-        }
-
-        .qr-footer {
+        .qr-scan-prompt {
+          font-size: clamp(24px, 2.86vh, 55px);
+          font-weight: 500;
+          color: #7D7D7D;
           text-align: center;
-          font-size: 24px;
-          color: #5f6368;
+          line-height: 1;
           margin: 0;
+          padding: 0;
+          background: transparent;
+          z-index: 2;
+        }
+
+        .qr-code-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: clamp(280px, 48vw, 577px);
+          height: clamp(280px, 29.8vh, 572px);
+        }
+
+        .qr-blur-circle {
+          position: absolute;
+          width: clamp(350px, 61.8vw, 741px);
+          height: clamp(350px, 38.6vh, 741px);
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(66, 133, 244, 0.08) 0%, rgba(66, 133, 244, 0.03) 50%, rgba(255, 255, 255, 0) 100%);
+          filter: blur(60px);
+          z-index: 1;
+        }
+
+        .qr-code-image {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          z-index: 2;
+        }
+
+        /* Corner decorations */
+        .qr-decoration {
+          position: absolute;
+          background: #E8E8E8;
+          opacity: 0.6;
+          border-radius: 8px;
+        }
+
+        .qr-decoration-top-left {
+          width: clamp(40px, 7vw, 84px);
+          height: clamp(20px, 2vh, 38px);
+          left: clamp(56px, 9.4vw, 113px);
+          top: clamp(242px, 24.2vh, 465px);
+        }
+
+        .qr-decoration-top-right {
+          width: clamp(40px, 7vw, 84px);
+          height: clamp(36px, 3.8vh, 73px);
+          right: clamp(90px, 15vw, 182px);
+          top: clamp(148px, 14.8vh, 285px);
+        }
+
+        .qr-decoration-bottom-left {
+          width: clamp(100px, 17.3vw, 208px);
+          height: clamp(121px, 12.1vh, 232px);
+          left: clamp(151px, 25.3vw, 303px);
+          bottom: clamp(171px, 17.1vh, 329px);
+        }
+
+        .qr-decoration-bottom-right {
+          width: clamp(87px, 14.6vw, 175px);
+          height: clamp(67px, 6.7vh, 129px);
+          right: clamp(62px, 10.4vw, 125px);
+          bottom: clamp(302px, 30.2vh, 583px);
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `
       document.head.appendChild(style)

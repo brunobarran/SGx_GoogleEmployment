@@ -1,9 +1,8 @@
 /**
- * LeaderboardScreen - Top 10 scores display
+ * LeaderboardScreen.v2 - Top 5 scores display (Figma design)
  *
- * Header: "{GAME_NAME} - TOP 10"
- * Table: Rank, Name, Score
- * Highlight: New entry (if just entered)
+ * Clean table layout with emphasis on rank 1
+ * Footer with navigation links
  * Auto-timeout: 30 seconds to QR screen
  *
  * @author Game of Life Arcade
@@ -24,12 +23,15 @@ export class LeaderboardScreen {
     // DOM element
     this.element = null
 
+    // Footer navigation state
+    this.selectedOption = 0  // 0 = Create game (default), 1 = Play again
+
     // Bind methods
     this.handleKeyPress = this.handleKeyPress.bind(this)
   }
 
   /**
-   * Show screen - Display top 10 scores
+   * Show screen - Display top 5 scores
    */
   show() {
     console.log('LeaderboardScreen: Show')
@@ -38,6 +40,8 @@ export class LeaderboardScreen {
     const state = this.appState.getState()
     const game = state.selectedGame
     const playerName = state.playerName
+    const playerScore = state.currentScore
+    const playerTimestamp = state.scoreTimestamp
 
     if (!game) {
       console.error('No game selected')
@@ -45,41 +49,48 @@ export class LeaderboardScreen {
       return
     }
 
-    // Load scores
-    const scores = this.storageManager.getScores(game.id)
+    // Load scores and prepare display list
+    const allScores = this.storageManager.getScores(game.id)
 
-    // Create screen element
-    this.element = document.createElement('div')
-    this.element.id = 'leaderboard-screen'
-    this.element.innerHTML = `
-      <div class="leaderboard-container">
-        <h1 class="leaderboard-title">${game.name.toUpperCase()} - TOP 10</h1>
-        <div class="leaderboard-table">
-          <div class="leaderboard-header">
-            <div class="leaderboard-col-rank">RANK</div>
-            <div class="leaderboard-col-name">NAME</div>
-            <div class="leaderboard-col-score">SCORE</div>
-          </div>
-          ${scores.length > 0 ? scores.map((entry, index) => `
-            <div class="leaderboard-row ${entry.name === playerName ? 'highlight' : ''}">
-              <div class="leaderboard-col-rank">${index + 1}</div>
-              <div class="leaderboard-col-name">${entry.name === playerName ? '► ' + entry.name + ' ◄' : entry.name}</div>
-              <div class="leaderboard-col-score">${entry.score.toLocaleString()}</div>
-            </div>
-          `).join('') : `
-            <div class="leaderboard-empty">No scores yet - Be the first!</div>
-          `}
-        </div>
-        <p class="leaderboard-footer">Press SPACE to continue (auto-advance in 30s)</p>
-      </div>
-    `
+    console.log('LeaderboardScreen DEBUG:')
+    console.log('- Total scores:', allScores.length)
+    console.log('- Looking for player:', playerName, playerScore, playerTimestamp)
+    console.log('- All scores:', JSON.stringify(allScores.map(e => ({ name: e.name, score: e.score, date: e.date })), null, 2))
+
+    // Find player's rank (1-based) - match by name, score AND timestamp for exact identification
+    const playerRank = allScores.findIndex(entry =>
+      entry.name === playerName &&
+      entry.score === playerScore &&
+      entry.date === playerTimestamp
+    ) + 1
+
+    console.log('- Player rank:', playerRank)
+
+    // Build display list (max 5 entries)
+    let scores = []
+    if (playerRank === 0 || playerRank <= 5) {
+      // Player not in leaderboard OR in top 5 → show top 5 normally
+      scores = allScores.slice(0, 5)
+      console.log('- Showing top 5 normally')
+    } else {
+      // Player rank > 5 → show top 4 + player (replacing rank 5)
+      scores = [
+        ...allScores.slice(0, 4),
+        { ...allScores[playerRank - 1], displayRank: playerRank }  // Show with real rank
+      ]
+      console.log('- Showing top 4 + player at rank', playerRank)
+    }
+
+    console.log('- Display scores:', JSON.stringify(scores.map(e => ({ name: e.name, score: e.score, rank: e.displayRank || '(index)' })), null, 2))
 
     // Calculate responsive dimensions
     const aspectRatio = 1200 / 1920  // 0.625 (10:16 portrait)
     const containerHeight = window.innerHeight
     const containerWidth = Math.floor(containerHeight * aspectRatio)
 
-    // Add styles with responsive dimensions
+    // Create screen element
+    this.element = document.createElement('div')
+    this.element.id = 'leaderboard-screen'
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
@@ -93,114 +104,176 @@ export class LeaderboardScreen {
       background: #FFFFFF;
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
-      overflow-y: auto;
+      overflow: hidden;
     `
 
-    // Add to DOM
+    // Create title
+    const title = document.createElement('div')
+    title.textContent = game.name
+    title.style.cssText = `
+      position: absolute;
+      top: clamp(60px, 6.1vh, 117px);
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: #202124;
+      font-size: clamp(32px, 3.65vh, 70px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+    `
+
+    // Create table container
+    const tableContainer = document.createElement('div')
+    tableContainer.style.cssText = `
+      position: absolute;
+      top: clamp(250px, 29.3vh, 562px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      min-width: 300px;
+      max-width: 820px;
+    `
+
+    // Create table headers
+    const headers = document.createElement('div')
+    headers.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 clamp(10px, 1.56vw, 30px);
+      margin-bottom: clamp(20px, 4.1vh, 79px);
+    `
+
+    const headerRank = document.createElement('div')
+    headerRank.textContent = 'Rank'
+    headerRank.style.cssText = `
+      color: #7D7D7D;
+      font-size: clamp(20px, 2.34vh, 45px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 0 0 auto;
+    `
+
+    const headerScore = document.createElement('div')
+    headerScore.textContent = 'Score'
+    headerScore.style.cssText = `
+      color: #7D7D7D;
+      font-size: clamp(20px, 2.34vh, 45px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 1;
+      text-align: center;
+    `
+
+    const headerPlayer = document.createElement('div')
+    headerPlayer.textContent = 'Player'
+    headerPlayer.style.cssText = `
+      color: #7D7D7D;
+      font-size: clamp(20px, 2.34vh, 45px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 0 0 auto;
+    `
+
+    headers.appendChild(headerRank)
+    headers.appendChild(headerScore)
+    headers.appendChild(headerPlayer)
+
+    // Create rows
+    const rowsContainer = document.createElement('div')
+    rowsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+    `
+
+    if (scores.length > 0) {
+      scores.forEach((entry, index) => {
+        const row = this.createRow(entry, index, playerName, playerScore, playerTimestamp)
+        rowsContainer.appendChild(row)
+      })
+    } else {
+      const emptyMessage = document.createElement('div')
+      emptyMessage.textContent = 'No scores yet - Be the first!'
+      emptyMessage.style.cssText = `
+        text-align: center;
+        font-size: clamp(18px, 1.46vh, 28px);
+        color: #5f6368;
+        padding: clamp(30px, 3.13vh, 60px) 0;
+        font-family: 'Google Sans', sans-serif;
+      `
+      rowsContainer.appendChild(emptyMessage)
+    }
+
+    tableContainer.appendChild(headers)
+    tableContainer.appendChild(rowsContainer)
+
+    // Create footer with navigation links
+    const footer = document.createElement('div')
+    footer.style.cssText = `
+      position: absolute;
+      bottom: clamp(80px, 10vh, 192px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: clamp(20px, 3.3vw, 40px);
+      align-items: center;
+      white-space: nowrap;
+    `
+
+    this.createGameLink = document.createElement('div')
+    this.createGameLink.className = 'footer-option'
+    this.createGameLink.textContent = 'Create game'
+    this.createGameLink.style.cssText = `
+      color: #7D7D7D;
+      font-size: clamp(18px, 2.08vh, 40px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      text-decoration: underline;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    `
+    this.createGameLink.addEventListener('click', () => {
+      this.selectedOption = 0
+      this.confirmSelection()
+    })
+
+    this.playAgainLink = document.createElement('div')
+    this.playAgainLink.className = 'footer-option'
+    this.playAgainLink.textContent = 'Play again'
+    this.playAgainLink.style.cssText = `
+      color: #7D7D7D;
+      font-size: clamp(18px, 2.08vh, 40px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      opacity: 0.4;
+      cursor: pointer;
+      transition: opacity 0.2s ease, color 0.2s ease;
+    `
+    this.playAgainLink.addEventListener('click', () => {
+      this.selectedOption = 1
+      this.confirmSelection()
+    })
+
+    footer.appendChild(this.createGameLink)
+    footer.appendChild(this.playAgainLink)
+
+    // Update selection visual
+    this.updateFooterSelection()
+
+    // Append all elements
+    this.element.appendChild(title)
+    this.element.appendChild(tableContainer)
+    this.element.appendChild(footer)
     document.body.appendChild(this.element)
 
-    // Add CSS if not already added
-    if (!document.getElementById('leaderboard-screen-styles')) {
-      const style = document.createElement('style')
-      style.id = 'leaderboard-screen-styles'
-      style.textContent = `
-        .leaderboard-container {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: clamp(32px, 4.17vh, 80px) clamp(20px, 2.6vh, 50px);
-          font-family: 'Google Sans', Arial, sans-serif;
-        }
-
-        .leaderboard-title {
-          font-size: clamp(20px, 2.5vh, 48px);
-          font-weight: 700;
-          color: #4285F4;
-          text-align: center;
-          margin: 0 0 clamp(24px, 3.13vh, 60px) 0;
-          letter-spacing: 2px;
-        }
-
-        .leaderboard-table {
-          background: #f8f9fa;
-          border-radius: 16px;
-          padding: clamp(16px, 2.08vh, 40px);
-          margin-bottom: clamp(16px, 2.08vh, 40px);
-        }
-
-        .leaderboard-header {
-          display: grid;
-          grid-template-columns: 100px 1fr 200px;
-          gap: clamp(8px, 1.04vh, 20px);
-          padding-bottom: clamp(8px, 1.04vh, 20px);
-          border-bottom: 3px solid #dadce0;
-          margin-bottom: clamp(8px, 1.04vh, 20px);
-          font-size: clamp(12px, 1.04vh, 20px);
-          font-weight: 700;
-          color: #5f6368;
-        }
-
-        .leaderboard-row {
-          display: grid;
-          grid-template-columns: 100px 1fr 200px;
-          gap: clamp(8px, 1.04vh, 20px);
-          padding: clamp(8px, 0.83vh, 16px) 0;
-          border-bottom: 1px solid #e8eaed;
-          font-size: clamp(14px, 1.25vh, 24px);
-          transition: all 0.3s ease;
-        }
-
-        .leaderboard-row:last-child {
-          border-bottom: none;
-        }
-
-        .leaderboard-row.highlight {
-          background: #e8f0fe;
-          border-radius: 8px;
-          padding-left: 16px;
-          padding-right: 16px;
-          margin-left: -16px;
-          margin-right: -16px;
-          border-bottom: none;
-          box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
-        }
-
-        .leaderboard-col-rank {
-          font-weight: 700;
-          color: #4285F4;
-        }
-
-        .leaderboard-col-name {
-          font-weight: 600;
-          color: #202124;
-        }
-
-        .leaderboard-col-score {
-          text-align: right;
-          font-weight: 700;
-          color: #34A853;
-        }
-
-        .leaderboard-row.highlight .leaderboard-col-name {
-          color: #4285F4;
-          font-weight: 700;
-        }
-
-        .leaderboard-empty {
-          text-align: center;
-          font-size: 28px;
-          color: #5f6368;
-          padding: 60px 0;
-        }
-
-        .leaderboard-footer {
-          text-align: center;
-          font-size: 24px;
-          color: #5f6368;
-          margin: 0;
-        }
-      `
-      document.head.appendChild(style)
-    }
+    // Add styles
+    this.addStyles()
 
     // Listen for keys
     this.inputManager.onKeyPress(this.handleKeyPress)
@@ -209,6 +282,155 @@ export class LeaderboardScreen {
     this.appState.setTimeout(LeaderboardScreen.AUTO_TIMEOUT, 'qr', 'leaderboard-timeout')
 
     console.log('LeaderboardScreen: Active (30s auto-advance)')
+  }
+
+  /**
+   * Create a table row
+   */
+  createRow(entry, index, playerName, playerScore, playerTimestamp) {
+    // Only current player's row is highlighted (black + arrow)
+    // Match by name, score AND timestamp to avoid highlighting duplicates
+    const isPlayerRow = entry.name === playerName &&
+                        entry.score === playerScore &&
+                        entry.date === playerTimestamp
+
+    // Use displayRank if present (for player outside top 4), otherwise use index + 1
+    const displayRank = entry.displayRank || (index + 1)
+
+    // Container with arrow indicator
+    const rowContainer = document.createElement('div')
+    rowContainer.style.cssText = `
+      position: relative;
+      display: flex;
+      align-items: center;
+    `
+
+    // Arrow indicator (outside table)
+    if (isPlayerRow) {
+      const arrow = document.createElement('div')
+      arrow.textContent = '▶'
+      arrow.style.cssText = `
+        position: absolute;
+        left: clamp(-40px, -3.3vw, -60px);
+        color: #202124;
+        font-size: clamp(32px, 3.65vh, 70px);
+        font-family: 'Google Sans', sans-serif;
+        font-weight: 500;
+        line-height: 1;
+      `
+      rowContainer.appendChild(arrow)
+    }
+
+    // Table row
+    const row = document.createElement('div')
+    row.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(20px, 2.45vh, 47px) clamp(10px, 1.56vw, 30px);
+      border-bottom: ${isPlayerRow ? '4px' : '3px'} solid ${isPlayerRow ? '#202124' : '#7D7D7D'};
+      flex: 1;
+    `
+
+    // Rank column
+    const rankCol = document.createElement('div')
+    rankCol.textContent = `${displayRank}`
+    rankCol.style.cssText = `
+      color: ${isPlayerRow ? '#202124' : '#CACACA'};
+      font-size: clamp(32px, 3.65vh, 70px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 0 0 auto;
+    `
+
+    // Score column
+    const scoreCol = document.createElement('div')
+    scoreCol.textContent = entry.score.toLocaleString()
+    scoreCol.style.cssText = `
+      color: ${isPlayerRow ? '#202124' : '#CACACA'};
+      font-size: clamp(32px, 3.65vh, 70px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 1;
+      text-align: center;
+    `
+
+    // Name column
+    const nameCol = document.createElement('div')
+    nameCol.textContent = entry.name
+    nameCol.style.cssText = `
+      color: ${isPlayerRow ? '#202124' : '#CACACA'};
+      font-size: clamp(32px, 3.65vh, 70px);
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      flex: 0 0 auto;
+    `
+
+    row.appendChild(rankCol)
+    row.appendChild(scoreCol)
+    row.appendChild(nameCol)
+
+    rowContainer.appendChild(row)
+
+    return rowContainer
+  }
+
+  /**
+   * Add CSS styles
+   */
+  addStyles() {
+    if (document.getElementById('leaderboard-v2-styles')) return
+
+    const style = document.createElement('style')
+    style.id = 'leaderboard-v2-styles'
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      #leaderboard-screen {
+        animation: fadeIn 0.3s ease-in;
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  /**
+   * Update footer selection visual
+   */
+  updateFooterSelection() {
+    if (!this.createGameLink || !this.playAgainLink) return
+
+    if (this.selectedOption === 0) {
+      // Create game selected (left, default)
+      this.createGameLink.style.textDecoration = 'underline'
+      this.createGameLink.style.opacity = '1'
+      this.playAgainLink.style.textDecoration = 'none'
+      this.playAgainLink.style.opacity = '0.4'
+    } else {
+      // Play again selected (right)
+      this.createGameLink.style.textDecoration = 'none'
+      this.createGameLink.style.opacity = '0.4'
+      this.playAgainLink.style.textDecoration = 'underline'
+      this.playAgainLink.style.opacity = '1'
+    }
+  }
+
+  /**
+   * Confirm selected option
+   */
+  confirmSelection() {
+    if (this.selectedOption === 0) {
+      console.log('LeaderboardScreen: Create game selected - advancing to QR screen')
+      this.appState.transition('qr')
+    } else {
+      console.log('LeaderboardScreen: Play again selected - going to gallery')
+      this.appState.transition('gallery')
+    }
   }
 
   /**
@@ -229,6 +451,11 @@ export class LeaderboardScreen {
       this.element = null
     }
 
+    // Reset state
+    this.selectedOption = 0
+    this.createGameLink = null
+    this.playAgainLink = null
+
     console.log('LeaderboardScreen: Cleaned up')
   }
 
@@ -237,10 +464,22 @@ export class LeaderboardScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Space advances to QR screen
-    if (key === ' ') {
-      console.log('LeaderboardScreen: Space pressed - advancing to QR')
-      this.appState.transition('qr')
+    console.log('LeaderboardScreen: Key pressed:', key, 'Current selection:', this.selectedOption)
+
+    // Arrow keys navigate footer options
+    if (key === 'ArrowLeft') {
+      console.log('LeaderboardScreen: ArrowLeft - selecting Create game')
+      this.selectedOption = 0  // Create game
+      this.updateFooterSelection()
+    } else if (key === 'ArrowRight') {
+      console.log('LeaderboardScreen: ArrowRight - selecting Play again')
+      this.selectedOption = 1  // Play again
+      this.updateFooterSelection()
+    }
+    // Space confirms selected option
+    else if (key === ' ') {
+      console.log('LeaderboardScreen: Space pressed - confirming selection', this.selectedOption)
+      this.confirmSelection()
     }
     // Escape returns to Idle
     else if (key === 'Escape') {

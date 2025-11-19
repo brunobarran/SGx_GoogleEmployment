@@ -1,7 +1,7 @@
 /**
- * WelcomeScreen v2 - Welcome/Title screen (Figma design)
+ * WelcomeScreen - Welcome/Title screen
  *
- * Displays title and colorful subtitle with cascade animation
+ * Displays title and "Press SPACE to start" prompt
  * Pure HTML/CSS, no p5.js
  *
  * @author Game of Life Arcade
@@ -36,12 +36,9 @@ export class WelcomeScreen {
     this.element.id = 'welcome-screen'
     this.element.innerHTML = `
       <div class="welcome-container">
-        <h1 class="welcome-title">Welcome to<br/>Conway's Arcade</h1>
-        <div class="welcome-subtitle">
-          <span class="line line-1">This is where <span class="highlight green">prompts</span> become <span class="highlight yellow">games</span>,</span>
-          <span class="line line-2">patterns become <span class="highlight red">play</span>, and AI</span>
-          <span class="line line-3">becomes pure <span class="highlight blue">arcade energy</span>.</span>
-        </div>
+        <h1 class="welcome-title">GAME OF LIFE ARCADE</h1>
+        <p class="welcome-subtitle">Conway's Cellular Automaton Games</p>
+        <p class="welcome-prompt">Press SPACE to start</p>
       </div>
     `
 
@@ -58,10 +55,10 @@ export class WelcomeScreen {
       aspect-ratio: 10 / 16;
       background: #FFFFFF;
       display: flex;
-      align-items: flex-start;
-      justify-content: flex-start;
-      padding-top: clamp(48px, 5vh, 96px);
+      align-items: center;
+      justify-content: center;
       z-index: 100;
+      animation: fadeIn 0.5s ease-in;
       overflow: hidden;
     `
 
@@ -73,80 +70,47 @@ export class WelcomeScreen {
       const style = document.createElement('style')
       style.id = 'welcome-screen-styles'
       style.textContent = `
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .welcome-container {
-          width: 100%;
-          padding: 0 clamp(40px, 9vw, 108px);
+          text-align: center;
           font-family: 'Google Sans', Arial, sans-serif;
         }
 
         .welcome-title {
-          font-size: clamp(36px, 5vh, 95px);
-          font-weight: 500;
-          color: #202124;
-          margin: 0 0 clamp(32px, 4vh, 76px) 0;
-          line-height: 1;
-          opacity: 0;
-          animation: slideUp 0.8s ease-out 0.2s forwards;
+          font-size: clamp(24px, 3.33vh, 64px);
+          font-weight: 700;
+          color: #4285F4;
+          margin: 0 0 clamp(8px, 1.04vh, 20px) 0;
+          letter-spacing: 2px;
         }
 
         .welcome-subtitle {
-          font-size: clamp(36px, 5vh, 95px);
-          font-weight: 500;
-          line-height: 1;
-          color: #202124;
-          display: flex;
-          flex-direction: column;
-          gap: 0;
+          font-size: clamp(14px, 1.25vh, 24px);
+          color: #5f6368;
+          margin: 0 0 clamp(24px, 3.13vh, 60px) 0;
+          font-weight: 400;
         }
 
-        .welcome-subtitle .line {
-          display: block;
-          opacity: 0;
+        .welcome-prompt {
+          font-size: clamp(16px, 1.46vh, 28px);
+          color: #5f6368;
+          margin: 0;
+          animation: pulse 2s infinite;
         }
 
-        .welcome-subtitle .line-1 {
-          animation: slideUp 0.8s ease-out 0.6s forwards;
-        }
-
-        .welcome-subtitle .line-2 {
-          animation: slideUp 0.8s ease-out 0.9s forwards;
-        }
-
-        .welcome-subtitle .line-3 {
-          animation: slideUp 0.8s ease-out 1.2s forwards;
-        }
-
-        .welcome-subtitle .highlight.green {
-          color: #38A952;
-        }
-
-        .welcome-subtitle .highlight.yellow {
-          color: #F7B200;
-        }
-
-        .welcome-subtitle .highlight.red {
-          color: #FF5145;
-        }
-
-        .welcome-subtitle .highlight.blue {
-          color: #438FF0;
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
       `
       document.head.appendChild(style)
     }
 
-    // Listen for any key
+    // Listen for Space key
     this.inputManager.onKeyPress(this.handleKeyPress)
 
     console.log('WelcomeScreen: Active')
@@ -175,8 +139,15 @@ export class WelcomeScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Any key advances to Gallery screen
-    console.log('WelcomeScreen: Key pressed - advancing to Gallery')
-    this.appState.transition('gallery')
+    // Space key advances to Gallery screen
+    if (key === ' ') {
+      console.log('WelcomeScreen: Space pressed - advancing to Gallery')
+      this.appState.transition('gallery')
+    }
+    // Escape returns to Idle
+    else if (key === 'Escape') {
+      console.log('WelcomeScreen: Escape pressed - returning to Idle')
+      this.appState.reset()
+    }
   }
 }
