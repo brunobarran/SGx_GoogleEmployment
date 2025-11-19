@@ -40,13 +40,83 @@
       min-height: 100vh;
       font-family: 'Google Sans Flex', Arial, sans-serif;
       overflow: hidden;
+      position: relative;
+    }
+
+    /* Game header overlay */
+    #game-header {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1200px, 100vw);
+      max-width: 100vw;
+      height: clamp(100px, 10vh, 200px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 clamp(40px, 6.67vw, 80px);
+      box-sizing: border-box;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    #game-title {
+      color: #202124;
+      font-size: clamp(36px, 3.65vh, 70px);
+      font-family: 'Google Sans Flex', Arial, sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      margin: 0;
+    }
+
+    #game-score {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(10px, 1.15vh, 22px);
+    }
+
+    #score-label {
+      color: #202124;
+      font-size: clamp(24px, 2.34vh, 45px);
+      font-family: 'Google Sans Flex', Arial, sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      margin: 0;
+    }
+
+    #score-value {
+      color: #202124;
+      font-size: clamp(36px, 3.65vh, 70px);
+      font-family: 'Google Sans Flex', Arial, sans-serif;
+      font-weight: 500;
+      line-height: 1;
+      margin: 0;
     }
   </style>
 </head>
 <body>
+  <!-- Game header overlay -->
+  <div id="game-header">
+    <h1 id="game-title">Game</h1>
+    <div id="game-score">
+      <div id="score-label">Score</div>
+      <div id="score-value">0</div>
+    </div>
+  </div>
+
   <!-- p5.js (Local - Offline) -->
   <script src="/lib/p5.min.js"></script>
   <script type="module">
+    // Game title mapping
+    const GAME_TITLES = {
+      'space-invaders': 'Gemini Invaders',
+      'dino-runner': 'Dino Runner',
+      'breakout': 'Breakout',
+      'flappy-bird': 'Flappy Bird'
+    }
+
     // Get game name from URL parameter
     const urlParams = new URLSearchParams(window.location.search)
     const gameName = urlParams.get('game')
@@ -55,6 +125,12 @@
       console.error('No game specified in URL parameter')
       document.body.innerHTML = '<h1 style="color: #EA4335;">Error: No game specified</h1>'
     } else {
+      // Set game title
+      const gameTitle = GAME_TITLES[gameName] || gameName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      document.getElementById('game-title').textContent = gameTitle
+
+      // Note: Score is updated directly by the game script via DOM manipulation
+
       // Dynamically load the game script
       const script = document.createElement('script')
       script.type = 'module'

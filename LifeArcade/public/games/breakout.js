@@ -17,7 +17,7 @@ import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
-import { renderGameUI, renderGameOver, renderWin } from '/src/utils/UIHelpers.js'
+import { renderGameOver, renderWin } from '/src/utils/UIHelpers.js'
 import {
   GAME_DIMENSIONS,
   GAMEOVER_CONFIG,
@@ -241,7 +241,12 @@ function draw() {
   }
 
   renderGame()
-  renderUI()
+
+  // Update score in header (if element exists)
+  const scoreElement = document.getElementById('score-value')
+  if (scoreElement) {
+    scoreElement.textContent = state.score
+  }
 
   // Update gradient animation
   maskedRenderer.updateAnimation()
@@ -495,17 +500,7 @@ function renderGame() {
   pop()
 }
 
-function renderUI() {
-  push()
-  scale(scaleFactor)
-
-  renderGameUI(CONFIG, state, [
-    '← → or A/D: Move',
-    'SPACE: Launch'
-  ])
-
-  pop()
-}
+// UI rendering removed - now handled by game-wrapper.html overlay
 
 // ============================================
 // INPUT

@@ -13,7 +13,7 @@ import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
-import { renderGameUI, renderGameOver } from '/src/utils/UIHelpers.js'
+import { renderGameOver } from '/src/utils/UIHelpers.js'
 import { updateLoopPattern } from '/src/utils/LoopPatternHelpers.js'
 import { createPatternRenderer, RenderMode, PatternName } from '/src/utils/PatternRenderer.js'
 import {
@@ -333,7 +333,12 @@ function draw() {
   }
 
   renderGame()
-  renderUI()
+
+  // Update score in header (if element exists)
+  const scoreElement = document.getElementById('score-value')
+  if (scoreElement) {
+    scoreElement.textContent = state.score
+  }
 
   // Update gradient animations
   maskedRenderer.updateAnimation()
@@ -593,17 +598,7 @@ function renderGame() {
   pop()
 }
 
-function renderUI() {
-  push()
-  scale(scaleFactor)
-
-  renderGameUI(CONFIG, state, [
-    '← → or A/D: Move',
-    'SPACE or Z: Shoot'
-  ])
-
-  pop()
-}
+// UI rendering removed - now handled by game-wrapper.html overlay
 
 // ============================================
 // GAME-SPECIFIC FUNCTIONS
