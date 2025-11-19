@@ -24,11 +24,11 @@
   },
   "homepage": "https://github.com/brunobarran/SGx_GoogleEmployment#readme",
   "devDependencies": {
-    "vite": "^7.2.2",
     "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.8"
   },
   "dependencies": {
-    "p5": "^2.1.1"
+    "p5": "^2.1.1",
+    "vite": "^7.2.2"
   }
 }
