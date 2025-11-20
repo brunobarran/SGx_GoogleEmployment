@@ -13,7 +13,6 @@ import { GoLEngine } from '/src/core/GoLEngine.js'
 import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
-import { Patterns } from '/src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
 import { renderGameOver } from '/src/utils/UIHelpers.js'
@@ -32,14 +31,15 @@ import {
 // ============================================
 
 const CONFIG = createGameConfig({
-  gravity: 4,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
+  gravity: 5.5,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
   groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
   horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
-  jumpForce: -60, // -14 × 3 = -42 (Lower force = shorter jump)
+  jumpForce: -70, // -14 × 3 = -42 (Lower force = shorter jump)
 
   obstacle: {
-    spawnInterval: 100,      // Slightly more generous (Option 2)
-    minInterval: 50,         // Option 2
+    spawnInterval: 100,      // Base spawn interval (frames)
+    minInterval: 50,         // Minimum interval (difficulty cap)
+    intervalVariability: 40, // Random offset ±40 frames (creates variable spacing)
     speed: -15,              // Slower start (Option 2)
     speedIncrease: 0.0015    // Steady ramp (Option 2)
   },
@@ -150,19 +150,24 @@ const CONFIG = createGameConfig({
       period: 4,
       gradient: GRADIENT_PRESETS.ENEMY_COLD
     }
-  ]
+  ],
+
+  // Ground lines (Chrome Dino style)
+  groundLines: {
+    density: 5,                    // Number of lines on screen simultaneously
+    speed: -15,                    // Match obstacle speed
+    minLength: 40,                 // Minimum line length (px)
+    maxLength: 80,                 // Maximum line length (px)
+    thickness: 2,                  // Stroke weight (px)
+    color: [83, 83, 83],          // Gray #535353
+    yOffsetMin: 10,                // Min offset from horizonY (10px below minimum)
+    yOffsetMax: 40,                // Max offset from horizonY (40px below horizon)
+    spawnInterval: 60              // Frames between spawns (every ~1 second at 60fps)
+  }
 })
 
 // Store scale factor for rendering (don't modify CONFIG values)
 let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
-
-// Google Brand Colors
-const GOOGLE_COLORS = {
-  BLUE: { r: 49, g: 134, b: 255 },
-  RED: { r: 252, g: 65, b: 61 },
-  GREEN: { r: 0, g: 175, b: 87 },
-  YELLOW: { r: 255, g: 204, b: 0 }
-}
 
 // ============================================
 // GAME STATE
@@ -170,6 +175,7 @@ const GOOGLE_COLORS = {
 const state = createGameState({
   spawnTimer: 0,
   cloudSpawnTimer: 0,  // Timer for cloud spawning
+  groundLineSpawnTimer: 0,  // Timer for ground line spawning
   gameSpeed: 1,
   dyingTimer: 0
 })
@@ -181,6 +187,7 @@ let player = null
 let obstacles = []
 let particles = []
 let clouds = []  // Parallax background clouds
+let groundLines = []  // Ground decoration lines (Chrome Dino style)
 
 // Gradient renderer
 let maskedRenderer = null
@@ -188,7 +195,8 @@ let maskedRenderer = null
 // PNG sprites for player (Phase 3.4)
 let dinoSprites = {
   run: [],   // run_0.png, run_1.png
-  duck: []   // duck_run_0.png, duck_run_1.png
+  duck: [],  // duck_run_0.png, duck_run_1.png
+  idle: []   // idle.png (shown during jump)
 }
 
 // ============================================
@@ -210,29 +218,11 @@ function updateConfigScale() {
 // ============================================
 function preload() {
   // Load PNG sprites for player (run + duck animations)
-  console.log('[Dino Runner] Loading dino sprites...')
-
-  // Running sprites (200×200px)
-  dinoSprites.run[0] = loadImage('/img/dino-sprites/run_0.png',
-    () => console.log('[Dino Runner] run_0.png loaded:', dinoSprites.run[0].width, 'x', dinoSprites.run[0].height),
-    (err) => console.error('[Dino Runner] Failed to load run_0.png:', err)
-  )
-  dinoSprites.run[1] = loadImage('/img/dino-sprites/run_1.png',
-    () => console.log('[Dino Runner] run_1.png loaded:', dinoSprites.run[1].width, 'x', dinoSprites.run[1].height),
-    (err) => console.error('[Dino Runner] Failed to load run_1.png:', err)
-  )
-
-  // Ducking sprites (265×121px)
-  dinoSprites.duck[0] = loadImage('/img/dino-sprites/duck_run_0.png',
-    () => console.log('[Dino Runner] duck_run_0.png loaded:', dinoSprites.duck[0].width, 'x', dinoSprites.duck[0].height),
-    (err) => console.error('[Dino Runner] Failed to load duck_run_0.png:', err)
-  )
-  dinoSprites.duck[1] = loadImage('/img/dino-sprites/duck_run_1.png',
-    () => console.log('[Dino Runner] duck_run_1.png loaded:', dinoSprites.duck[1].width, 'x', dinoSprites.duck[1].height),
-    (err) => console.error('[Dino Runner] Failed to load duck_run_1.png:', err)
-  )
-
-  console.log('[Dino Runner] All sprites loaded successfully')
+  dinoSprites.run[0] = loadImage('/img/dino-sprites/run_0.png')
+  dinoSprites.run[1] = loadImage('/img/dino-sprites/run_1.png')
+  dinoSprites.duck[0] = loadImage('/img/dino-sprites/duck_run_0.png')
+  dinoSprites.duck[1] = loadImage('/img/dino-sprites/duck_run_1.png')
+  dinoSprites.idle[0] = loadImage('/img/dino-sprites/idle.png')
 }
 
 // ============================================
@@ -265,12 +255,15 @@ function initGame() {
   state.frameCount = 0
   state.spawnTimer = 0
   state.cloudSpawnTimer = 0
+  state.groundLineSpawnTimer = 0
   state.gameSpeed = 1
 
   setupPlayer()
   obstacles = []
   particles = []
+  groundLines = []
   initParallax()
+  initGroundLines()
 }
 
 function setupPlayer() {
@@ -448,6 +441,123 @@ function renderClouds() {
 }
 
 // ============================================
+// GROUND LINES SYSTEM (Chrome Dino style)
+// ============================================
+
+/**
+ * Initialize ground lines system.
+ * Pre-populates the screen with lines for seamless effect.
+ */
+function initGroundLines() {
+  groundLines = []
+
+  // Pre-populate screen with lines distributed evenly
+  const spacing = GAME_DIMENSIONS.BASE_WIDTH / CONFIG.groundLines.density
+
+  for (let i = 0; i < CONFIG.groundLines.density; i++) {
+    const gLine = spawnGroundLine()
+    // Distribute lines across screen width
+    gLine.x = i * spacing + random(-spacing * 0.3, spacing * 0.3)
+    groundLines.push(gLine)
+  }
+}
+
+/**
+ * Create a new ground line.
+ * @returns {Object} Ground line entity
+ */
+function spawnGroundLine() {
+  return {
+    x: GAME_DIMENSIONS.BASE_WIDTH,  // Start off-screen right
+    y: CONFIG.horizonY + random(CONFIG.groundLines.yOffsetMin, CONFIG.groundLines.yOffsetMax),
+    length: random(CONFIG.groundLines.minLength, CONFIG.groundLines.maxLength),
+    vx: CONFIG.groundLines.speed,
+    dead: false
+  }
+}
+
+/**
+ * Update all ground lines.
+ * Handles movement, cleanup, and spawning.
+ */
+function updateGroundLines() {
+  // Move lines
+  groundLines.forEach(gLine => {
+    gLine.x += gLine.vx * state.gameSpeed
+
+    // Mark as dead if off-screen left
+    if (gLine.x + gLine.length < 0) {
+      gLine.dead = true
+    }
+  })
+
+  // Remove dead lines
+  groundLines = groundLines.filter(gLine => !gLine.dead)
+
+  // Spawn new line if timer reached
+  state.groundLineSpawnTimer++
+  if (state.groundLineSpawnTimer >= CONFIG.groundLines.spawnInterval) {
+    groundLines.push(spawnGroundLine())
+    state.groundLineSpawnTimer = 0
+  }
+}
+
+/**
+ * Render ground lines with simple stroke.
+ * Must be called AFTER horizon line, BEFORE obstacles.
+ */
+function renderGroundLines() {
+  push()
+  stroke(CONFIG.groundLines.color[0], CONFIG.groundLines.color[1], CONFIG.groundLines.color[2])
+  strokeWeight(CONFIG.groundLines.thickness)
+
+  groundLines.forEach(gLine => {
+    line(gLine.x, gLine.y, gLine.x + gLine.length, gLine.y)
+  })
+
+  pop()
+}
+
+// ============================================
+// HITBOX CALCULATION HELPER
+// ============================================
+
+/**
+ * Calculate tight hitbox based on actual alive cells in GoL grid.
+ * Returns bounding box that fits exactly around the visible pattern.
+ *
+ * @param {GoLEngine} golEngine - GoL engine with pattern
+ * @returns {Object} { width, height, offsetX, offsetY }
+ */
+function calculateTightHitbox(golEngine) {
+  const grid = golEngine.current
+  let minX = golEngine.cols
+  let maxX = 0
+  let minY = golEngine.rows
+  let maxY = 0
+
+  // Find bounding box of alive cells
+  for (let x = 0; x < golEngine.cols; x++) {
+    for (let y = 0; y < golEngine.rows; y++) {
+      if (grid[x][y] === 1) {
+        minX = Math.min(minX, x)
+        maxX = Math.max(maxX, x)
+        minY = Math.min(minY, y)
+        maxY = Math.max(maxY, y)
+      }
+    }
+  }
+
+  // Calculate dimensions (add 1 because indices are 0-based)
+  const width = (maxX - minX + 1) * 30
+  const height = (maxY - minY + 1) * 30
+  const offsetX = minX * 30
+  const offsetY = minY * 30
+
+  return { width, height, offsetX, offsetY }
+}
+
+// ============================================
 // UPDATE LOOP
 // ============================================
 function draw() {
@@ -503,14 +613,26 @@ function updateGame() {
   // Update parallax background (BEFORE other entities)
   updateClouds()
 
+  // Update ground lines (Chrome Dino style decoration)
+  updateGroundLines()
+
   // Update player
   updatePlayer()
 
   // Spawn obstacles
   state.spawnTimer++
-  const currentInterval = Math.max(
+
+  // Calculate base interval with difficulty scaling
+  const baseInterval = Math.max(
     CONFIG.obstacle.minInterval,
     CONFIG.obstacle.spawnInterval - Math.floor(state.score / 100)
+  )
+
+  // Add random variability (±40 frames) for Chrome Dino-style spacing
+  const randomOffset = random(-CONFIG.obstacle.intervalVariability, CONFIG.obstacle.intervalVariability)
+  const currentInterval = Math.max(
+    CONFIG.obstacle.minInterval,
+    baseInterval + randomOffset
   )
 
   if (state.spawnTimer >= currentInterval) {
@@ -628,29 +750,22 @@ function spawnObstacle() {
   // Position based on obstacle type
   let obstacleY
   if (spawnFlying) {
-    // Flying obstacles: High enough for ducking dino to pass underneath
-    // Duck height: 121px, need clearance above
-    // Bottom of pterodactyl should be at least 135px above ground (15px clearance)
-    const minHeightAboveGround = 135  // Enough for 121px dino + 14px clearance
+    // Flying obstacles: Extremely low to force ducking
+    // Duck height: 121px, almost touching - absolutely requires ducking
+    // Bottom of pterodactyl at 120px above ground (just above duck height)
+    const minHeightAboveGround = 120  // Extremely tight - must duck
     obstacleY = CONFIG.groundY - dims.height - minHeightAboveGround
   } else {
     // Ground obstacles: centered on horizon line
     obstacleY = CONFIG.horizonY - dims.height * 0.5
   }
 
-  // Reduce hitbox for flying pterodactyls (KISS: 60% of visual size)
-  let hitboxWidth = dims.width
-  let hitboxHeight = dims.height
-  let hitboxOffsetX = 0
-  let hitboxOffsetY = 0
-
-  if (spawnFlying) {
-    // LWSS has padding - reduce hitbox to 60% and center it
-    hitboxWidth = dims.width * 0.6
-    hitboxHeight = dims.height * 0.6
-    hitboxOffsetX = (dims.width - hitboxWidth) / 2
-    hitboxOffsetY = (dims.height - hitboxHeight) / 2
-  }
+  // Calculate tight hitbox based on actual alive cells
+  const tightHitbox = calculateTightHitbox(renderer.gol)
+  const hitboxWidth = tightHitbox.width
+  const hitboxHeight = tightHitbox.height
+  const hitboxOffsetX = tightHitbox.offsetX
+  const hitboxOffsetY = tightHitbox.offsetY
 
   const obstacle = {
     x: GAME_DIMENSIONS.BASE_WIDTH,
@@ -745,16 +860,29 @@ function renderGame() {
   strokeWeight(2)
   line(0, CONFIG.horizonY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.horizonY)
 
+  // Render ground lines (Chrome Dino style - AFTER horizon, BEFORE player)
+  renderGroundLines()
+
   // Render player with PNG sprite animation (hide during DYING and GAMEOVER)
-  // Phase 3.4: Using animated PNG sprites (run + duck)
+  // Phase 3.4: Using animated PNG sprites (run + duck + idle)
   if (state.phase === 'PLAYING' && player.sprites) {
-    // Select sprite set based on ducking state
-    const spriteSet = player.isDucking ? player.sprites.duck : player.sprites.run
+    // Select sprite set based on player state (priority: jump > duck > run)
+    let spriteSet
+    if (!player.onGround) {
+      // Jumping/falling - show idle sprite (static)
+      spriteSet = player.sprites.idle
+    } else if (player.isDucking) {
+      // Ducking on ground - show duck animation
+      spriteSet = player.sprites.duck
+    } else {
+      // Running on ground - show run animation
+      spriteSet = player.sprites.run
+    }
 
     // Verify sprite set exists and has frames
     if (spriteSet && spriteSet.length > 0) {
-      // Get current animation frame
-      const currentSprite = spriteSet[player.frameIndex]
+      // Get current animation frame (% prevents index overflow)
+      const currentSprite = spriteSet[player.frameIndex % spriteSet.length]
 
       // Render sprite (dimensions match hitbox exactly)
       if (currentSprite && currentSprite.width > 0) {

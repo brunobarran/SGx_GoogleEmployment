@@ -34,10 +34,10 @@ const CONFIG = createGameConfig({
   globalCellSize: 30,  // Pixel size of all GoL cells (range: 15-60)
 
   invader: {
-    cols: 6,      // 6 columns
+    cols: 5,      // 6 columns
     rows: 3,      // 3 rows
     // width/height now calculated dynamically from gol.cols/rows × globalCellSize
-    spacing: 70,  // Spacing between invaders
+    spacing: 80,  // Spacing between invaders
     startX: 180,  // Same as Breakout offsetX for visual consistency
     startY: 200,  // Same as Breakout offsetY - unified starting position
 
@@ -45,7 +45,13 @@ const CONFIG = createGameConfig({
     moveIntervalStart: 30,    // Initial move interval (slow)
     moveIntervalMin: 3,        // Minimum move interval (very fast)
     moveIntervalDecrement: 5,  // Reduce by 5 frames each level (faster acceleration)
-    speed: 45                  // Horizontal move distance
+    speed: 45,                 // Horizontal move distance
+
+    // Enemy shooting system (NEW - 2025-11-20)
+    shootStartLevel: 2,        // Start shooting at level 2
+    shootIntervalStart: 120,   // 2 seconds at 60fps (slow)
+    shootIntervalMin: 30,      // 0.5 seconds (fast)
+    shootIntervalDecrement: 15 // Reduce 15 frames per level
     // NOTE: golUpdateRate removed - now uses CONFIG.loopUpdateRate (unified for all GoL)
   },
 
@@ -58,6 +64,11 @@ const CONFIG = createGameConfig({
   bullet: {
     // width/height now calculated dynamically from gol.cols/rows × globalCellSize
     speed: 12     // Bullet vertical speed (negative = upward)
+  },
+
+  enemyBullet: {
+    speed: 8      // Downward speed (positive = downward)
+    // width/height = globalCellSize (single black cell: 30×30px)
   },
 
   explosion: {
@@ -91,8 +102,10 @@ let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 const state = createGameState({
   level: 1,
   currentMoveInterval: 30,  // Current invader move interval (decreases per level)
+  currentShootInterval: 120, // Current enemy shoot interval (decreases per level)
   invaderDirection: 1,
   invaderMoveTimer: 0,
+  enemyShootTimer: 0,        // Timer for enemy shooting
   playerShootCooldown: 0,
   dyingTimer: 0
 })
@@ -103,6 +116,7 @@ const state = createGameState({
 let player = null
 let invaders = []
 let bullets = []
+let enemyBullets = []  // Enemy bullets (black cells)
 let particles = []
 
 // Simple gradient renderer
@@ -179,9 +193,11 @@ function initGame() {
   state.level = 1
   state.frameCount = 0
   state.currentMoveInterval = CONFIG.invader.moveIntervalStart  // Reset to starting speed
+  state.currentShootInterval = CONFIG.invader.shootIntervalStart // Reset enemy shooting speed
   state.invaderDirection = 1
   invaders = []
   bullets = []
+  enemyBullets = []  // Clear enemy bullets
   particles = []
 
   setupPlayer()
@@ -239,8 +255,6 @@ function setupPlayer() {
     gol: renderer.gol,
     gradient: GRADIENT_PRESETS.PLAYER
   }
-
-  console.log(`[SetupPlayer] BLINKER Loop (period ${renderer.metadata.period})`)
 }
 
 function setupInvaders() {
@@ -265,9 +279,6 @@ function setupInvaders() {
 
   const dims = testRenderer.dimensions
   const hitbox = calculateClampedHitbox(dims.width, 'invaders')
-
-  console.log(`[SetupInvaders] Random still lifes (BLOCK, BEEHIVE, LOAF, BOAT, TUB)`)
-  console.log(`[SetupInvaders] Dimensions:`, dims)
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -295,8 +306,6 @@ function setupInvaders() {
       invaders.push(invader)
     }
   }
-
-  console.log('Invaders created:', invaders.length)
 }
 
 // ============================================
@@ -368,6 +377,7 @@ function updateGame() {
   updatePlayer()
   updateInvaders()
   updateBullets()
+  updateEnemyBullets()  // Enemy shooting system
   updateParticlesLocal()
   checkCollisions()
   checkWinLose()
@@ -494,8 +504,83 @@ function shootBullet() {
   bullets.push(bullet)
 }
 
+/**
+ * Determine if an invader is in the bottom row (has no invader below it).
+ * Used to select which invaders can shoot at the player.
+ *
+ * @param {Object} invader - Invader to check
+ * @returns {boolean} True if no invader is below this one
+ */
+function isBottomInvader(invader) {
+  return !invaders.some(other =>
+    !other.dead &&
+    Math.abs(other.x - invader.x) < invader.width &&
+    other.y > invader.y
+  )
+}
+
+/**
+ * Shoot enemy bullet from random bottom invader.
+ * Creates a simple black cell (30×30px) that moves downward.
+ * Only shoots from level 2+.
+ */
+function shootEnemyBullet() {
+  // Only shoot from level 2+
+  if (state.level < CONFIG.invader.shootStartLevel) return
+
+  // Pick random alive invader from bottom row
+  const bottomInvaders = invaders.filter(inv =>
+    !inv.dead && isBottomInvader(inv)
+  )
+
+  if (bottomInvaders.length === 0) return
+
+  const shooter = bottomInvaders[Math.floor(Math.random() * bottomInvaders.length)]
+
+  // Create enemy bullet (simple black cell - KISS approach)
+  const bullet = {
+    x: shooter.x + shooter.width / 2 - CONFIG.globalCellSize / 2,  // Center under invader
+    y: shooter.y + shooter.height,
+    width: CONFIG.globalCellSize,   // Single cell: 30px
+    height: CONFIG.globalCellSize,  // Single cell: 30px
+    vy: CONFIG.enemyBullet.speed,   // Positive = downward
+    dead: false,
+    type: 'enemy'
+  }
+
+  enemyBullets.push(bullet)
+}
+
+/**
+ * Update enemy bullets (movement, cleanup).
+ * Includes timer-based shooting from bottom invaders.
+ */
+function updateEnemyBullets() {
+  // Enemy shooting timer (only from level 2+)
+  if (state.level >= CONFIG.invader.shootStartLevel) {
+    state.enemyShootTimer++
+
+    if (state.enemyShootTimer >= state.currentShootInterval) {
+      shootEnemyBullet()
+      state.enemyShootTimer = 0
+    }
+  }
+
+  // Update bullet positions
+  enemyBullets.forEach(bullet => {
+    bullet.y += bullet.vy
+
+    // Off screen - use CONFIG.height (base coordinates)
+    if (bullet.y > CONFIG.height) {
+      bullet.dead = true
+    }
+  })
+
+  enemyBullets = enemyBullets.filter(b => !b.dead)
+}
+
 function checkCollisions() {
-  // Bullets vs Invaders
+  // Player bullets vs Invaders
   bullets.forEach(bullet => {
     invaders.forEach(invader => {
       if (!bullet.dead && !invader.dead) {
@@ -516,6 +601,52 @@ function checkCollisions() {
     })
   })
 
+  // Enemy bullets vs Player
+  enemyBullets.forEach(bullet => {
+    if (!bullet.dead && player && !player.dead) {
+      // Use player hitbox for collision
+      if (Collision.rectRect(
+        bullet.x, bullet.y, bullet.width, bullet.height,
+        player.x + player.hitbox.offsetX,
+        player.y + player.hitbox.offsetY,
+        player.hitbox.width,
+        player.hitbox.height
+      )) {
+        bullet.dead = true
+        destroyPlayer()  // Game over
+      }
+    }
+  })
+
+  // Player bullets vs Enemy bullets (NEW - Bullet deflection)
+  // Only check if both arrays have bullets (performance optimization)
+  if (bullets.length > 0 && enemyBullets.length > 0) {
+    bullets.forEach(playerBullet => {
+      // Early exit if already dead (performance)
+      if (playerBullet.dead) return
+
+      enemyBullets.forEach(enemyBullet => {
+        if (!enemyBullet.dead && !playerBullet.dead) {
+          // Simple rect collision (both bullets are small)
+          if (Collision.rectRect(
+            playerBullet.x, playerBullet.y, playerBullet.width, playerBullet.height,
+            enemyBullet.x, enemyBullet.y, enemyBullet.width, enemyBullet.height
+          )) {
+            playerBullet.dead = true
+            enemyBullet.dead = true
+
+            // Spawn mini-explosion at midpoint between bullets
+            const midX = (playerBullet.x + enemyBullet.x) / 2
+            const midY = (playerBullet.y + enemyBullet.y) / 2
+            spawnMiniExplosion(midX, midY)
+
+            state.score += 10  // Small bonus for bullet deflection
+          }
+        }
+      })
+    })
+  }
+
   invaders = invaders.filter(i => !i.dead)
 }
 
@@ -523,11 +654,19 @@ function checkWinLose() {
   if (invaders.length === 0) {
     // Matrix destroyed - increase speed for next level
     state.level++
+
+    // Increase invader movement speed
     state.currentMoveInterval = Math.max(
       CONFIG.invader.moveIntervalMin,
       state.currentMoveInterval - CONFIG.invader.moveIntervalDecrement
     )
-    console.log(`[Level ${state.level}] New moveInterval: ${state.currentMoveInterval}`)
+
+    // Increase enemy shooting speed (NEW)
+    state.currentShootInterval = Math.max(
+      CONFIG.invader.shootIntervalMin,
+      state.currentShootInterval - CONFIG.invader.shootIntervalDecrement
+    )
+
     setupInvaders()
   }
 
@@ -592,6 +731,13 @@ function renderGame() {
     )
   })
 
+  // Render enemy bullets (simple black cells - KISS approach)
+  fill(0)  // Pure black
+  noStroke()
+  enemyBullets.forEach(bullet => {
+    rect(bullet.x, bullet.y, bullet.width, bullet.height)
+  })
+
   // Render particles with masked gradients (PHASE 3: pass globalCellSize)
   renderParticles(particles, maskedRenderer, CONFIG.globalCellSize)
 
@@ -617,8 +763,6 @@ function spawnExplosion(invader) {
 
   // Dispersion radius proportional to invader size
   const dispersionRadius = (invader.width + invader.height) / 4
-
-  console.log(`[Explosion] Spawning ${particleCount} particles at (${centerX}, ${centerY}) with radius ${dispersionRadius}`)
 
   for (let i = 0; i < particleCount; i++) {
     const particle = {
@@ -649,8 +793,108 @@ function spawnExplosion(invader) {
     particle.width = dims.width
     particle.height = dims.height
 
+    // Center particle: x,y should be top-left corner, not center
+    particle.x -= particle.width / 2
+    particle.y -= particle.height / 2
+
     particles.push(particle)
   }
+}
+
+/**
+ * Spawn player explosion particles.
+ * Creates more particles than invader explosion (player is important visual event).
+ */
+function spawnPlayerExplosion() {
+  const centerX = player.x + player.width / 2
+  const centerY = player.y + player.height / 2
+
+  // More particles than invader (8 vs 2-3)
+  const particleCount = 8
+
+  // Dispersion radius proportional to player size
+  const dispersionRadius = (player.width + player.height) / 4
+
+  for (let i = 0; i < particleCount; i++) {
+    const particle = {
+      x: centerX + (Math.random() * 2 - 1) * dispersionRadius,
+      y: centerY + (Math.random() * 2 - 1) * dispersionRadius,
+      vx: (Math.random() * 2 - 1) * 5,  // Slightly faster than invader explosion
+      vy: (Math.random() * 2 - 1) * 5,
+      alpha: 255,
+      width: 0,
+      height: 0,
+      dead: false,
+
+      // 6x6 grid for explosions (uses unified update rate)
+      gol: new GoLEngine(6, 6, CONFIG.loopUpdateRate),
+      gradient: GRADIENT_PRESETS.EXPLOSION
+    }
+
+    // Pure GoL setup (Tier 1: no lifeForce)
+    seedRadialDensity(particle.gol, 0.7, 0.0)
+
+    // Add a small pattern in center for chaos
+    const explosionPatterns = [Patterns.BLINKER, Patterns.TOAD, Patterns.BEACON]
+    const pattern = explosionPatterns[Math.floor(Math.random() * explosionPatterns.length)]
+    particle.gol.setPattern(pattern, 1, 1)
+
+    // Calculate dimensions after pattern applied
+    const dims = calculateEntityDimensions(particle)
+    particle.width = dims.width
+    particle.height = dims.height
+
+    // Center particle: x,y should be top-left corner, not center
+    particle.x -= particle.width / 2
+    particle.y -= particle.height / 2
+
+    particles.push(particle)
+  }
+}
+
+/**
+ * Destroy player (hit by enemy bullet).
+ * Spawns explosion particles and triggers game over.
+ */
+function destroyPlayer() {
+  spawnPlayerExplosion()
+  state.lives = 0
+  player.dead = true  // Hide player during DYING phase
+}
+
+/**
+ * Spawn mini-explosion when bullets collide.
+ * Creates a single 2×2 Blinker particle that oscillates briefly.
+ *
+ * @param {number} x - X coordinate of collision
+ * @param {number} y - Y coordinate of collision
+ */
+function spawnMiniExplosion(x, y) {
+  const particle = {
+    x: x - CONFIG.globalCellSize,  // Center (30px offset for 2×2 grid)
+    y: y - CONFIG.globalCellSize,
+    vx: 0,  // No movement (static flash)
+    vy: 0,
+    alpha: 255,
+    width: 0,   // Will be calculated
+    height: 0,  // Will be calculated
+    dead: false,
+    lifetime: 20,  // 20 frames = 0.33 seconds (quick but visible)
+
+    // 2×2 grid with BLINKER pattern (oscillates for visual effect)
+    gol: new GoLEngine(2, 2, CONFIG.loopUpdateRate),
+    gradient: GRADIENT_PRESETS.EXPLOSION
+  }
+
+  // Vertical blinker in 2×2 grid (will oscillate horizontally)
+  particle.gol.setPattern(Patterns.BLINKER, 0, 0)
+
+  // Calculate dimensions after pattern applied
+  const dims = calculateEntityDimensions(particle)
+  particle.width = dims.width   // 60px (2 cells × 30px)
+  particle.height = dims.height // 60px
+
+  particles.push(particle)
 }
 
 // ============================================

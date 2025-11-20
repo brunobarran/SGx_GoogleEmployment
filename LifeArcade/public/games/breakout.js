@@ -17,7 +17,7 @@ import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
-import { renderGameOver, renderWin } from '/src/utils/UIHelpers.js'
+import { renderGameOver } from '/src/utils/UIHelpers.js'
 import {
   GAME_DIMENSIONS,
   GAMEOVER_CONFIG,
@@ -32,16 +32,16 @@ import {
 const CONFIG = createGameConfig({
 
   paddle: {
-    width: 450,   // 150 × 3 = 450
+    width: 225,   // 75 × 3 = 225 (half of original 450)
     height: 75,   // 25 × 3 = 75
     speed: 30,    // 10 × 3 = 30
     y: 1850
   },
 
   ball: {
-    radius: 120,  // 40 × 3 = 120
     speed: 18,    // 6 × 3 = 18
     maxAngle: Math.PI / 3
+    // Note: radius is calculated dynamically in setupBall() based on GoL grid size
   },
 
   brick: {
@@ -50,7 +50,7 @@ const CONFIG = createGameConfig({
     width: 240,   // 80 × 3 = 240
     height: 240,  // 80 × 3 = 240
     padding: 60,  // Unified spacing: 60px (same as Space Invaders for visual consistency)
-    offsetX: 180, // Centered: 3×240 + 2×60 = 720 + 120 = 840px, (1200-840)/2 = 180px
+    offsetX: 0,   // Will be calculated dynamically
     offsetY: 200  // Unified starting position with Space Invaders (same as startY)
   }
 })
@@ -70,8 +70,7 @@ const BRICK_PATTERNS = [
 // ============================================
 const state = createGameState({
   level: 1,
-  dyingTimer: 0,
-  isWin: false
+  dyingTimer: 0
 })
 
 // ============================================
@@ -141,8 +140,8 @@ function setupPaddle() {
     height: CONFIG.paddle.height,
     vx: 0,
     gol: new GoLEngine(
-      Math.floor(CONFIG.paddle.width / 30),   // 15 cells for 450px width (450/30 = 15)
-      Math.floor(CONFIG.paddle.height / 30),  // 2-3 cells for 75px height (75/30 = 2.5)
+      Math.floor(CONFIG.paddle.width / 30),   // 7 cells for 225px width (225/30 = 7.5)
+      Math.floor(CONFIG.paddle.height / 30),  // 2 cells for 75px height (75/30 = 2.5)
       12
     ),
     cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
@@ -152,16 +151,21 @@ function setupPaddle() {
   // Seed with radial density
   seedRadialDensity(paddle.gol, 0.85, 0.0)
 
-  // Add accent pattern
-  paddle.gol.setPattern(Patterns.BLINKER, 7, 0)  // Scaled: 4 × 1.75 ≈ 7 (centered in 15 cols)
+  // Add accent pattern (centered in 7 cols)
+  paddle.gol.setPattern(Patterns.BLINKER, 3, 0)  // Centered: (7 - 1) / 2 ≈ 3
 }
 
 function setupBall() {
+  // Ball visual size: 3 cells × 30px = 90px total width/height
+  // Ball radius should be half of that: 90 / 2 = 45px
+  const ballVisualSize = 3 * 30  // 90px
+  const ballVisualRadius = ballVisualSize / 2  // 45px
+
   ball = {
     x: CONFIG.width / 2,
-    y: CONFIG.paddle.y - 120,  // 40 × 3 = 120
-    radius: CONFIG.ball.radius,
-    vx: CONFIG.ball.speed * (Math.random() > 0.5 ? 1 : -1),
+    y: CONFIG.paddle.y - ballVisualRadius,
+    radius: ballVisualRadius,  // FIXED: Use actual visual radius (45px), not CONFIG (120px)
+    vx: 0,  // Start purely vertical (KISS fix for horizontal loops)
     vy: -CONFIG.ball.speed,
     stuck: false,  // Ball starts moving
     gol: new GoLEngine(3, 3, 15),  // 3×3 grid maintained
@@ -175,6 +179,16 @@ function setupBall() {
 
 function setupBricks() {
   bricks = []
+
+  // Calculate visual brick size based on GoL grid (not CONFIG.brick.width)
+  // GoL grid size: floor(brickWidth / 30) cells × 30px per cell
+  const brickGolCols = Math.floor(CONFIG.brick.width / 30)
+  const brickGolRows = Math.floor(CONFIG.brick.height / 30)
+  const visualBrickWidth = brickGolCols * 30  // Actual rendered width
+
+  // Calculate offsetX to center grid horizontally using VISUAL width
+  const totalWidth = CONFIG.brick.cols * visualBrickWidth + (CONFIG.brick.cols - 1) * CONFIG.brick.padding
+  CONFIG.brick.offsetX = (CONFIG.width - totalWidth) / 2
 
   for (let row = 0; row < CONFIG.brick.rows; row++) {
     for (let col = 0; col < CONFIG.brick.cols; col++) {
@@ -190,17 +204,21 @@ function setupBricks() {
         col: col,
         scoreValue: patternInfo.scoreValue,
         gol: new GoLEngine(
-          Math.floor(CONFIG.brick.width / 30),   // 8 cells for 240px (240/30 = 8)
-          Math.floor(CONFIG.brick.height / 30),  // 8 cells for 240px (square)
+          brickGolCols,  // Dynamic: 8 cells @ 240px, 4 cells @ 130px
+          brickGolRows,  // Square grid
           15  // Same evolution speed as Space Invaders
         ),
-        cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
+        cellSize: 30,  // Fixed at 30px for pattern visibility
         gradient: patternInfo.gradient,
         dead: false
       }
 
-      // Seed with higher density to maintain more cells (same as invaders)
-      seedRadialDensity(brick.gol, 0.75, 0.0)
+      // Apply canonical GoL pattern and freeze (no evolution)
+      // Center pattern in available grid space
+      const patternOffsetX = Math.max(0, Math.floor((brickGolCols - 4) / 2))  // Patterns are ~3-4 cells wide
+      const patternOffsetY = Math.max(0, Math.floor((brickGolRows - 4) / 2))
+      brick.gol.setPattern(Patterns[patternInfo.name], patternOffsetX, patternOffsetY)
+      brick.gol.freeze()  // Static patterns, no B3/S23 evolution
 
       bricks.push(brick)
     }
@@ -222,13 +240,13 @@ function draw() {
     state.dyingTimer++
     particles = updateParticles(particles, state.frameCount)
 
-    // Transition to GAMEOVER/WIN when particles done or timeout reached
+    // Transition to GAMEOVER when particles done or timeout reached
     const minDelayPassed = state.dyingTimer >= GAMEOVER_CONFIG.MIN_DELAY
     const particlesDone = particles.length === 0
     const maxWaitReached = state.dyingTimer >= GAMEOVER_CONFIG.MAX_WAIT
 
     if ((particlesDone && minDelayPassed) || maxWaitReached) {
-      state.phase = state.isWin ? 'WIN' : 'GAMEOVER'
+      state.phase = 'GAMEOVER'
 
       // Send postMessage to parent if in installation
       if (window.parent !== window) {
@@ -251,14 +269,10 @@ function draw() {
   // Update gradient animation
   maskedRenderer.updateAnimation()
 
-  // Only show Game Over/Win screen in standalone mode
+  // Only show Game Over screen in standalone mode
   if (state.phase === 'GAMEOVER') {
     if (window.parent === window) {
       renderGameOver(width, height, state.score)
-    }
-  } else if (state.phase === 'WIN') {
-    if (window.parent === window) {
-      renderWin(width, height, state.score)
     }
   }
 }
@@ -270,12 +284,7 @@ function updateGame() {
   // Update ball
   updateBall()
 
-  // Update bricks with life force to maintain density
-  bricks.forEach(brick => {
-    brick.gol.updateThrottled(state.frameCount)
-    // Maintain minimum density to prevent bricks from disappearing
-    applyLifeForce(brick)
-  })
+  // Bricks are frozen (static patterns) - no updates needed
 
   // Update particles (Pure GoL for explosion effect)
   particles = updateParticles(particles, state.frameCount)
@@ -283,18 +292,15 @@ function updateGame() {
   // Check collisions
   checkCollisions()
 
-  // Check win/lose
-  if (bricks.length === 0 && state.phase !== 'DYING' && state.phase !== 'WIN') {
-    state.phase = 'DYING'
-    state.dyingTimer = 0
-    state.isWin = true  // Flag to show WIN screen instead of GAMEOVER
-    // Note: postMessage will be sent after particle animation completes
+  // Check level progression - all bricks destroyed
+  if (bricks.length === 0 && state.phase === 'PLAYING') {
+    nextLevel()
   }
 
+  // Check game over - no lives left
   if (state.lives <= 0 && state.phase !== 'GAMEOVER' && state.phase !== 'DYING') {
     state.phase = 'DYING'
     state.dyingTimer = 0
-    state.isWin = false  // Flag to show GAMEOVER screen
     // Note: postMessage will be sent after particle animation completes
   }
 }
@@ -321,7 +327,7 @@ function updateBall() {
   if (ball.stuck) {
     // Ball follows paddle when stuck
     ball.x = paddle.x + paddle.width / 2
-    ball.y = paddle.y - 40
+    ball.y = paddle.y - ball.radius
 
     // Release on space
     if (keyIsDown(32)) {  // SPACE
@@ -334,22 +340,26 @@ function updateBall() {
     ball.x += ball.vx
     ball.y += ball.vy
 
-    // Use actual collision radius for wall collisions
-    const actualRadius = ball.radius * 0.5
+    // Wall collisions use VISUAL radius
+    // ball.radius is now correctly set to actual visual radius (45px = half of 90px grid)
+    const wallRadius = ball.radius
 
-    // Wall collisions
-    if (ball.x - actualRadius < 0 || ball.x + actualRadius > CONFIG.width) {
+    // Wall collisions (in BASE resolution 1200×1920)
+    // Left wall (x = 0): collides when ball.x - 45 < 0
+    // Right wall (x = 1200): collides when ball.x + 45 > 1200
+    if (ball.x - wallRadius < 0 || ball.x + wallRadius > CONFIG.width) {
       ball.vx *= -1
-      ball.x = Collision.clamp(ball.x, actualRadius, CONFIG.width - actualRadius)
+      ball.x = Collision.clamp(ball.x, wallRadius, CONFIG.width - wallRadius)
     }
 
-    if (ball.y - actualRadius < 0) {
+    // Top wall (y = 0)
+    if (ball.y - wallRadius < 0) {
       ball.vy *= -1
-      ball.y = actualRadius
+      ball.y = wallRadius
     }
 
-    // Bottom edge - lose life
-    if (ball.y - actualRadius > CONFIG.height) {
+    // Bottom edge - lose life (y > 1920)
+    if (ball.y - wallRadius > CONFIG.height) {
       state.lives--
       if (state.lives > 0) {
         resetBall()
@@ -365,14 +375,86 @@ function updateBall() {
 
 function resetBall() {
   ball.x = paddle.x + paddle.width / 2
-  ball.y = paddle.y - 120  // 40 × 3 = 120
-  ball.vx = 0
+  ball.y = paddle.y - ball.radius  // Use actual ball radius
+  ball.vx = 0  // Vertical on reset
   ball.vy = 0
   ball.stuck = true
 }
 
+function nextLevel() {
+  state.level++
+
+  // PHASE 1: Grid Expansion (Levels 1-11)
+  // Increase grid size while reducing brick size and padding to fit screen
+  //
+  // PHASE 2: Speed Only (Levels 12+)
+  // Grid maxed at 8×8 (64 bricks), only increase speed
+
+  const MAX_GRID_LEVEL = 11  // Level where grid stops growing
+
+  let newRows, newCols, brickSize, padding
+
+  if (state.level <= MAX_GRID_LEVEL) {
+    // PHASE 1: Progressive grid expansion with dynamic sizing
+
+    // Grid progression: 3×3 → 3×4 → 4×4 → 4×5 → 5×5 → 5×6 → 6×6 → 6×7 → 7×7 → 7×8 → 8×8
+    newRows = Math.min(8, 3 + Math.floor((state.level - 1) / 2))
+    newCols = Math.min(8, 3 + Math.floor(state.level / 2))
+
+    // Dynamic brick size calculation
+    // Start at 240px (level 1-2), reduce progressively to 130px (level 11)
+    const sizeReduction = (state.level - 1) * 10  // 0, 10, 20, 30... 100
+    brickSize = Math.max(130, 240 - sizeReduction)
+
+    // Dynamic padding calculation
+    // Start at 60px, reduce progressively to 20px
+    const paddingReduction = (state.level - 1) * 4  // 0, 4, 8, 12... 40
+    padding = Math.max(20, 60 - paddingReduction)
+
+    // Fine-tune to ensure grid fits within maxWidth (1200px)
+    const maxUsableWidth = 1180  // Leave 20px margin
+    let totalWidth = newCols * brickSize + (newCols - 1) * padding
+
+    // If still too wide, reduce brick size further
+    while (totalWidth > maxUsableWidth && brickSize > 130) {
+      brickSize -= 5
+      totalWidth = newCols * brickSize + (newCols - 1) * padding
+    }
+
+    // If STILL too wide, reduce padding
+    while (totalWidth > maxUsableWidth && padding > 20) {
+      padding -= 2
+      totalWidth = newCols * brickSize + (newCols - 1) * padding
+    }
+
+  } else {
+    // PHASE 2: Grid maxed out, only speed increases
+    newRows = 8
+    newCols = 8
+    brickSize = 130
+    padding = 20
+  }
+
+  // Apply calculated values
+  CONFIG.brick.rows = newRows
+  CONFIG.brick.cols = newCols
+  CONFIG.brick.width = brickSize
+  CONFIG.brick.height = brickSize
+  CONFIG.brick.padding = padding
+  // Note: offsetX is calculated by setupBricks() to avoid duplication
+
+  // Increase ball speed by 10% per level (capped at 2.5x original speed)
+  const speedMultiplier = Math.min(2.5, 1 + (state.level - 1) * 0.1)
+  const baseSpeed = 18  // Original speed from CONFIG
+  CONFIG.ball.speed = baseSpeed * speedMultiplier
+
+  // Rebuild bricks (this will recalculate offsetX) and reset ball
+  setupBricks()
+  setupBall()
+}
+
 function checkCollisions() {
-  // Ball center (ball position is top-left corner because we draw it offset by radius)
+  // Ball coordinates (ball.x, ball.y) represent the CENTER of the ball
   const ballCenterX = ball.x
   const ballCenterY = ball.y
   const ballActualRadius = ball.radius * 0.5  // Use smaller collision radius (half visual size)
@@ -400,8 +482,10 @@ function checkCollisions() {
     }
   }
 
-  // Ball vs bricks
-  bricks.forEach(brick => {
+  // Ball vs bricks - KISS fix: for loop + break + separation
+  for (let i = 0; i < bricks.length; i++) {
+    const brick = bricks[i]
+
     if (Collision.circleRect(
       ballCenterX, ballCenterY, ballActualRadius,
       brick.x, brick.y, brick.width, brick.height
@@ -416,9 +500,21 @@ function checkCollisions() {
       if (Math.abs(dx / brick.width) > Math.abs(dy / brick.height)) {
         // Hit left or right side
         ball.vx *= -1
+        // Separate ball from brick
+        if (dx > 0) {
+          ball.x = brick.x + brick.width + ballActualRadius
+        } else {
+          ball.x = brick.x - ballActualRadius
+        }
       } else {
         // Hit top or bottom
         ball.vy *= -1
+        // Separate ball from brick
+        if (dy > 0) {
+          ball.y = brick.y + brick.height + ballActualRadius
+        } else {
+          ball.y = brick.y - ballActualRadius
+        }
       }
 
       // Mark brick as dead
@@ -427,8 +523,11 @@ function checkCollisions() {
 
       // Spawn explosion
       spawnExplosion(brick.x + brick.width / 2, brick.y + brick.height / 2, brick.gradient)
+
+      // Only one brick per frame
+      break
     }
-  })
+  }
 
   bricks = bricks.filter(b => !b.dead)
 }
@@ -506,7 +605,7 @@ function renderGame() {
 // INPUT
 // ============================================
 function keyPressed() {
-  if (key === ' ' && (state.phase === 'GAMEOVER' || state.phase === 'WIN')) {
+  if (key === ' ' && state.phase === 'GAMEOVER') {
     initGame()
   }
 }

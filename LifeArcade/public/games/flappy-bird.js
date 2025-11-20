@@ -17,9 +17,11 @@ import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
-import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
+import { seedRadialDensity, applyLifeForce } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
 import { renderGameOver } from '/src/utils/UIHelpers.js'
+import { createPatternRenderer, RenderMode, PatternName } from '/src/utils/PatternRenderer.js'
+import { initHitboxDebug, drawHitboxRect } from '/src/debug/HitboxDebug.js'
 import {
   GAME_DIMENSIONS,
   GAMEOVER_CONFIG,
@@ -34,24 +36,44 @@ import {
 
 const CONFIG = createGameConfig({
   player: {
-    width: 240,    // 80 × 3 = 240
-    height: 240,   // 80 × 3 = 240
+    width: 210,    // LWSS: 7 cols × 30px = 210px (visual width)
+    height: 180,   // LWSS: 6 rows × 30px = 180px (visual height)
     cellSize: 30,  // Scaled to 30px (3x from 10px baseline)
     x: 300,        // Keep same (relative positioning)
     startY: 960    // Keep same (relative to canvas height)
   },
 
-  gravity: 2.1,    // 0.7 × 3 = 2.1 (scaled for larger player)
-  jumpForce: -42,  // -14 × 3 = -42 (scaled for larger player)
-  groundY: 1850,   // Keep same (relative to canvas height)
-  ceilingY: 70,    // Keep same (relative to canvas height)
+  gravity: 1.0,        // SMOOTH: Very gentle gravity for precise control
+  jumpForce: -22,      // SMOOTH: Short, precise jumps for micro-adjustments
+  terminalVelocity: 15, // SMOOTH: Slow falling speed for maximum control
+  groundY: 1850,       // Keep same (relative to canvas height)
+  ceilingY: 200,       // Lowered to avoid UI overlap (was 70)
 
   pipe: {
-    width: 360,      // 120 × 3 = 360
-    gap: 600,        // Increased from 280×3=840 to 600 for better playability with scaled player
-    speed: -15,      // -5 × 3 = -15
+    width: 360,            // 120 × 3 = 360
+    gapStart: 600,         // Initial gap size (easier)
+    gapMin: 400,           // Minimum gap size (harder at high levels)
+    gapDecrement: 20,      // Gap reduction per level
+    speedStart: -15,       // Initial speed (slower)
+    speedMin: -45,         // Maximum speed (faster at high levels)
+    speedIncrement: -3,    // Speed increase per level
     spawnInterval: 100,
-    cellSize: 30     // Scaled to 30px (3x from 10px baseline)
+    cellSize: 30           // Scaled to 30px (3x from 10px baseline)
+  },
+
+  parallax: {
+    cloudDensity: 8,         // Number of clouds on screen
+    cloudOpacity: 0.20,      // 20% opacity for subtle effect
+    scrollSpeed: -1.5,       // Horizontal velocity (slower than pipes)
+    spawnInterval: 120,      // Every 2 seconds (120 frames)
+    cellSize: 30,            // Cell size for cloud patterns
+    patterns: [              // Still life patterns for clouds
+      PatternName.BLOCK,
+      PatternName.BEEHIVE,
+      PatternName.LOAF,
+      PatternName.BOAT,
+      PatternName.TUB
+    ]
   }
 })
 
@@ -62,7 +84,9 @@ let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 // GAME STATE
 // ============================================
 const state = createGameState({
+  level: 1,         // Current level (increases every 5 points)
   spawnTimer: 0,
+  cloudSpawnTimer: 0,  // Timer for cloud spawning
   dyingTimer: 0
 })
 
@@ -72,6 +96,7 @@ const state = createGameState({
 let player = null
 let pipes = []
 let particles = []
+let clouds = []  // Parallax background clouds
 
 // Gradient renderer (DO NOT MODIFY)
 let maskedRenderer = null
@@ -91,6 +116,143 @@ function updateConfigScale() {
 }
 
 // ============================================
+// PARALLAX BACKGROUND SYSTEM
+// ============================================
+
+/**
+ * Initialize parallax cloud system.
+ * Pre-populates the screen with clouds for seamless effect.
+ */
+function initParallax() {
+  clouds = []
+
+  // Pre-populate screen with clouds
+  const spacing = GAME_DIMENSIONS.BASE_WIDTH / CONFIG.parallax.cloudDensity
+
+  for (let i = 0; i < CONFIG.parallax.cloudDensity; i++) {
+    const cloud = spawnCloud()
+    // Distribute clouds across screen width
+    cloud.x = i * spacing + random(-spacing * 0.3, spacing * 0.3)
+    clouds.push(cloud)
+  }
+}
+
+/**
+ * Create a new cloud with random still life pattern.
+ * @returns {Object} Cloud entity
+ */
+function spawnCloud() {
+  // Select random pattern from still lifes
+  const patternName = random(CONFIG.parallax.patterns)
+
+  // Select random multicolor gradient for variety
+  const gradients = [
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW
+  ]
+  const randomGradient = random(gradients)
+
+  // Create renderer with static mode (still lifes don't evolve)
+  const renderer = createPatternRenderer({
+    mode: RenderMode.STATIC,
+    pattern: patternName,
+    phase: 0,  // Still lifes are always phase 0
+    globalCellSize: CONFIG.parallax.cellSize,
+    loopUpdateRate: 10  // Not used for static mode, but required
+  })
+
+  const dims = renderer.dimensions
+
+  const cloud = {
+    x: GAME_DIMENSIONS.BASE_WIDTH,  // Start off-screen right
+    y: random(300, 1200),  // Random vertical position
+    vx: CONFIG.parallax.scrollSpeed,
+    pattern: patternName,
+    gol: renderer.gol,
+    width: dims.width,
+    height: dims.height,
+    cellSize: CONFIG.parallax.cellSize,
+    gradient: randomGradient,  // Multicolor gradient
+    dead: false
+  }
+
+  return cloud
+}
+
+/**
+ * Update all clouds in parallax background.
+ * Handles movement, cleanup, and spawning.
+ */
+function updateClouds() {
+  // Move clouds
+  clouds.forEach(cloud => {
+    cloud.x += cloud.vx
+
+    // Mark as dead if off-screen left
+    if (cloud.x < -cloud.width) {
+      cloud.dead = true
+    }
+  })
+
+  // Remove dead clouds
+  clouds = clouds.filter(c => !c.dead)
+
+  // Spawn new cloud if timer reached
+  state.cloudSpawnTimer++
+  if (state.cloudSpawnTimer >= CONFIG.parallax.spawnInterval) {
+    clouds.push(spawnCloud())
+    state.cloudSpawnTimer = 0
+  }
+}
+
+/**
+ * Render parallax clouds with opacity.
+ * Must be called BEFORE rendering other entities (background layer).
+ */
+function renderClouds() {
+  push()
+
+  // Create a graphics buffer for clouds with opacity
+  const cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
+  cloudGraphics.clear()
+
+  clouds.forEach(cloud => {
+    // Render each cell with multicolor gradient and transparency
+    const grid = cloud.gol.current
+    const cols = cloud.gol.cols
+    const rows = cloud.gol.rows
+
+    cloudGraphics.noStroke()
+
+    for (let x = 0; x < cols; x++) {
+      for (let y = 0; y < rows; y++) {
+        if (grid[x][y] === 1) {
+          const px = cloud.x + x * cloud.cellSize
+          const py = cloud.y + y * cloud.cellSize
+
+          // Get gradient color from maskedRenderer (uses Perlin noise)
+          const [r, g, b] = maskedRenderer.getGradientColor(
+            px + cloud.cellSize / 2,
+            py + cloud.cellSize / 2
+          )
+
+          // Apply opacity to the gradient color
+          cloudGraphics.fill(r, g, b, CONFIG.parallax.cloudOpacity * 255)
+          cloudGraphics.rect(px, py, cloud.cellSize, cloud.cellSize)
+        }
+      }
+    }
+  })
+
+  // Draw the buffer to main canvas
+  image(cloudGraphics, 0, 0)
+  cloudGraphics.remove()  // Clean up
+
+  pop()
+}
+
+// ============================================
 // p5.js SETUP
 // ============================================
 function setup() {
@@ -105,6 +267,7 @@ function setup() {
   createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
   maskedRenderer = new SimpleGradientRenderer(this)
+  initHitboxDebug()  // Initialize hitbox debugging (press H to toggle)
   initGame()
 }
 
@@ -113,11 +276,14 @@ function initGame() {
   state.lives = 1
   state.phase = 'PLAYING'
   state.frameCount = 0
+  state.level = 1
   state.spawnTimer = 0
+  state.cloudSpawnTimer = 0
 
   setupPlayer()
   pipes = []
   particles = []
+  initParallax()
 }
 
 function setupPlayer() {
@@ -131,18 +297,15 @@ function setupPlayer() {
     // Physics
     vy: 0,
 
-    // GoL engine - Standard: 6×6 grid at 12fps for player
-    gol: new GoLEngine(6, 6, 12),
+    // GoL engine - LWSS: 7×6 grid at 15fps (period 4 animation: 4 frames per cycle at 60fps)
+    gol: new GoLEngine(7, 6, 15),
 
     // Gradient - Choose from GRADIENT_PRESETS
     gradient: GRADIENT_PRESETS.PLAYER
   }
 
-  // Seed with radial density - Standard pattern
-  seedRadialDensity(player.gol, 0.85, 0.0)
-
-  // Optional: Add accent pattern for visual interest
-  player.gol.setPattern(Patterns.BLINKER, 2, 2)
+  // LWSS pattern (Lightweight Spaceship) - Period 4 oscillator
+  player.gol.setPattern(Patterns.LIGHTWEIGHT_SPACESHIP, 0, 0)
 }
 
 // ============================================
@@ -196,6 +359,12 @@ function draw() {
 }
 
 function updateGame() {
+  // Update parallax background (BEFORE other entities)
+  updateClouds()
+
+  // Calculate level based on score (every 5 points = 1 level)
+  state.level = Math.floor(state.score / 5) + 1
+
   updatePlayer()
   updatePipes()
   particles = updateParticles(particles, state.frameCount)
@@ -211,6 +380,10 @@ function updatePlayer() {
 
   // Apply gravity
   player.vy += CONFIG.gravity
+
+  // Apply terminal velocity (prevent infinite acceleration)
+  player.vy = Math.min(player.vy, CONFIG.terminalVelocity)
+
   player.y += player.vy
 
   // Check ceiling/ground collision
@@ -232,56 +405,90 @@ function updatePlayer() {
   applyLifeForce(player)
 }
 
+// ============================================
+// PIPE SPAWNING
+// ============================================
 function spawnPipes() {
   state.spawnTimer++
 
   if (state.spawnTimer >= CONFIG.pipe.spawnInterval) {
     state.spawnTimer = 0
 
+    // Calculate current speed based on level
+    const currentSpeed = Math.max(
+      CONFIG.pipe.speedMin,
+      CONFIG.pipe.speedStart + (state.level - 1) * CONFIG.pipe.speedIncrement
+    )
+
+    // Calculate current gap based on level
+    const currentGap = Math.max(
+      CONFIG.pipe.gapMin,
+      CONFIG.pipe.gapStart - (state.level - 1) * CONFIG.pipe.gapDecrement
+    )
+
     // Random gap position (between ceiling and ground)
-    const minGapTop = CONFIG.ceilingY + 240  // 80 × 3 = 240
-    const maxGapTop = CONFIG.groundY - CONFIG.pipe.gap - 240
+    const minGapTop = CONFIG.ceilingY + 240
+    const maxGapTop = CONFIG.groundY - currentGap - 240
     const gapTop = random(minGapTop, maxGapTop)
 
-    // Top pipe
+    // Top pipe - brick wall pattern with BEEHIVE still lifes
+    const topPipeCols = Math.floor(CONFIG.pipe.width / 30)
+    const topPipeRows = Math.floor((gapTop - CONFIG.ceilingY) / 30)
+
     const topPipe = {
       x: GAME_DIMENSIONS.BASE_WIDTH,
       y: CONFIG.ceilingY,
       width: CONFIG.pipe.width,
       height: gapTop - CONFIG.ceilingY,
       cellSize: CONFIG.pipe.cellSize,
-      vx: CONFIG.pipe.speed,
+      vx: currentSpeed,
       scored: false,
-      gol: new GoLEngine(
-        Math.floor(CONFIG.pipe.width / 30),  // cellSize 30 (scaled from 10)
-        Math.floor((gapTop - CONFIG.ceilingY) / 30),
-        0  // Visual Only (no evolution)
-      ),
+      gol: new GoLEngine(topPipeCols, topPipeRows, 0),  // updateRate 0 (still lifes don't evolve)
       gradient: GRADIENT_PRESETS.ENEMY_HOT,
       dead: false
     }
 
-    // Bottom pipe
+    // Bottom pipe - brick wall pattern with BEEHIVE still lifes
+    const bottomPipeCols = Math.floor(CONFIG.pipe.width / 30)
+    const bottomPipeRows = Math.floor((CONFIG.groundY - (gapTop + currentGap)) / 30)
+
     const bottomPipe = {
       x: GAME_DIMENSIONS.BASE_WIDTH,
-      y: gapTop + CONFIG.pipe.gap,
+      y: gapTop + currentGap,
       width: CONFIG.pipe.width,
-      height: CONFIG.groundY - (gapTop + CONFIG.pipe.gap),
+      height: CONFIG.groundY - (gapTop + currentGap),
       cellSize: CONFIG.pipe.cellSize,
-      vx: CONFIG.pipe.speed,
+      vx: currentSpeed,
       scored: false,
-      gol: new GoLEngine(
-        Math.floor(CONFIG.pipe.width / 30),  // cellSize 30 (scaled from 10)
-        Math.floor((CONFIG.groundY - (gapTop + CONFIG.pipe.gap)) / 30),
-        0  // Visual Only (no evolution)
-      ),
+      gol: new GoLEngine(bottomPipeCols, bottomPipeRows, 0),  // updateRate 0 (still lifes don't evolve)
       gradient: GRADIENT_PRESETS.ENEMY_COLD,
       dead: false
     }
 
-    // Seed pipes with radial density
-    seedRadialDensity(topPipe.gol, 0.75, 0.0)
-    seedRadialDensity(bottomPipe.gol, 0.75, 0.0)
+    // Brick Wall Pattern: BEEHIVE still lifes in alternating rows
+    // This creates a solid visual that matches the hitbox (fair gameplay)
+    // Performance: 0fps evolution (still lifes are static)
+    // Strategy: Prefer overflow over gaps (better to extend past hitbox than miss coverage)
+
+    // Top pipe - populate with brick wall pattern
+    for (let y = -1; y <= topPipeRows; y += 2) {
+      const offsetX = (Math.floor(y / 2) % 2 === 0) ? 0 : 2
+      for (let x = offsetX; x <= topPipeCols - 3; x += 3) {
+        if (x >= -1 && x + 4 <= topPipeCols + 1 && y + 3 <= topPipeRows + 1) {
+          topPipe.gol.setPattern(Patterns.BEEHIVE, Math.max(0, x), Math.max(0, y))
+        }
+      }
+    }
+
+    // Bottom pipe - populate with brick wall pattern
+    for (let y = -1; y <= bottomPipeRows; y += 2) {
+      const offsetX = (Math.floor(y / 2) % 2 === 0) ? 0 : 2
+      for (let x = offsetX; x <= bottomPipeCols - 3; x += 3) {
+        if (x >= -1 && x + 4 <= bottomPipeCols + 1 && y + 3 <= bottomPipeRows + 1) {
+          bottomPipe.gol.setPattern(Patterns.BEEHIVE, Math.max(0, x), Math.max(0, y))
+        }
+      }
+    }
 
     pipes.push(topPipe, bottomPipe)
   }
@@ -291,10 +498,9 @@ function updatePipes() {
   pipes.forEach(pipe => {
     pipe.x += pipe.vx
 
-    // Visual Only: maintain density
-    if (state.frameCount % 8 === 0) {
-      maintainDensity(pipe, 0.7)
-    }
+    // Brick wall pattern uses still lifes (updateRate = 0)
+    // No evolution needed - static patterns for performance
+    // pipe.gol.updateThrottled(state.frameCount)  // Commented out - still lifes don't evolve
 
     // Score when player passes pipe
     if (!pipe.scored && pipe.x + pipe.width < player.x) {
@@ -356,11 +562,8 @@ function renderGame() {
   push()
   scale(scaleFactor)
 
-  // Draw ceiling and ground lines
-  stroke(CONFIG.ui.textColor)
-  strokeWeight(2)
-  line(0, CONFIG.ceilingY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.ceilingY)
-  line(0, CONFIG.groundY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.groundY)
+  // Render parallax clouds (BEFORE all other entities - background layer)
+  renderClouds()
 
   // Render player with gradient (hide during DYING and GAMEOVER)
   if (state.phase === 'PLAYING') {
@@ -386,6 +589,14 @@ function renderGame() {
 
   // Render particles with gradients and alpha
   renderParticles(particles, maskedRenderer)
+
+  // DEBUG: Render hitboxes (press H to toggle)
+  if (state.phase === 'PLAYING') {
+    drawHitboxRect(player.x, player.y, player.width, player.height, 'player', '#00FF00')
+  }
+  pipes.forEach((pipe, index) => {
+    drawHitboxRect(pipe.x, pipe.y, pipe.width, pipe.height, `pipe ${index}`, '#FF0000')
+  })
 
   pop()
 }

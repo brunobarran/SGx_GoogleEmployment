@@ -59,6 +59,7 @@
       box-sizing: border-box;
       z-index: 1000;
       pointer-events: none;
+      gap: clamp(20px, 3vw, 60px);
     }
 
     #game-title {
@@ -70,14 +71,14 @@
       margin: 0;
     }
 
-    #game-score {
+    .game-stat {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: clamp(10px, 1.15vh, 22px);
     }
 
-    #score-label {
+    .stat-label {
       color: #202124;
       font-size: clamp(24px, 2.34vh, 45px);
       font-family: 'Google Sans Flex', Arial, sans-serif;
@@ -86,7 +87,7 @@
       margin: 0;
     }
 
-    #score-value {
+    .stat-value {
       color: #202124;
       font-size: clamp(36px, 3.65vh, 70px);
       font-family: 'Google Sans Flex', Arial, sans-serif;
@@ -94,15 +95,22 @@
       line-height: 1;
       margin: 0;
     }
+
+    #game-stats {
+      display: flex;
+      gap: clamp(30px, 4vw, 80px);
+    }
   </style>
 </head>
 <body>
   <!-- Game header overlay -->
   <div id="game-header">
     <h1 id="game-title">Game</h1>
-    <div id="game-score">
-      <div id="score-label">Score</div>
-      <div id="score-value">0</div>
+    <div id="game-stats">
+      <div class="game-stat">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score-value">0</div>
+      </div>
     </div>
   </div>
 

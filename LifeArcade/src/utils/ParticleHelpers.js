@@ -34,8 +34,18 @@ export function updateParticles(particles, frameCount, loopUpdateRate = 30) {
 
     p.x += p.vx
     p.y += p.vy
-    p.alpha -= 4
-    if (p.alpha <= 0) p.dead = true
+
+    // Handle lifetime-based particles (mini-explosions)
+    if (p.lifetime !== undefined) {
+      p.lifetime--
+      if (p.lifetime <= 0) {
+        p.dead = true
+      }
+    } else {
+      // Default alpha-based fade for regular particles
+      p.alpha -= 4
+      if (p.alpha <= 0) p.dead = true
+    }
   })
 
   return particles.filter(p => !p.dead)
