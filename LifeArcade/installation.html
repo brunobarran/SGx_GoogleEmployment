@@ -97,6 +97,10 @@
     import { StorageManager } from './src/installation/StorageManager.js'
     import { InputManager } from './src/installation/InputManager.js'
     import { IframeComm } from './src/installation/IframeComm.js'
+    import { ResetManager } from './src/installation/ResetManager.js'
+
+    // ===== IMPORT RESET SYSTEM =====
+    import { ResetCircleUI } from './src/utils/ResetCircleUI.js'
 
     // ===== IMPORT SCREENS =====
     import { IdleScreen } from './src/screens/IdleScreen.js'
@@ -118,6 +122,13 @@
     const iframeComm = new IframeComm()
 
     console.log('✓ Managers initialized')
+
+    // ===== INITIALIZE RESET SYSTEM =====
+    const resetCircleUI = new ResetCircleUI()
+    const resetManager = new ResetManager(inputManager, appState, storageManager, resetCircleUI)
+    resetManager.startListening()
+
+    console.log('✓ Reset system initialized (M=3s soft, M+N=10s hard)')
 
     // ===== CREATE SCREEN INSTANCES =====
     const screens = {
@@ -178,6 +189,8 @@
       storageManager,
       inputManager,
       iframeComm,
+      resetManager,
+      resetCircleUI,
       screens
     }
 
