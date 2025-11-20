@@ -176,18 +176,23 @@ let dinoSprites = {
 }
 
 // ============================================
-// RESPONSIVE CANVAS HELPERS (MOBILE - PORTRAIT ONLY)
+// RESPONSIVE CANVAS HELPERS (MOBILE - PORTRAIT AND LANDSCAPE)
 // ============================================
 function calculateResponsiveSize() {
   const maxWidth = window.innerWidth
   const maxHeight = window.innerHeight
 
-  // PORTRAIT ONLY: Always use width-constrained
-  // Ignore landscape orientation
-  return {
-    width: maxWidth,
-    height: maxWidth / GAME_DIMENSIONS.ASPECT_RATIO
+  // Try width-first (portrait default)
+  let width = maxWidth
+  let height = width / GAME_DIMENSIONS.ASPECT_RATIO
+
+  // If too tall, use height-first (landscape)
+  if (height > maxHeight) {
+    height = maxHeight
+    width = height * GAME_DIMENSIONS.ASPECT_RATIO
   }
+
+  return { width, height }
 }
 
 function updateConfigScale() {

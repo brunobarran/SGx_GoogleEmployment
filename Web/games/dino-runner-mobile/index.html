@@ -9,6 +9,11 @@
   <!-- p5.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
 
+  <!-- Google Sans Flex Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600&display=swap" rel="stylesheet">
+
   <style>
     * {
       margin: 0;
@@ -18,7 +23,7 @@
 
     body {
       background: #FFFFFF;  /* Google White */
-      font-family: 'Roboto', 'Arial', sans-serif;
+      font-family: 'Google Sans Flex', 'Roboto', 'Arial', sans-serif;
       overflow: hidden;
       touch-action: none;  /* Prevent iOS Safari gestures */
       -webkit-user-select: none;
@@ -32,24 +37,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #F8F9FA;  /* Google Light Gray */
+      background: #FFFFFF;  /* White background for letterboxing */
     }
 
-    #score-display {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      font-size: 28px;
-      font-weight: bold;
-      color: #4285F4;  /* Google Blue */
-      z-index: 10;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-      font-family: monospace;
+    canvas {
+      display: block;
     }
 
+    /* Touch Hint (overlay) */
     #touch-hint {
       position: absolute;
-      bottom: 30px;
+      bottom: 180px;  /* Above score + footer */
       width: 100%;
       text-align: center;
       font-size: 16px;
@@ -57,6 +55,7 @@
       opacity: 0.7;
       z-index: 10;
       animation: fadeInOut 3s ease-in-out infinite;
+      pointer-events: none;
     }
 
     @keyframes fadeInOut {
@@ -64,9 +63,103 @@
       50% { opacity: 0.9; }
     }
 
-    canvas {
-      display: block;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    /* Score Section (overlay at bottom) */
+    #score-section {
+      position: absolute;
+      bottom: 92px;  /* Height of footer */
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);  /* Semi-transparent */
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 12px 0;
+      text-align: center;
+      border-top: 1px solid rgba(240, 240, 240, 0.8);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    #score-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    #score-label {
+      color: #515151;
+      font-size: 17.6px;
+      font-weight: 500;
+      line-height: 17.6px;
+    }
+
+    #score {
+      color: #515151;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 22px;
+    }
+
+    /* Footer Bar (overlay at bottom) */
+    #footer-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #F6F6F6;
+      border-top: 1px solid #EBEBEB;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 31px;
+      min-height: 92px;
+      z-index: 15;
+    }
+
+    #footer-text {
+      color: #515151;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 16px;
+      text-align: center;
+    }
+
+    #create-button {
+      background: #3C6BCF;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 14px;
+      padding: 12px 18px;
+      border-radius: 40px;
+      border: 2px solid #3C6BCF;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 170px;
+      min-height: 38px;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+      text-decoration: none;
+    }
+
+    #create-button:hover {
+      background: #2C5ABF;
+      border-color: #2C5ABF;
+    }
+
+    #create-button:active {
+      transform: scale(0.98);
+    }
+
+    .arrow {
+      width: 0;
+      height: 0;
+      border-top: 4.5px solid transparent;
+      border-bottom: 4.5px solid transparent;
+      border-left: 5.5px solid white;
     }
 
     /* Game Over Overlay */
@@ -89,7 +182,7 @@
     }
 
     #game-over-text {
-      font-size: 48px;
+      font-size: clamp(32px, 8vw, 48px);
       font-weight: bold;
       color: #EA4335;  /* Google Red */
       margin-bottom: 20px;
@@ -97,7 +190,7 @@
     }
 
     #final-score {
-      font-size: 32px;
+      font-size: clamp(24px, 6vw, 32px);
       color: #FFFFFF;
       margin-bottom: 30px;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
@@ -140,6 +233,42 @@
     #loading.hidden {
       display: none;
     }
+
+    /* Responsive adjustments for small screens */
+    @media (max-width: 480px) {
+      #footer-bar {
+        gap: 20px;
+        padding: 15px 10px;
+        flex-wrap: wrap;  /* Allow wrapping if really needed, but keep horizontal */
+      }
+
+      #footer-text {
+        font-size: 14px;  /* Slightly smaller */
+      }
+
+      #create-button {
+        font-size: 13px;
+        padding: 10px 15px;
+        min-width: 150px;  /* Slightly smaller */
+        min-height: 36px;
+      }
+
+      #score-section {
+        padding: 10px 0;
+      }
+
+      #score-label {
+        font-size: 16px;
+      }
+
+      #score {
+        font-size: 20px;
+      }
+
+      #touch-hint {
+        bottom: 180px;  /* Adjust for footer height */
+      }
+    }
   </style>
 </head>
 <body>
@@ -147,13 +276,27 @@
     <!-- Loading indicator -->
     <div id="loading">Loading...</div>
 
-    <!-- Score Display -->
-    <div id="score-display">Score: <span id="score">0</span></div>
+    <!-- Canvas will be inserted here by p5.js (100vw x 100vh) -->
 
-    <!-- Touch Hint -->
+    <!-- Touch Hint (overlay) -->
     <div id="touch-hint">Tap to Jump</div>
 
-    <!-- Canvas will be inserted here by p5.js -->
+    <!-- Score Section (overlay at bottom) -->
+    <div id="score-section">
+      <div id="score-display">
+        <div id="score-label">Score</div>
+        <div id="score">0</div>
+      </div>
+    </div>
+
+    <!-- Footer Bar (overlay at bottom) -->
+    <div id="footer-bar">
+      <div id="footer-text">Work at Google</div>
+      <a id="create-button" href="#" role="button">
+        <span>Create your own</span>
+        <div class="arrow"></div>
+      </a>
+    </div>
 
     <!-- Game Over Overlay -->
     <div id="game-over-overlay">
