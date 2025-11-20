@@ -16,9 +16,9 @@ Instalación en 5 minutos. Para guía completa ver `INSTALL_MAC.md`.
 ### Paso 1: Clonar Repositorio
 
 ```bash
-cd ~
-git clone https://github.com/brunobarran/SGx_GoogleEmployment.git LifeArcade
-cd LifeArcade
+cd ~/Documents/GitHub
+git clone https://github.com/brunobarran/SGx_GoogleEmployment.git
+cd SGx_GoogleEmployment/LifeArcade
 ```
 
 ---
@@ -124,7 +124,7 @@ open -a Docker
 ### Error: "Servidor no responde"
 ```bash
 # Solución: Ver logs
-cd ~/LifeArcade
+cd ~/Documents/GitHub/SGx_GoogleEmployment/LifeArcade
 docker compose logs
 ```
 
