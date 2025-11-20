@@ -210,8 +210,7 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-letter-line {
-          width: 100%;
-          max-width: clamp(90px, 18.8vw, 225px);
+          width: clamp(120px, 22vw, 250px);
           height: 0;
           border: none;
           border-top: clamp(4px, 0.57vh, 11px) solid #000000;
@@ -293,7 +292,7 @@ export class ScoreEntryScreen {
             <div class="score-entry-number">${score.toLocaleString()}</div>
             <div class="score-entry-game-name">${gameName}</div>
           </div>
-          <div class="score-entry-continue">Press any key to continue</div>
+          <div style="visibility: hidden; height: clamp(16px, 2.12vh, 41px);"></div>
         </div>
       `
       // Auto-advance after 3 seconds
@@ -313,7 +312,7 @@ export class ScoreEntryScreen {
               </div>
             `).join('')}
           </div>
-          <div class="score-entry-continue">Press any key to continue</div>
+          <div style="visibility: hidden; height: clamp(16px, 2.12vh, 41px);"></div>
         </div>
       `
     }

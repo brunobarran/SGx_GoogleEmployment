@@ -130,13 +130,12 @@ export class QRCodeScreen {
 
         .qr-title-wrapper {
           width: 100%;
-          max-width: clamp(350px, 60vw, 720px);
           margin-bottom: 0;
           flex-shrink: 0;
         }
 
         .qr-title {
-          font-size: clamp(36px, 4.43vh, 85px);
+          font-size: clamp(36px, 4.43vh, 84px);
           font-weight: 500;
           line-height: 1.1;
           text-align: left;

@@ -311,7 +311,7 @@ export class LeaderboardScreen {
       arrow.textContent = '▶'
       arrow.style.cssText = `
         position: absolute;
-        left: clamp(-40px, -3.3vw, -60px);
+        left: clamp(-80px, -3.3vw, -80px);
         color: #202124;
         font-size: clamp(32px, 3.65vh, 70px);
         font-family: 'Google Sans Flex', sans-serif;

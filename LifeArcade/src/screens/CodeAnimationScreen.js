@@ -213,8 +213,25 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
     // Update every 30ms (~33 chars/sec, slower terminal effect)
     this.intervalHandle = setInterval(() => {
       if (this.currentChar < this.targetText.length) {
-        this.currentText += this.targetText[this.currentChar]
-        this.currentChar++
+        const char = this.targetText[this.currentChar]
+
+        // If we hit an opening tag, skip to the end of it instantly
+        if (char === '<') {
+          const closingBracket = this.targetText.indexOf('>', this.currentChar)
+          if (closingBracket !== -1) {
+            // Copy entire tag instantly (from < to >)
+            this.currentText += this.targetText.substring(this.currentChar, closingBracket + 1)
+            this.currentChar = closingBracket + 1
+          } else {
+            // No closing bracket found, just add the char
+            this.currentText += char
+            this.currentChar++
+          }
+        } else {
+          // Normal character, add it
+          this.currentText += char
+          this.currentChar++
+        }
 
         // Update display
         const codeContent = this.element.querySelector('.code-content')
