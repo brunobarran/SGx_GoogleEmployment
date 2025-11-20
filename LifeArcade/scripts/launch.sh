@@ -2,7 +2,8 @@
 
 # =============================================================================
 # LifeArcade Kiosk Launcher
-# Starts Docker container and opens Chrome in kiosk mode
+# Starts Docker container and opens Chrome in fullscreen mode
+# Uses macOS native fullscreen (always-on-top guaranteed)
 # Follows KISS principle - simple and direct
 # =============================================================================
 
@@ -25,10 +26,10 @@ done
 echo ""
 echo "Server ready!"
 
-# Launch Chrome in kiosk mode
-echo "Launching Chrome in kiosk mode..."
+# Launch Chrome in fullscreen mode
+echo "Launching Chrome in fullscreen mode..."
 "$CHROME" \
-    --kiosk \
+    --start-fullscreen \
     --app="http://localhost/installation.html" \
     --window-size=1200,1920 \
     --window-position=0,0 \
