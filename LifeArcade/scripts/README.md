@@ -51,7 +51,7 @@ Ver `../INSTALL_MAC.md` para instrucciones detalladas de instalación.
 
 Editar `launch.sh` línea 9:
 ```bash
-PROJECT_DIR="/Users/$(whoami)/LifeArcade"
+PROJECT_DIR="/Users/specialguestx/Documents/GitHub/SGx_GoogleEmployment/LifeArcade"
 ```
 
 ### Cambiar Puerto
