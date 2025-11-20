@@ -31,14 +31,15 @@ import {
 // ============================================
 
 const CONFIG = createGameConfig({
-  gravity: 4,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
+  gravity: 5.5,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
   groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
   horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
-  jumpForce: -60, // -14 × 3 = -42 (Lower force = shorter jump)
+  jumpForce: -70, // -14 × 3 = -42 (Lower force = shorter jump)
 
   obstacle: {
-    spawnInterval: 100,      // Slightly more generous (Option 2)
-    minInterval: 50,         // Option 2
+    spawnInterval: 100,      // Base spawn interval (frames)
+    minInterval: 50,         // Minimum interval (difficulty cap)
+    intervalVariability: 40, // Random offset ±40 frames (creates variable spacing)
     speed: -15,              // Slower start (Option 2)
     speedIncrease: 0.0015    // Steady ramp (Option 2)
   },
@@ -56,6 +57,19 @@ const CONFIG = createGameConfig({
       PatternName.BOAT,
       PatternName.TUB
     ]
+  },
+
+  // Ground lines (Chrome Dino style)
+  groundLines: {
+    density: 5,                    // Number of lines on screen simultaneously
+    speed: -15,                    // Match obstacle speed
+    minLength: 40,                 // Minimum line length (px)
+    maxLength: 80,                 // Maximum line length (px)
+    thickness: 2,                  // Stroke weight (px)
+    color: [83, 83, 83],          // Gray #535353
+    yOffsetMin: 10,                // Min offset from horizonY (10px below minimum)
+    yOffsetMax: 40,                // Max offset from horizonY (40px below horizon)
+    spawnInterval: 60              // Frames between spawns (every ~1 second at 60fps)
   },
 
   obstaclePatterns: [
@@ -138,6 +152,7 @@ const GOOGLE_COLORS = {
 const state = createGameState({
   spawnTimer: 0,
   cloudSpawnTimer: 0,  // Timer for cloud spawning
+  groundLineSpawnTimer: 0,  // Timer for ground line spawning
   gameSpeed: 1,
   dyingTimer: 0
 })
@@ -149,13 +164,15 @@ let player = null
 let obstacles = []
 let particles = []
 let clouds = []  // Parallax background clouds
+let groundLines = []  // Ground decoration lines (Chrome Dino style)
 
 // Gradient renderer
 let maskedRenderer = null
 
 // PNG sprites for player (Phase 3.4)
 let dinoSprites = {
-  run: []   // run_0.png, run_1.png
+  run: [],   // run_0.png, run_1.png
+  idle: []   // idle.png (shown during jump)
 }
 
 // ============================================
@@ -197,7 +214,7 @@ function handleTouchEnd(e) {
 // p5.js PRELOAD (Phase 3.4)
 // ============================================
 function preload() {
-  // Load PNG sprites for player (run animation only)
+  // Load PNG sprites for player (run + idle animations)
   console.log('[Dino Runner] Loading dino sprites...')
 
   // Running sprites (200×200px)
@@ -208,6 +225,12 @@ function preload() {
   dinoSprites.run[1] = loadImage('./assets/dino-sprites/run_1.png',
     () => console.log('[Dino Runner] run_1.png loaded:', dinoSprites.run[1].width, 'x', dinoSprites.run[1].height),
     (err) => console.error('[Dino Runner] Failed to load run_1.png:', err)
+  )
+
+  // Idle sprite (during jump)
+  dinoSprites.idle[0] = loadImage('./assets/dino-sprites/idle.png',
+    () => console.log('[Dino Runner] idle.png loaded:', dinoSprites.idle[0].width, 'x', dinoSprites.idle[0].height),
+    (err) => console.error('[Dino Runner] Failed to load idle.png:', err)
   )
 
   console.log('[Dino Runner] All sprites loaded successfully')
@@ -258,12 +281,15 @@ function initGame() {
   state.frameCount = 0
   state.spawnTimer = 0
   state.cloudSpawnTimer = 0
+  state.groundLineSpawnTimer = 0
   state.gameSpeed = 1
 
   setupPlayer()
   obstacles = []
   particles = []
+  groundLines = []
   initParallax()
+  initGroundLines()
 }
 
 function setupPlayer() {
@@ -438,6 +464,84 @@ function renderClouds() {
 }
 
 // ============================================
+// GROUND LINES SYSTEM (Chrome Dino style)
+// ============================================
+
+/**
+ * Initialize ground lines system.
+ * Pre-populates the screen with lines for seamless effect.
+ */
+function initGroundLines() {
+  groundLines = []
+
+  // Pre-populate screen with lines distributed evenly
+  const spacing = GAME_DIMENSIONS.BASE_WIDTH / CONFIG.groundLines.density
+
+  for (let i = 0; i < CONFIG.groundLines.density; i++) {
+    const gLine = spawnGroundLine()
+    // Distribute lines across screen width
+    gLine.x = i * spacing + random(-spacing * 0.3, spacing * 0.3)
+    groundLines.push(gLine)
+  }
+}
+
+/**
+ * Create a new ground line.
+ * @returns {Object} Ground line entity
+ */
+function spawnGroundLine() {
+  return {
+    x: GAME_DIMENSIONS.BASE_WIDTH,  // Start off-screen right
+    y: CONFIG.horizonY + random(CONFIG.groundLines.yOffsetMin, CONFIG.groundLines.yOffsetMax),
+    length: random(CONFIG.groundLines.minLength, CONFIG.groundLines.maxLength),
+    vx: CONFIG.groundLines.speed,
+    dead: false
+  }
+}
+
+/**
+ * Update all ground lines.
+ * Handles movement, cleanup, and spawning.
+ */
+function updateGroundLines() {
+  // Move lines
+  groundLines.forEach(gLine => {
+    gLine.x += gLine.vx * state.gameSpeed
+
+    // Mark as dead if off-screen left
+    if (gLine.x + gLine.length < 0) {
+      gLine.dead = true
+    }
+  })
+
+  // Remove dead lines
+  groundLines = groundLines.filter(gLine => !gLine.dead)
+
+  // Spawn new line if timer reached
+  state.groundLineSpawnTimer++
+  if (state.groundLineSpawnTimer >= CONFIG.groundLines.spawnInterval) {
+    groundLines.push(spawnGroundLine())
+    state.groundLineSpawnTimer = 0
+  }
+}
+
+/**
+ * Render ground lines with simple stroke.
+ * Must be called AFTER horizon line, BEFORE obstacles.
+ */
+function renderGroundLines() {
+  push()
+  stroke(CONFIG.groundLines.color[0], CONFIG.groundLines.color[1], CONFIG.groundLines.color[2])
+  strokeWeight(CONFIG.groundLines.thickness)
+
+  groundLines.forEach(gLine => {
+    line(gLine.x, gLine.y, gLine.x + gLine.length, gLine.y)
+  })
+
+  pop()
+}
+
+// ============================================
 // UPDATE LOOP
 // ============================================
 function draw() {
@@ -493,14 +597,26 @@ function updateGame() {
   // Update parallax background (BEFORE other entities)
   updateClouds()
 
+  // Update ground lines (Chrome Dino style decoration)
+  updateGroundLines()
+
   // Update player
   updatePlayer()
 
   // Spawn obstacles
   state.spawnTimer++
-  const currentInterval = Math.max(
+
+  // Calculate base interval with difficulty scaling
+  const baseInterval = Math.max(
     CONFIG.obstacle.minInterval,
     CONFIG.obstacle.spawnInterval - Math.floor(state.score / 100)
+  )
+
+  // Add random variability (±40 frames) for Chrome Dino-style spacing
+  const randomOffset = random(-CONFIG.obstacle.intervalVariability, CONFIG.obstacle.intervalVariability)
+  const currentInterval = Math.max(
+    CONFIG.obstacle.minInterval,
+    baseInterval + randomOffset
   )
 
   if (state.spawnTimer >= currentInterval) {
@@ -690,15 +806,26 @@ function renderGame() {
   strokeWeight(2)
   line(0, CONFIG.horizonY, GAME_DIMENSIONS.BASE_WIDTH, CONFIG.horizonY)
 
+  // Render ground lines (Chrome Dino style - AFTER horizon, BEFORE player)
+  renderGroundLines()
+
   // Render player with PNG sprite animation (hide during DYING and GAMEOVER)
-  // Phase 3.4: Using animated PNG sprites (run only)
+  // Phase 3.4: Using animated PNG sprites (run + idle)
   if (state.phase === 'PLAYING' && player.sprites) {
-    const spriteSet = player.sprites.run
+    // Select sprite set based on player state
+    let spriteSet
+    if (!player.onGround) {
+      // Jumping/falling - show idle sprite (static)
+      spriteSet = player.sprites.idle
+    } else {
+      // Running on ground - show run animation
+      spriteSet = player.sprites.run
+    }
 
     // Verify sprite set exists and has frames
     if (spriteSet && spriteSet.length > 0) {
-      // Get current animation frame
-      const currentSprite = spriteSet[player.frameIndex]
+      // Get current animation frame (% prevents index overflow)
+      const currentSprite = spriteSet[player.frameIndex % spriteSet.length]
 
       // Render sprite (dimensions match hitbox exactly)
       if (currentSprite && currentSprite.width > 0) {
