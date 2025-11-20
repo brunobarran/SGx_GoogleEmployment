@@ -26,10 +26,9 @@ done
 echo ""
 echo "Server ready!"
 
-# Launch Chrome in fullscreen mode
+# Launch Chrome in app mode
 echo "Launching Chrome in fullscreen mode..."
 "$CHROME" \
-    --start-fullscreen \
     --app="http://localhost/installation.html" \
     --window-size=1200,1920 \
     --window-position=0,0 \
@@ -40,6 +39,13 @@ echo "Launching Chrome in fullscreen mode..."
     --no-default-browser-check &
 
 CHROME_PID=$!
+
+# Wait for Chrome to open
+sleep 2
+
+# Force fullscreen with AppleScript (Cmd+Ctrl+F)
+osascript -e 'tell application "Google Chrome" to activate' \
+          -e 'tell application "System Events" to keystroke "f" using {control down, command down}'
 
 # Wait for Chrome to close
 wait $CHROME_PID
