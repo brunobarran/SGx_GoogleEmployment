@@ -295,6 +295,12 @@ function initGame() {
   groundLines = []
   initParallax()
   initGroundLines()
+
+  // Show score section when game restarts
+  const scoreSection = document.getElementById('score-section')
+  if (scoreSection) {
+    scoreSection.style.display = 'block'
+  }
 }
 
 function setupPlayer() {
@@ -591,10 +597,16 @@ function draw() {
 function showGameOver() {
   const overlay = document.getElementById('game-over-overlay')
   const finalScoreElement = document.getElementById('final-score-value')
+  const scoreSection = document.getElementById('score-section')
 
   if (overlay && finalScoreElement) {
     overlay.classList.add('visible')
     finalScoreElement.textContent = state.score
+
+    // Hide score section when game over overlay appears
+    if (scoreSection) {
+      scoreSection.style.display = 'none'
+    }
   }
 }
 
@@ -904,17 +916,14 @@ function windowResized() {
 }
 
 // ============================================
-// RESTART BUTTON HANDLER (MOBILE)
+// RESTART HANDLER (MOBILE) - Tap anywhere on overlay
 // ============================================
 window.addEventListener('DOMContentLoaded', () => {
-  const restartButton = document.getElementById('restart-button')
-  if (restartButton) {
-    restartButton.addEventListener('click', () => {
+  const overlay = document.getElementById('game-over-overlay')
+  if (overlay) {
+    overlay.addEventListener('click', () => {
       // Hide game over overlay
-      const overlay = document.getElementById('game-over-overlay')
-      if (overlay) {
-        overlay.classList.remove('visible')
-      }
+      overlay.classList.remove('visible')
       // Reset game
       initGame()
     })

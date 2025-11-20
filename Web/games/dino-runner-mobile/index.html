@@ -66,7 +66,7 @@
     /* Score Section (overlay at bottom) */
     #score-section {
       position: absolute;
-      bottom: 92px;  /* Height of footer */
+      bottom: 120px;  /* Height of footer */
       left: 0;
       right: 0;
       background: rgba(255, 255, 255, 0.95);  /* Semi-transparent */
@@ -162,61 +162,65 @@
       border-left: 5.5px solid white;
     }
 
-    /* Game Over Overlay */
+    /* Game Over Overlay - Figma Design */
     #game-over-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: none;  /* Hidden by default */
+      height: calc(100% - 136px);  /* Don't cover score (44px) + footer (92px) */
+      background: rgba(255, 255, 255, 0.8);  /* White 80% opacity (Figma) */
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
       align-items: center;
       justify-content: center;
       flex-direction: column;
       z-index: 20;
+      cursor: pointer;  /* Tap anywhere to restart */
     }
 
     #game-over-overlay.visible {
       display: flex;
     }
 
+    /* Game Over Content Wrapper */
+    #game-over-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;  /* Figma: 14px gap */
+    }
+
     #game-over-text {
-      font-size: clamp(32px, 8vw, 48px);
-      font-weight: bold;
-      color: #EA4335;  /* Google Red */
-      margin-bottom: 20px;
-      text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+      font-size: 30px;  /* Figma: 30px */
+      font-weight: 500;  /* Figma: weight 500 */
+      color: #515151;  /* Figma: gray */
+      line-height: 30px;
+      font-family: 'Google Sans Flex', sans-serif;
+      text-align: center;
     }
 
     #final-score {
-      font-size: clamp(24px, 6vw, 32px);
-      color: #FFFFFF;
-      margin-bottom: 30px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      font-size: 70px;  /* Figma: 70px */
+      font-weight: 500;  /* Figma: weight 500 */
+      color: #515151;  /* Figma: gray */
+      line-height: 70px;
+      font-family: 'Google Sans Flex', sans-serif;
+      text-align: center;
     }
 
-    #restart-button {
-      padding: 15px 40px;
-      font-size: 20px;
-      font-weight: bold;
-      color: #FFFFFF;
-      background: #34A853;  /* Google Green */
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s, background 0.2s;
-      min-width: 200px;
-      min-height: 60px;
-    }
-
-    #restart-button:hover {
-      background: #2D9049;
-    }
-
-    #restart-button:active {
-      transform: scale(0.95);
+    #restart-hint {
+      position: absolute;
+      bottom: 120px;  /* Above footer (92px) + margin */
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;  /* Figma: 16px */
+      font-weight: 500;  /* Figma: weight 500 */
+      color: #515151;  /* Figma: gray */
+      line-height: 16px;
+      font-family: 'Google Sans Flex', sans-serif;
+      text-align: center;
     }
 
     /* Loading indicator */
@@ -268,6 +272,22 @@
       #touch-hint {
         bottom: 180px;  /* Adjust for footer height */
       }
+
+      /* Game Over responsive */
+      #game-over-text {
+        font-size: 24px;
+        line-height: 24px;
+      }
+
+      #final-score {
+        font-size: 60px;
+        line-height: 60px;
+      }
+
+      #restart-hint {
+        font-size: 14px;
+        bottom: 110px;  /* Adjust for smaller footer */
+      }
     }
   </style>
 </head>
@@ -300,9 +320,11 @@
 
     <!-- Game Over Overlay -->
     <div id="game-over-overlay">
-      <div id="game-over-text">GAME OVER</div>
-      <div id="final-score">Score: <span id="final-score-value">0</span></div>
-      <button id="restart-button">TAP TO RESTART</button>
+      <div id="game-over-content">
+        <div id="game-over-text">Game Over</div>
+        <div id="final-score"><span id="final-score-value">0</span></div>
+      </div>
+      <div id="restart-hint">Tap to restart</div>
     </div>
   </div>
 
