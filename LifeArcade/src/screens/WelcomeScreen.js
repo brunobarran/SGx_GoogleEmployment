@@ -11,6 +11,11 @@
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
 export class WelcomeScreen {
+  /**
+   * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
+   */
+  static INACTIVITY_TIMEOUT = 30000
+
   constructor(appState, inputManager) {
     this.appState = appState
     this.inputManager = inputManager
@@ -149,7 +154,10 @@ export class WelcomeScreen {
     // Listen for any key
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    console.log('WelcomeScreen: Active')
+    // Set inactivity timeout - return to Idle after 30s
+    this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
+
+    console.log('WelcomeScreen: Active (30s inactivity timer)')
   }
 
   /**
@@ -157,6 +165,9 @@ export class WelcomeScreen {
    */
   hide() {
     console.log('WelcomeScreen: Hide')
+
+    // Clear inactivity timeout
+    this.appState.clearTimeout('welcome-inactivity')
 
     // Stop listening for keys
     this.inputManager.offKeyPress(this.handleKeyPress)
@@ -175,6 +186,10 @@ export class WelcomeScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
+    // Reset inactivity timer on any key press
+    this.appState.clearTimeout('welcome-inactivity')
+    this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
+
     // Any key advances to Gallery screen
     console.log('WelcomeScreen: Key pressed - advancing to Gallery')
     this.appState.transition('gallery')

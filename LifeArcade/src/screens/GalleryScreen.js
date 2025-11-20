@@ -11,6 +11,11 @@
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
 export class GalleryScreen {
+  /**
+   * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
+   */
+  static INACTIVITY_TIMEOUT = 30000
+
   // Games with their AI creation prompts
   static GAMES = [
     {
@@ -197,7 +202,10 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     // Listen for keys
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    console.log('GalleryScreen: Active')
+    // Set inactivity timeout - return to Idle after 30s
+    this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
+
+    console.log('GalleryScreen: Active (30s inactivity timer)')
   }
 
   /**
@@ -414,6 +422,9 @@ Score increases with each pipe successfully passed. Game ends on collision with 
   hide() {
     console.log('GalleryScreen: Hide')
 
+    // Clear inactivity timeout
+    this.appState.clearTimeout('gallery-inactivity')
+
     // Stop listening for keys
     this.inputManager.offKeyPress(this.handleKeyPress)
 
@@ -431,6 +442,10 @@ Score increases with each pipe successfully passed. Game ends on collision with 
    * Handle key press
    */
   handleKeyPress(key) {
+    // Reset inactivity timer on any key press
+    this.appState.clearTimeout('gallery-inactivity')
+    this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
+
     // Arrow navigation
     if (key === 'ArrowLeft') {
       this.navigate('left')

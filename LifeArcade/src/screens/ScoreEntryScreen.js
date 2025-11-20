@@ -15,6 +15,12 @@
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
 export class ScoreEntryScreen {
+  /**
+   * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
+   * Only applies to screen 3 (name entry)
+   */
+  static INACTIVITY_TIMEOUT = 30000
+
   constructor(appState, inputManager, storageManager) {
     this.appState = appState
     this.inputManager = inputManager
@@ -315,6 +321,9 @@ export class ScoreEntryScreen {
           <div style="visibility: hidden; height: clamp(16px, 2.12vh, 41px);"></div>
         </div>
       `
+
+      // Set inactivity timeout only for screen 3 (name entry)
+      this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
     }
   }
 
@@ -333,6 +342,9 @@ export class ScoreEntryScreen {
    */
   hide() {
     console.log('ScoreEntryScreen: Hide')
+
+    // Clear inactivity timeout
+    this.appState.clearTimeout('score-entry-inactivity')
 
     // Clear auto-advance timeout
     if (this.autoAdvanceTimeout) {
@@ -357,6 +369,12 @@ export class ScoreEntryScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
+    // Reset inactivity timer on any key press (only if on screen 3)
+    if (this.currentScreen === 3) {
+      this.appState.clearTimeout('score-entry-inactivity')
+      this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
+    }
+
     // Space - Advance screen or confirm name
     if (key === ' ') {
       if (this.currentScreen < 3) {

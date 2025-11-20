@@ -14,9 +14,9 @@ import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
 export class QRCodeScreen {
   /**
-   * Auto-advance timeout (15 seconds)
+   * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
    */
-  static AUTO_TIMEOUT = 15000
+  static INACTIVITY_TIMEOUT = 30000
 
   /**
    * Base URL for web version
@@ -245,10 +245,10 @@ export class QRCodeScreen {
     // Listen for keys
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    // Set auto-advance timeout to Idle (loop complete)
-    this.appState.setTimeout(QRCodeScreen.AUTO_TIMEOUT, 'idle', 'qr-timeout')
+    // Set inactivity timeout - return to Idle after 30s
+    this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
 
-    console.log('QRCodeScreen: Active (15s auto-advance to Idle)')
+    console.log('QRCodeScreen: Active (30s inactivity timer)')
   }
 
   /**
@@ -257,8 +257,8 @@ export class QRCodeScreen {
   hide() {
     console.log('QRCodeScreen: Hide')
 
-    // Clear auto-advance timeout
-    this.appState.clearTimeout('qr-timeout')
+    // Clear inactivity timeout
+    this.appState.clearTimeout('qr-inactivity')
 
     // Stop listening for keys
     this.inputManager.offKeyPress(this.handleKeyPress)
@@ -284,6 +284,10 @@ export class QRCodeScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
+    // Reset inactivity timer on any key press
+    this.appState.clearTimeout('qr-inactivity')
+    this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
+
     // Space or Escape returns to Idle (restart loop)
     if (key === ' ' || key === 'Escape') {
       console.log('QRCodeScreen: Key pressed - returning to Idle')
