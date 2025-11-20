@@ -127,6 +127,18 @@ http://localhost/installation.html
 
 🎮 **You should see LifeArcade!**
 
+### Adjust Resolution (Development Only)
+
+For testing the portrait display (1200×1920):
+
+1. Press **F12** to open DevTools
+2. Click the **device toggle** icon (or press `Ctrl+Shift+M` / `Cmd+Shift+M`)
+3. In the dimensions dropdown, select **"Responsive"**
+4. Set dimensions to **1200 × 1920**
+5. Press **F12** again to hide DevTools and view fullscreen
+
+**Note:** This is only for development testing. The Mac Mini kiosk uses the physical 1200×1920 portrait monitor.
+
 ---
 
 ## Step 4: Stop the Application
@@ -144,6 +156,48 @@ docker compose up -d
 ```
 
 **Note:** No need to `--build` again unless you change code.
+
+---
+
+## Updating the Application
+
+To get the latest changes from GitHub:
+
+### macOS
+
+```bash
+# Navigate to project directory
+cd ~/Desktop/SGx_GoogleEmployment/LifeArcade
+
+# Pull latest changes
+git pull origin main
+
+# Rebuild Docker image
+docker compose down
+docker compose build
+
+# Restart container
+docker compose up -d
+```
+
+### Windows
+
+```powershell
+# Navigate to project directory
+cd $HOME\Desktop\SGx_GoogleEmployment\LifeArcade
+
+# Pull latest changes
+git pull origin main
+
+# Rebuild Docker image
+docker compose down
+docker compose build
+
+# Restart container
+docker compose up -d
+```
+
+**Note:** If you're using the macOS kiosk app (LifeArcade.app), you may also need to rebuild the app bundle if `launch.sh` changed. See `docs/INSTALL_MAC.md` for details.
 
 ---
 
