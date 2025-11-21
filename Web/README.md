@@ -1,204 +1,141 @@
-# Web - LLM Game Generator
+# Web - Conway's Game of Life Game Generator
 
-**LLM-powered Conway's Game of Life arcade game generator**
+**Generate playable arcade games using AI and the Game of Life framework**
 
-## 🎯 Overview
+## 🎯 How to Use
 
-Web app that generates playable arcade games using Claude API and the Game of Life framework from LifeArcade.
+**Create your own Game of Life arcade game in 3 simple steps:**
 
-## 🚀 Features (Planned)
+### 1. Get the Prompt
+Copy the complete prompt from: [`conways-arcade/PROMPT.md`](https://github.com/brunobarran/conways-arcade-test/blob/main/PROMPT.md)
 
-- **Game Request Form:** User describes game mechanics
-- **Real-time Generation:** Live code generation with progress
-- **Code Preview:** Syntax-highlighted JavaScript output
-- **Instant Play:** Test game in browser immediately
-- **Download:** Get JS + HTML files
-- **Quality Scoring:** Automated validation (90-95% accuracy)
+### 2. Use with Gemini 2.5 Pro
+Open [Google AI Studio](https://aistudio.google.com/) and:
+1. Select **Gemini 2.5 Pro** model (recommended)
+2. Paste your game request + the PROMPT.md content
+3. Wait for the complete HTML file
 
-## 🏗️ Tech Stack (Proposed)
+### 3. Save and Play
+1. Copy the generated HTML code
+2. Save as `my-game.html`
+3. Double-click to play (works offline, no server needed)
 
-### Backend
-- Node.js + Express
-- Anthropic Claude API (Sonnet 4.5)
-- Framework docs injection (from LifeArcade)
-- HTML auto-generation (server-side)
+---
 
-### Frontend
-- React or Vue.js
-- Monaco Editor (code display)
-- p5.js (game preview)
-- Tailwind CSS
+## 📝 Example Request
 
-### Quality Assurance
-- Code validation (import checks)
-- Runtime testing (iframe sandbox)
-- Error detection (common LLM mistakes)
-- Scoring system (like Snake/Pong analysis)
+```
+I want to create a Space Invaders-style game where:
+- Player is at the bottom (can move left/right)
+- Enemies spawn at the top in rows
+- Player shoots bullets upward
+- Score increases when enemies are destroyed
+- Game over if enemies reach the bottom
 
-## 📊 Status
+[PASTE ENTIRE PROMPT.md HERE]
+```
 
-**Current:** 60% complete (framework ready, web app pending)
+**What you'll get:** A complete, playable HTML file with your game (~1000-1500 lines)
 
-**Completed:**
-- ✅ Framework validated (LifeArcade)
-- ✅ Prompt templates (Snake, Pong)
-- ✅ Quality benchmarks (90-95%)
-- ✅ HTML auto-generation strategy
-- ✅ "Available Methods" reference
+---
 
-**Pending:**
-- ⏳ Backend API setup
-- ⏳ Frontend UI
-- ⏳ Claude API integration
-- ⏳ Quality assurance automation
-- ⏳ Deployment
+## 🐛 Troubleshooting
+
+**If the game doesn't work:**
+- **Keep iterating with Gemini** - describe what's wrong and ask for fixes
+- Check browser console (F12) for errors
+- Verify all 12 modules were copied correctly
+- Make sure exports were removed from inline modules
+
+**Common fixes:**
+- "Please remove all export keywords from the inline modules"
+- "The gradient colors are not showing, can you fix it?"
+- "The collision detection isn't working correctly"
+
+**Gemini is very good at fixing its own code** - just describe the issue clearly!
+
+---
 
 ## 🎮 Proven Quality
 
 **Test Results:**
-- **Snake:** 72/76 checks (95%) - 2 method name bugs
-- **Pong:** 18/20 checks (90%) - 1 export typo
-- **Average:** 92.5% success rate
-
-**Key Insights:**
-- LLM follows framework patterns correctly
-- "Available Methods" section reduces errors
-- Advanced physics implemented successfully (vector normalization in Pong)
-- Minimal bugs, quick fixes
-
-## 📁 Project Structure (Planned)
-
-```
-Web/
-├── backend/
-│   ├── server.js              # Express server
-│   ├── routes/
-│   │   └── generate.js        # Game generation endpoint
-│   ├── services/
-│   │   ├── claude.js          # Claude API client
-│   │   ├── generator.js       # Game generator logic
-│   │   └── validator.js       # Code validation
-│   └── utils/
-│       ├── html-gen.js        # HTML auto-generation
-│       └── framework-loader.js # Load LifeArcade docs
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── GameForm.jsx   # Request form
-│   │   │   ├── CodePreview.jsx # Code display
-│   │   │   ├── GamePreview.jsx # Play test
-│   │   │   └── Gallery.jsx     # Examples
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── public/
-│
-└── shared/
-    └── framework-pattern.md  # Symlink to LifeArcade docs
-```
-
-## 🚀 Quick Start (Future)
-
-```bash
-# Install dependencies
-npm install
-
-# Start backend
-cd backend
-npm run dev
-
-# Start frontend (separate terminal)
-cd frontend
-npm run dev
-
-# Open http://localhost:3000
-```
-
-## 🔗 Integration with LifeArcade
-
-**Shared Resources:**
-- Framework documentation (`../LifeArcade/docs/framework-pattern.md`)
-- Helper functions reference
-- Test prompts (Snake, Pong)
-- Quality benchmarks
-
-**Benefits:**
-- Consistent framework across projects
-- Generated games work in LifeArcade
-- Real examples for testing
-- Shared maintenance
-
-## 📝 Implementation Plan
-
-### Phase 1: Backend MVP (1 week)
-- [ ] Express server setup
-- [ ] Claude API integration
-- [ ] Prompt engineering (use test prompts as base)
-- [ ] HTML auto-generation
-- [ ] Basic validation
-
-### Phase 2: Frontend MVP (1 week)
-- [ ] React app setup
-- [ ] Game request form
-- [ ] Code preview (Monaco)
-- [ ] Download functionality
-- [ ] Example gallery
-
-### Phase 3: Quality Assurance (3-5 days)
-- [ ] Automated testing (iframe sandbox)
-- [ ] Bug detection (common errors)
-- [ ] Quality scoring (0-100%)
-- [ ] Suggest fixes
-
-### Phase 4: Deployment (2-3 days)
-- [ ] Deploy to Vercel/Railway
-- [ ] Environment variables
-- [ ] CORS & security
-- [ ] Analytics
-
-**Total:** 3-4 weeks
-
-## 💡 Future Enhancements
-
-- User accounts (save generated games)
-- Payment integration (freemium model)
-- Game templates (e.g., "platformer", "shooter")
-- Multiplayer games
-- Export to LifeArcade directly
-- Community gallery (share games)
-- API access for developers
-
-## 📊 Business Model (Ideas)
-
-### Freemium
-- **Free:** 5 games/month, basic validation
-- **Pro:** Unlimited, advanced validation, templates
-- **Enterprise:** API access, custom framework
-
-### Pricing (Estimated)
-- Free: $0/month
-- Pro: $20/month
-- Enterprise: Custom
-
-## 🔗 Links
-
-- LifeArcade: `../LifeArcade/`
-- Framework Docs: `../LifeArcade/docs/framework-pattern.md`
-- Test Prompts: `../LifeArcade/prompts/`
-- Analysis: `../LifeArcade/docs/LLM_TEST_*_ANALYSIS.md`
+- **Snake:** 10/10 - Perfect implementation
+- **Pong:** 9/10 - Minor collision bug (fixed in 1 iteration)
+- **Dino Runner:** 10/10 - Perfect mobile game
+- **Average:** 95%+ success rate
 
 ---
 
-## 🎯 Next Steps
+## 🔗 Resources
 
-1. Review implementation plan
-2. Setup backend (Express + Claude API)
-3. Create simple frontend
-4. Test end-to-end flow
-5. Iterate based on results
+- **Template Repository:** [github.com/brunobarran/conways-arcade-test](https://github.com/brunobarran/conways-arcade-test)
+- **Live Demo:** [brunobarran.github.io/conways-arcade-test](https://brunobarran.github.io/conways-arcade-test/)
+- **Prompt File:** [PROMPT.md](https://github.com/brunobarran/conways-arcade-test/blob/main/PROMPT.md)
+- **Framework Modules:** [lib/](https://github.com/brunobarran/conways-arcade-test/tree/main/lib)
 
 ---
 
-_Status: Planning Phase_
-_Ready to Start: Yes (framework validated)_
-_Estimated Time: 3-4 weeks to MVP_
+## 🏗️ Technical Details
+
+### What's Under the Hood
+- **Conway's Game of Life B3/S23** - Cellular automaton engine
+- **p5.js** - Graphics and animation
+- **12 Framework Modules** - Copied inline from GitHub
+- **Single HTML File** - No build tools, no dependencies
+- **Google Brand Colors** - Animated gradient rendering
+
+### Framework Modules (Auto-included)
+1. GoLEngine.js - Core cellular automaton
+2. GradientPresets.js - Color palettes
+3. GradientCache.js - Performance optimization
+4. SimpleGradientRenderer.js - Perlin noise gradients
+5. Collision.js - Hitbox detection
+6. Patterns.js - Canonical GoL patterns
+7. GoLHelpers.js - Seeding and life force
+8. ParticleHelpers.js - Explosions
+9. PatternRenderer.js - Static/loop rendering
+10. GameBaseConfig.js - Responsive canvas
+11. UIHelpers.js - Score/health display
+12. HitboxDebug.js - Debug visualization
+
+**You don't need to understand these** - Gemini handles everything!
+
+---
+
+## 💡 Tips for Better Results
+
+1. **Be specific about game mechanics:**
+   - "Player moves with arrow keys at 5 pixels per frame"
+   - "Enemies spawn every 2 seconds at random X positions"
+   - "Bullets move at 8 pixels per frame upward"
+
+2. **Describe visual style:**
+   - "Use Google gradient colors for all entities"
+   - "Player should be blue, enemies should be red"
+   - "Add particle explosions when enemies die"
+
+3. **Include win/lose conditions:**
+   - "Game over if player health reaches 0"
+   - "Win when score reaches 1000 points"
+   - "Lives decrease when enemy touches player"
+
+4. **Request UI elements:**
+   - "Show score in top-left corner"
+   - "Display health bar at top-right"
+   - "Add FPS counter in bottom-left"
+
+---
+
+## 🚀 Future Enhancements (Planned)
+
+- Web interface (no need to copy/paste prompts)
+- Game gallery (share your creations)
+- Mobile-optimized games (touch controls)
+- Multiplayer support
+- Export to LifeArcade
+
+---
+
+_Status: Fully Functional_
+_Tested with: Gemini 2.5 Pro_
+_Success Rate: 95%+_
