@@ -78,7 +78,7 @@ class SimpleGradientRenderer {
         this.p5,
         options.cacheSize || 512,
         this.palette,
-        0.01,   // noiseScale (matches original 0.002 * 5 scaling)
+        0.003,   // noiseScale (matches original 0.002 * 5 scaling)
         12345   // seed (fixed for consistency)
       )
       console.log('[SimpleGradientRenderer] Cache initialized successfully')
@@ -109,7 +109,7 @@ class SimpleGradientRenderer {
     if (this.useCache && this.gradientCache) {
       // Animated lookup: offset Y coordinate by animation time
       // This creates smooth scrolling effect without recalculating Perlin noise
-      return this.gradientCache.getAnimatedColor(screenX, screenY, this.animationOffset * 10)
+      return this.gradientCache.getAnimatedColor(screenX, screenY, this.animationOffset * 1)
     }
 
     // FALLBACK PATH: Runtime Perlin noise (original implementation)
@@ -129,13 +129,13 @@ class SimpleGradientRenderer {
    */
   _getGradientColorRuntime(screenX, screenY) {
     // Noise scale - controls the "zoom" of the noise pattern
-    const noiseScale = 0.002
+    const noiseScale = 0.0002
 
     // Sample 2D Perlin noise with time dimension for animation
     const noiseValue = this.p5.noise(
       screenX * noiseScale,
       screenY * noiseScale,
-      this.animationOffset * 0.5  // Time dimension for smooth animation
+      this.animationOffset * 2  // Time dimension for smooth animation
     )
 
     // Defensive check: if noise returns NaN, use simple fallback
@@ -272,6 +272,11 @@ class SimpleGradientRenderer {
    * - With cache: Only updates offset (no Perlin noise recalculation)
    * - Without cache: Updates time dimension for noise sampling
    *
+   * ANIMATION SPEED:
+   * - Update rate: 10fps equivalent (0.005 / 6)
+   * - At 60fps: 0.005 / 6 = 0.000833 per frame
+   * - Velocity: 0.000833 × 60fps × 10 = 0.5 units/second (6x slower than original)
+   *
    * @example
    * function draw() {
    *   // ... render game
@@ -279,7 +284,13 @@ class SimpleGradientRenderer {
    * }
    */
   updateAnimation() {
-    this.animationOffset += 0.005 // Slow, smooth animation
+    //this.animationOffset += 0.005 / 6  // 10fps equivalent (6x slower)
+
+    // DEBUG: Verificar que el código se está ejecutando
+    if (typeof window._debugAnimationDisabled === 'undefined') {
+      console.log('[SimpleGradientRenderer] Animation DISABLED - code loaded successfully')
+      window._debugAnimationDisabled = true
+    }
   }
 
   /**
