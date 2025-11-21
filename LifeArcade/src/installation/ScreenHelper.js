@@ -20,6 +20,7 @@ const PORTRAIT_HEIGHT = 1920
  * Calculate responsive dimensions for portrait installation display.
  *
  * Maintains 10:16 aspect ratio (0.625) and fits within viewport.
+ * Handles landscape orientation by limiting width and adjusting height.
  *
  * @returns {{containerWidth: number, containerHeight: number, aspectRatio: number}}
  *
@@ -27,13 +28,32 @@ const PORTRAIT_HEIGHT = 1920
  * const { containerWidth, containerHeight } = getResponsiveDimensions()
  * console.log(`Container: ${containerWidth}×${containerHeight}`)
  * // → Container: 675×1080 (on 1920×1080 display rotated)
+ * // → Container: 1140×1824 (on 1920×1080 landscape)
  */
 export function getResponsiveDimensions() {
   const aspectRatio = PORTRAIT_WIDTH / PORTRAIT_HEIGHT  // 0.625
-  const containerHeight = window.innerHeight
-  const containerWidth = Math.floor(containerHeight * aspectRatio)
+  const isLandscape = window.innerWidth > window.innerHeight
 
-  return { containerWidth, containerHeight, aspectRatio }
+  if (isLandscape) {
+    // Landscape: Limit by width and maintain aspect ratio
+    // Use 95% of viewport width to ensure content fits with padding
+    const containerWidth = Math.floor(window.innerWidth * 0.95)
+    const containerHeight = Math.floor(containerWidth / aspectRatio)
+
+    // If calculated height exceeds viewport, recalculate from height
+    if (containerHeight > window.innerHeight) {
+      const adjustedHeight = window.innerHeight
+      const adjustedWidth = Math.floor(adjustedHeight * aspectRatio)
+      return { containerWidth: adjustedWidth, containerHeight: adjustedHeight, aspectRatio }
+    }
+
+    return { containerWidth, containerHeight, aspectRatio }
+  } else {
+    // Portrait: Original behavior - limit by height
+    const containerHeight = window.innerHeight
+    const containerWidth = Math.floor(containerHeight * aspectRatio)
+    return { containerWidth, containerHeight, aspectRatio }
+  }
 }
 
 /**
