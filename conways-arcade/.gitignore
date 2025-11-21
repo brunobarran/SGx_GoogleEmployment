@@ -25,6 +25,11 @@ yarn-error.log*
 *.temp
 .cache/
 
-# Conway's Arcade (managed as separate testing repo)
-# Development happens in conways-arcade/ but deployed via conways-arcade-test
-conways-arcade/
+# Node (if accidentally added)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs (should not exist, but just in case)
+dist/
+build/
