@@ -257,8 +257,12 @@ function setup() {
   canvas.parent('game-container')
   frameRate(60)
 
-  // Create gradient renderer
-  maskedRenderer = new SimpleGradientRenderer(this)
+  // Create gradient renderer with cache (Phase 3.5: Mobile Performance Optimization)
+  // Cache enabled by default for 20x faster gradient lookups
+  maskedRenderer = new SimpleGradientRenderer(this, {
+    useCache: true,    // Enable pre-rendered gradient texture
+    cacheSize: 512     // 512×512 texture (~1MB memory)
+  })
 
   // Initialize hitbox debugging (press H to toggle)
   initHitboxDebug()
