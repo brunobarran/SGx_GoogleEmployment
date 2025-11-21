@@ -132,7 +132,7 @@
 
     // ===== CREATE SCREEN INSTANCES =====
     const screens = {
-      idle: new IdleScreen(appState, inputManager),
+      idle: new IdleScreen(appState, inputManager, storageManager),
       welcome: new WelcomeScreen(appState, inputManager),
       gallery: new GalleryScreen(appState, inputManager),
       code: new CodeAnimationScreen(appState, inputManager),

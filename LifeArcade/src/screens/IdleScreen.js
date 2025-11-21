@@ -9,11 +9,18 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { IdleLeaderboardShowcaseScreen } from './IdleLeaderboardShowcaseScreen.js'
 
 export class IdleScreen {
-  constructor(appState, inputManager) {
+  /**
+   * Showcase inactivity timer (2 minutes)
+   */
+  static SHOWCASE_INACTIVITY_TIMEOUT = 120000
+
+  constructor(appState, inputManager, storageManager) {
     this.appState = appState
     this.inputManager = inputManager
+    this.storageManager = storageManager
 
     // DOM elements
     this.element = null
@@ -22,6 +29,10 @@ export class IdleScreen {
 
     // Animation state
     this.isActive = false
+
+    // Showcase management
+    this.showcaseScreen = null
+    this.showcaseTimerHandle = null
 
     // Bind methods
     this.handleKeyPress = this.handleKeyPress.bind(this)
@@ -121,7 +132,51 @@ export class IdleScreen {
     // Listen for any key press
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    console.log('IdleScreen: Active')
+    // Start showcase inactivity timer (2 minutes)
+    this.startShowcaseTimer()
+
+    console.log('IdleScreen: Active (2min showcase timer)')
+  }
+
+  /**
+   * Start showcase inactivity timer (2 minutes)
+   */
+  startShowcaseTimer() {
+    // Clear existing timer
+    if (this.showcaseTimerHandle) {
+      clearTimeout(this.showcaseTimerHandle)
+    }
+
+    // Set new timer
+    this.showcaseTimerHandle = setTimeout(() => {
+      console.log('IdleScreen: Showcase timer triggered - showing leaderboard')
+      this.showShowcase()
+    }, IdleScreen.SHOWCASE_INACTIVITY_TIMEOUT)
+  }
+
+  /**
+   * Show showcase screen
+   */
+  showShowcase() {
+    if (!this.showcaseScreen) {
+      this.showcaseScreen = new IdleLeaderboardShowcaseScreen(
+        this.appState,
+        this.inputManager,
+        this.storageManager,
+        () => this.onShowcaseClosed()
+      )
+      this.showcaseScreen.show()
+    }
+  }
+
+  /**
+   * Handle showcase closed - restart timer
+   */
+  onShowcaseClosed() {
+    this.showcaseScreen = null
+    // Restart 2-minute timer
+    this.startShowcaseTimer()
+    console.log('IdleScreen: Showcase closed - timer restarted')
   }
 
   /**
@@ -130,6 +185,18 @@ export class IdleScreen {
   hide() {
     console.log('IdleScreen: Hide')
     this.isActive = false
+
+    // Clear showcase timer
+    if (this.showcaseTimerHandle) {
+      clearTimeout(this.showcaseTimerHandle)
+      this.showcaseTimerHandle = null
+    }
+
+    // Close showcase if active
+    if (this.showcaseScreen) {
+      this.showcaseScreen.hide()
+      this.showcaseScreen = null
+    }
 
     // Stop listening for keys
     this.inputManager.offKeyPress(this.handleKeyPress)
@@ -152,6 +219,14 @@ export class IdleScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
+    // If showcase is active, let it handle the key
+    if (this.showcaseScreen && this.showcaseScreen.isActive) {
+      return
+    }
+
+    // Clear and restart showcase timer on user interaction
+    this.startShowcaseTimer()
+
     // Any key advances to Welcome screen
     console.log(`IdleScreen: Key "${key}" pressed - advancing to Welcome`)
     this.appState.transition('welcome')
