@@ -85,6 +85,7 @@ export class ScoreEntryScreen {
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Add to DOM
@@ -105,7 +106,7 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-gameover {
-          font-size: clamp(48px, 6.25vh, 120px);
+          font-size: clamp(48px, 6.25cqh, 120px);
           font-weight: 500;
           color: #202124;
           margin: 0;
@@ -119,12 +120,12 @@ export class ScoreEntryScreen {
           align-items: center;
           justify-content: space-between;
           height: 100%;
-          padding: clamp(60px, 7.6vh, 146px) clamp(45px, 9vw, 108px);
+          padding: clamp(60px, 7.6cqh, 146px) clamp(45px, 9cqw, 108px);
           font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .score-entry-header {
-          font-size: clamp(28px, 4.69vh, 90px);
+          font-size: clamp(28px, 4.69cqh, 90px);
           font-weight: 500;
           line-height: 1;
           white-space: nowrap;
@@ -146,11 +147,11 @@ export class ScoreEntryScreen {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: clamp(21px, 2.68vh, 51px);
+          gap: clamp(21px, 2.68cqh, 51px);
         }
 
         .score-entry-number {
-          font-size: clamp(94px, 12.19vh, 234px);
+          font-size: clamp(94px, 12.19cqh, 234px);
           font-weight: 500;
           color: #202124;
           line-height: 1;
@@ -158,7 +159,7 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-game-name {
-          font-size: clamp(24px, 3.66vh, 70px);
+          font-size: clamp(24px, 3.66cqh, 70px);
           font-weight: 500;
           color: #202124;
           line-height: 1;
@@ -167,7 +168,7 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-continue {
-          font-size: clamp(16px, 2.12vh, 41px);
+          font-size: clamp(16px, 2.12cqh, 41px);
           font-weight: 500;
           color: #7D7D7D;
           text-align: center;
@@ -181,7 +182,7 @@ export class ScoreEntryScreen {
           align-items: center;
           justify-content: space-between;
           height: 100%;
-          padding: clamp(60px, 7.6vh, 146px) clamp(45px, 9.4vw, 113px);
+          padding: clamp(60px, 7.6cqh, 146px) clamp(45px, 9.4cqw, 113px);
           font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
@@ -189,7 +190,7 @@ export class ScoreEntryScreen {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: clamp(20px, 4vw, 50px);
+          gap: clamp(20px, 4cqw, 50px);
           flex: 1;
         }
 
@@ -198,11 +199,11 @@ export class ScoreEntryScreen {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: clamp(21px, 2.68vh, 51px);
+          gap: clamp(21px, 2.68cqh, 51px);
         }
 
         .score-entry-letter-char {
-          font-size: clamp(80px, 12.19vh, 234px);
+          font-size: clamp(80px, 12.19cqh, 234px);
           font-weight: 400;
           color: #CACACA;
           line-height: 1;
@@ -216,24 +217,24 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-letter-line {
-          width: clamp(120px, 22vw, 250px);
+          width: clamp(120px, 22cqw, 250px);
           height: 0;
           border: none;
-          border-top: clamp(4px, 0.57vh, 11px) solid #000000;
+          border-top: clamp(4px, 0.57cqh, 11px) solid #000000;
           position: relative;
         }
 
         .score-entry-letter-line::after {
           content: '';
           position: absolute;
-          top: clamp(21px, 2.68vh, 51px);
+          top: clamp(21px, 2.68cqh, 51px);
           left: 50%;
           transform: translateX(-50%);
           width: 0;
           height: 0;
-          border-left: clamp(15px, 2vh, 40px) solid transparent;
-          border-right: clamp(15px, 2vh, 40px) solid transparent;
-          border-bottom: clamp(20px, 2.6vh, 50px) solid #000000;
+          border-left: clamp(15px, 2cqh, 40px) solid transparent;
+          border-right: clamp(15px, 2cqh, 40px) solid transparent;
+          border-bottom: clamp(20px, 2.6cqh, 50px) solid #000000;
           opacity: 0;
           transition: opacity 0.3s ease;
         }
@@ -298,7 +299,7 @@ export class ScoreEntryScreen {
             <div class="score-entry-number">${score.toLocaleString()}</div>
             <div class="score-entry-game-name">${gameName}</div>
           </div>
-          <div style="visibility: hidden; height: clamp(16px, 2.12vh, 41px);"></div>
+          <div style="visibility: hidden; height: clamp(16px, 2.12cqh, 41px);"></div>
         </div>
       `
       // Auto-advance after 3 seconds
@@ -318,7 +319,7 @@ export class ScoreEntryScreen {
               </div>
             `).join('')}
           </div>
-          <div style="visibility: hidden; height: clamp(16px, 2.12vh, 41px);"></div>
+          <div style="visibility: hidden; height: clamp(16px, 2.12cqh, 41px);"></div>
         </div>
       `
 

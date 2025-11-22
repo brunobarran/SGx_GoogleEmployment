@@ -68,17 +68,18 @@ export class IdleScreen {
       align-items: center;
       overflow: hidden;
       z-index: 100;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Create title container
     const titleContainer = document.createElement('div')
     titleContainer.style.cssText = `
       width: clamp(300px, 61%, 732px);
-      min-height: clamp(200px, 24.3vh, 467px);
+      min-height: clamp(200px, 24.3cqh, 467px);
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: clamp(20px, 5vh, 96px);
+      margin-bottom: clamp(20px, 5cqh, 96px);
     `
 
     // Create title element
@@ -88,7 +89,7 @@ export class IdleScreen {
       width: 100%;
       text-align: center;
       color: #202124;
-      font-size: clamp(48px, 7vh, 134px);
+      font-size: clamp(48px, 7cqh, 134px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -102,7 +103,7 @@ export class IdleScreen {
     const promptContainer = document.createElement('div')
     promptContainer.style.cssText = `
       width: clamp(300px, 53.5%, 642px);
-      min-height: clamp(80px, 11.5vh, 221px);
+      min-height: clamp(80px, 11.5cqh, 221px);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -115,7 +116,7 @@ export class IdleScreen {
       width: 100%;
       text-align: center;
       color: #7D7D7D;
-      font-size: clamp(24px, 2.9vh, 55px);
+      font-size: clamp(24px, 2.9cqh, 55px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;

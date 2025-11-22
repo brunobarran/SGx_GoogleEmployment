@@ -126,6 +126,7 @@ export class IdleLeaderboardShowcaseScreen {
       z-index: 200;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Title: "Top players of [Game Name]"
@@ -133,12 +134,12 @@ export class IdleLeaderboardShowcaseScreen {
     title.textContent = `Top players of ${this.selectedGame.name}`
     title.style.cssText = `
       position: absolute;
-      top: clamp(60px, 6.1vh, 117px);
+      top: clamp(60px, 6.1cqh, 117px);
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
       color: #202124;
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -166,7 +167,7 @@ export class IdleLeaderboardShowcaseScreen {
     const container = document.createElement('div')
     container.style.cssText = `
       position: absolute;
-      top: clamp(250px, 29.3vh, 562px);
+      top: clamp(250px, 29.3cqh, 562px);
       left: 50%;
       transform: translateX(-50%);
       width: 70%;
@@ -180,15 +181,15 @@ export class IdleLeaderboardShowcaseScreen {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 clamp(10px, 1.56vw, 30px);
-      margin-bottom: clamp(20px, 4.1vh, 79px);
+      padding: 0 clamp(10px, 1.56cqw, 30px);
+      margin-bottom: clamp(20px, 4.1cqh, 79px);
     `
 
     const headerRank = document.createElement('div')
     headerRank.textContent = 'Rank'
     headerRank.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -199,7 +200,7 @@ export class IdleLeaderboardShowcaseScreen {
     headerScore.textContent = 'Score'
     headerScore.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -211,7 +212,7 @@ export class IdleLeaderboardShowcaseScreen {
     headerPlayer.textContent = 'Player'
     headerPlayer.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -239,9 +240,9 @@ export class IdleLeaderboardShowcaseScreen {
       emptyMessage.textContent = 'No scores yet'
       emptyMessage.style.cssText = `
         text-align: center;
-        font-size: clamp(18px, 1.46vh, 28px);
+        font-size: clamp(18px, 1.46cqh, 28px);
         color: #5f6368;
-        padding: clamp(30px, 3.13vh, 60px) 0;
+        padding: clamp(30px, 3.13cqh, 60px) 0;
         font-family: 'Google Sans Flex', sans-serif;
       `
       rowsContainer.appendChild(emptyMessage)
@@ -267,7 +268,7 @@ export class IdleLeaderboardShowcaseScreen {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: clamp(20px, 2.45vh, 47px) clamp(10px, 1.56vw, 30px);
+      padding: clamp(20px, 2.45cqh, 47px) clamp(10px, 1.56cqw, 30px);
       border-bottom: ${isTopPlayer ? '4px' : '3px'} solid ${isTopPlayer ? '#202124' : '#CACACA'};
     `
 
@@ -276,7 +277,7 @@ export class IdleLeaderboardShowcaseScreen {
     rankCol.textContent = `${rank}`
     rankCol.style.cssText = `
       color: ${isTopPlayer ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -288,7 +289,7 @@ export class IdleLeaderboardShowcaseScreen {
     scoreCol.textContent = entry.score.toLocaleString()
     scoreCol.style.cssText = `
       color: ${isTopPlayer ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -301,7 +302,7 @@ export class IdleLeaderboardShowcaseScreen {
     nameCol.textContent = entry.name
     nameCol.style.cssText = `
       color: ${isTopPlayer ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;

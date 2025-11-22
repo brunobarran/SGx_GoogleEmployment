@@ -65,9 +65,10 @@ export class WelcomeScreen {
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
-      padding-top: clamp(48px, 5vh, 96px);
+      padding-top: clamp(48px, 5cqh, 96px);
       z-index: 100;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Add to DOM
@@ -91,22 +92,22 @@ export class WelcomeScreen {
 
         .welcome-container {
           width: 100%;
-          padding: 0 clamp(40px, 9vw, 108px);
+          padding: 0 clamp(40px, 9cqw, 108px);
           font-family: 'Google Sans Flex', Arial, sans-serif;
         }
 
         .welcome-title {
-          font-size: clamp(36px, 5vh, 95px);
+          font-size: clamp(36px, 5cqh, 95px);
           font-weight: 500;
           color: #202124;
-          margin: 0 0 clamp(32px, 4vh, 76px) 0;
+          margin: 0 0 clamp(32px, 4cqh, 76px) 0;
           line-height: 1;
           opacity: 0;
           animation: slideUp 0.8s ease-out 0.2s forwards;
         }
 
         .welcome-subtitle {
-          font-size: clamp(36px, 5vh, 95px);
+          font-size: clamp(36px, 5cqh, 95px);
           font-weight: 500;
           line-height: 1;
           color: #202124;

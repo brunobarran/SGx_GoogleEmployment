@@ -121,6 +121,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       background: #FFFFFF;
       z-index: 100;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Create title
@@ -128,12 +129,12 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     title.innerHTML = `<span style="font-family: 'Google Sans Flex', sans-serif; font-weight: 500;">Prompt Library</span>`
     title.style.cssText = `
       position: absolute;
-      top: clamp(60px, 6.1vh, 117px);
+      top: clamp(60px, 6.1cqh, 117px);
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
       color: #202124;
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-weight: 500;
       line-height: 1;
       z-index: 10;
@@ -147,7 +148,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
-      height: clamp(600px, 75vh, 1440px);
+      height: clamp(600px, 75cqh, 1440px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -223,11 +224,11 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     cardTitle.style.cssText = `
       text-align: center;
       color: #7D7D7D;
-      font-size: clamp(20px, 2.12vh, 40.67px);
+      font-size: clamp(20px, 2.12cqh, 40.67px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
-      margin-bottom: clamp(30px, 3.44vh, 66px);
+      margin-bottom: clamp(30px, 3.44cqh, 66px);
     `
 
     // Prompt container with gradient overlay
@@ -235,7 +236,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     promptContainer.className = 'gallery-card-prompt-container'
     promptContainer.style.cssText = `
       position: relative;
-      max-height: clamp(450px, 54vh, 1036px);
+      max-height: clamp(450px, 54cqh, 1036px);
       overflow: hidden;
     `
 
@@ -245,7 +246,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     promptText.style.cssText = `
       text-align: justify;
       color: #202124;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Mono', monospace;
       font-weight: 500;
       line-height: 1;
@@ -260,7 +261,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       bottom: 0;
       left: 0;
       right: 0;
-      height: clamp(150px, 20vh, 384px);
+      height: clamp(150px, 20cqh, 384px);
       background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 1) 100%);
       pointer-events: none;
     `
@@ -276,9 +277,9 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       width: 70%;
       min-width: 350px;
       max-width: 840px;
-      padding: clamp(30px, 3.28vh, 63px) clamp(30px, 3.65vh, 70px) clamp(40px, 4.53vh, 87px) clamp(30px, 3.65vh, 70px);
+      padding: clamp(30px, 3.28cqh, 63px) clamp(30px, 3.65cqh, 70px) clamp(40px, 4.53cqh, 87px) clamp(30px, 3.65cqh, 70px);
       background: #FFFFFF;
-      border-radius: clamp(18px, 1.82vh, 35px);
+      border-radius: clamp(18px, 1.82cqh, 35px);
       transition: all 0.3s ease;
       transform-style: preserve-3d;
     `
@@ -294,7 +295,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
     arrow.className = `gallery-arrow gallery-arrow-${direction}`
     arrow.src = 'img/arrow.png'
     arrow.style.cssText = `
-      height: clamp(50px, 6.05vh, 116.1px);
+      height: clamp(50px, 6.05cqh, 116.1px);
       cursor: pointer;
       pointer-events: auto;
       transition: filter 0.2s ease;

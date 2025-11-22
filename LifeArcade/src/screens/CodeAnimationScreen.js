@@ -83,6 +83,7 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
       z-index: 100;
       animation: fadeIn 0.3s ease-in;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Add to DOM
@@ -94,7 +95,7 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
       style.id = 'code-screen-styles'
       style.textContent = `
         .code-container {
-          padding: clamp(80px, 10.3vh, 198px) clamp(30px, 5vw, 60px);
+          padding: clamp(80px, 10.3cqh, 198px) clamp(30px, 5cqw, 60px);
           font-family: 'Google Sans Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
           height: 100%;
           display: flex;
@@ -114,7 +115,7 @@ The critical phase was the "translation" mapping: I decided the "aliens" would n
         }
 
         .code-content {
-          font-size: clamp(18px, 2.34vh, 45px);
+          font-size: clamp(18px, 2.34cqh, 45px);
           line-height: 1.2;
           color: #FFFFFF;
           white-space: pre-wrap;

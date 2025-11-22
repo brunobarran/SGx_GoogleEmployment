@@ -75,6 +75,7 @@ export class GameScreen {
       border: none;
       object-fit: contain;
       z-index: 100;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Auto-focus iframe when loaded so keyboard events work immediately

@@ -84,6 +84,7 @@ export class QRCodeScreen {
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     this.element.innerHTML = `
@@ -125,7 +126,7 @@ export class QRCodeScreen {
           flex-direction: column;
           align-items: center;
           font-family: 'Google Sans Flex', Arial, sans-serif;
-          padding: clamp(60px, 6vh, 115px) clamp(45px, 7.7vw, 92px);
+          padding: clamp(60px, 6cqh, 115px) clamp(45px, 7.7cqw, 92px);
         }
 
         .qr-title-wrapper {
@@ -135,7 +136,7 @@ export class QRCodeScreen {
         }
 
         .qr-title {
-          font-size: clamp(36px, 4.43vh, 84px);
+          font-size: clamp(36px, 4.43cqh, 84px);
           font-weight: 500;
           line-height: 1.1;
           text-align: left;
@@ -156,11 +157,11 @@ export class QRCodeScreen {
           justify-content: center;
           flex: 1;
           width: 100%;
-          gap: clamp(20px, 3vh, 60px);
+          gap: clamp(20px, 3cqh, 60px);
         }
 
         .qr-scan-prompt {
-          font-size: clamp(24px, 2.86vh, 55px);
+          font-size: clamp(24px, 2.86cqh, 55px);
           font-weight: 500;
           color: #7D7D7D;
           text-align: center;
@@ -176,14 +177,14 @@ export class QRCodeScreen {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: clamp(280px, 48vw, 577px);
-          height: clamp(280px, 29.8vh, 572px);
+          width: clamp(280px, 48cqw, 577px);
+          height: clamp(280px, 29.8cqh, 572px);
         }
 
         .qr-blur-circle {
           position: absolute;
-          width: clamp(350px, 61.8vw, 741px);
-          height: clamp(350px, 38.6vh, 741px);
+          width: clamp(350px, 61.8cqw, 741px);
+          height: clamp(350px, 38.6cqh, 741px);
           border-radius: 50%;
           background: radial-gradient(circle, rgba(66, 133, 244, 0.08) 0%, rgba(66, 133, 244, 0.03) 50%, rgba(255, 255, 255, 0) 100%);
           filter: blur(60px);
@@ -207,31 +208,31 @@ export class QRCodeScreen {
         }
 
         .qr-decoration-top-left {
-          width: clamp(40px, 7vw, 84px);
-          height: clamp(20px, 2vh, 38px);
-          left: clamp(56px, 9.4vw, 113px);
-          top: clamp(242px, 24.2vh, 465px);
+          width: clamp(40px, 7cqw, 84px);
+          height: clamp(20px, 2cqh, 38px);
+          left: clamp(56px, 9.4cqw, 113px);
+          top: clamp(242px, 24.2cqh, 465px);
         }
 
         .qr-decoration-top-right {
-          width: clamp(40px, 7vw, 84px);
-          height: clamp(36px, 3.8vh, 73px);
-          right: clamp(90px, 15vw, 182px);
-          top: clamp(148px, 14.8vh, 285px);
+          width: clamp(40px, 7cqw, 84px);
+          height: clamp(36px, 3.8cqh, 73px);
+          right: clamp(90px, 15cqw, 182px);
+          top: clamp(148px, 14.8cqh, 285px);
         }
 
         .qr-decoration-bottom-left {
-          width: clamp(100px, 17.3vw, 208px);
-          height: clamp(121px, 12.1vh, 232px);
-          left: clamp(151px, 25.3vw, 303px);
-          bottom: clamp(171px, 17.1vh, 329px);
+          width: clamp(100px, 17.3cqw, 208px);
+          height: clamp(121px, 12.1cqh, 232px);
+          left: clamp(151px, 25.3cqw, 303px);
+          bottom: clamp(171px, 17.1cqh, 329px);
         }
 
         .qr-decoration-bottom-right {
-          width: clamp(87px, 14.6vw, 175px);
-          height: clamp(67px, 6.7vh, 129px);
-          right: clamp(62px, 10.4vw, 125px);
-          bottom: clamp(302px, 30.2vh, 583px);
+          width: clamp(87px, 14.6cqw, 175px);
+          height: clamp(67px, 6.7cqh, 129px);
+          right: clamp(62px, 10.4cqw, 125px);
+          bottom: clamp(302px, 30.2cqh, 583px);
         }
 
         @keyframes fadeIn {

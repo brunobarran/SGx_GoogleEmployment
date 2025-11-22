@@ -105,6 +105,7 @@ export class LeaderboardScreen {
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;
+      container-type: size; /* Enable Container Queries */
     `
 
     // Create title
@@ -112,12 +113,12 @@ export class LeaderboardScreen {
     title.textContent = game.name
     title.style.cssText = `
       position: absolute;
-      top: clamp(60px, 6.1vh, 117px);
+      top: clamp(60px, 6.1cqh, 117px);
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
       color: #202124;
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -127,7 +128,7 @@ export class LeaderboardScreen {
     const tableContainer = document.createElement('div')
     tableContainer.style.cssText = `
       position: absolute;
-      top: clamp(250px, 29.3vh, 562px);
+      top: clamp(250px, 29.3cqh, 562px);
       left: 50%;
       transform: translateX(-50%);
       width: 70%;
@@ -141,15 +142,15 @@ export class LeaderboardScreen {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 clamp(10px, 1.56vw, 30px);
-      margin-bottom: clamp(20px, 4.1vh, 79px);
+      padding: 0 clamp(10px, 1.56cqw, 30px);
+      margin-bottom: clamp(20px, 4.1cqh, 79px);
     `
 
     const headerRank = document.createElement('div')
     headerRank.textContent = 'Rank'
     headerRank.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -160,7 +161,7 @@ export class LeaderboardScreen {
     headerScore.textContent = 'Score'
     headerScore.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -172,7 +173,7 @@ export class LeaderboardScreen {
     headerPlayer.textContent = 'Player'
     headerPlayer.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(20px, 2.34vh, 45px);
+      font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -200,9 +201,9 @@ export class LeaderboardScreen {
       emptyMessage.textContent = 'No scores yet - Be the first!'
       emptyMessage.style.cssText = `
         text-align: center;
-        font-size: clamp(18px, 1.46vh, 28px);
+        font-size: clamp(18px, 1.46cqh, 28px);
         color: #5f6368;
-        padding: clamp(30px, 3.13vh, 60px) 0;
+        padding: clamp(30px, 3.13cqh, 60px) 0;
         font-family: 'Google Sans Flex', sans-serif;
       `
       rowsContainer.appendChild(emptyMessage)
@@ -215,11 +216,11 @@ export class LeaderboardScreen {
     const footer = document.createElement('div')
     footer.style.cssText = `
       position: absolute;
-      bottom: clamp(80px, 10vh, 192px);
+      bottom: clamp(80px, 10cqh, 192px);
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: clamp(20px, 3.3vw, 40px);
+      gap: clamp(20px, 3.3cqw, 40px);
       align-items: center;
       white-space: nowrap;
     `
@@ -229,7 +230,7 @@ export class LeaderboardScreen {
     this.createGameLink.textContent = 'Create game'
     this.createGameLink.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(18px, 2.08vh, 40px);
+      font-size: clamp(18px, 2.08cqh, 40px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       text-decoration: underline;
@@ -247,7 +248,7 @@ export class LeaderboardScreen {
     this.playAgainLink.textContent = 'Play again'
     this.playAgainLink.style.cssText = `
       color: #7D7D7D;
-      font-size: clamp(18px, 2.08vh, 40px);
+      font-size: clamp(18px, 2.08cqh, 40px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -291,8 +292,8 @@ export class LeaderboardScreen {
     // Only current player's row is highlighted (black + arrow)
     // Match by name, score AND timestamp to avoid highlighting duplicates
     const isPlayerRow = entry.name === playerName &&
-                        entry.score === playerScore &&
-                        entry.date === playerTimestamp
+      entry.score === playerScore &&
+      entry.date === playerTimestamp
 
     // Use displayRank if present (for player outside top 4), otherwise use index + 1
     const displayRank = entry.displayRank || (index + 1)
@@ -311,9 +312,9 @@ export class LeaderboardScreen {
       arrow.textContent = '▶'
       arrow.style.cssText = `
         position: absolute;
-        left: clamp(-80px, -3.3vw, -80px);
+        left: clamp(-80px, -3.3cqw, -80px);
         color: #202124;
-        font-size: clamp(32px, 3.65vh, 70px);
+        font-size: clamp(32px, 3.65cqh, 70px);
         font-family: 'Google Sans Flex', sans-serif;
         font-weight: 500;
         line-height: 1;
@@ -327,7 +328,7 @@ export class LeaderboardScreen {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: clamp(20px, 2.45vh, 47px) clamp(10px, 1.56vw, 30px);
+      padding: clamp(20px, 2.45cqh, 47px) clamp(10px, 1.56cqw, 30px);
       border-bottom: ${isPlayerRow ? '4px' : '3px'} solid ${isPlayerRow ? '#202124' : '#7D7D7D'};
       flex: 1;
     `
@@ -337,7 +338,7 @@ export class LeaderboardScreen {
     rankCol.textContent = `${displayRank}`
     rankCol.style.cssText = `
       color: ${isPlayerRow ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -349,7 +350,7 @@ export class LeaderboardScreen {
     scoreCol.textContent = entry.score.toLocaleString()
     scoreCol.style.cssText = `
       color: ${isPlayerRow ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
@@ -362,7 +363,7 @@ export class LeaderboardScreen {
     nameCol.textContent = entry.name
     nameCol.style.cssText = `
       color: ${isPlayerRow ? '#202124' : '#CACACA'};
-      font-size: clamp(32px, 3.65vh, 70px);
+      font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
       line-height: 1;
