@@ -122,6 +122,7 @@ export class ScoreEntryScreen {
           height: 100%;
           padding: clamp(60px, 7.6cqh, 146px) clamp(45px, 9cqw, 108px);
           font-family: 'Google Sans Flex', Arial, sans-serif;
+          animation: fadeIn 0.5s ease-in;
         }
 
         .score-entry-header {
@@ -184,6 +185,7 @@ export class ScoreEntryScreen {
           height: 100%;
           padding: clamp(60px, 7.6cqh, 146px) clamp(45px, 9.4cqw, 113px);
           font-family: 'Google Sans Flex', Arial, sans-serif;
+          animation: fadeIn 0.5s ease-in;
         }
 
         .score-entry-letters-row {
@@ -311,6 +313,9 @@ export class ScoreEntryScreen {
       // SCREEN 3: Name Entry
       this.element.innerHTML = `
         <div class="score-entry-container-name">
+          <div class="score-entry-header">
+            <span class="score-entry-header-text">Write your </span><span class="score-entry-header-highlight">name</span>
+          </div>
           <div class="score-entry-letters-row">
             ${this.letters.map((letter, index) => `
               <div class="score-entry-letter-box">
