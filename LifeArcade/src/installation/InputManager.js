@@ -179,10 +179,26 @@ export class InputManager {
       'ArrowDown',
       'ArrowLeft',
       'ArrowRight',
-      '1', '2', '3', '4', '5', '6', '7',
+      '1', '2', '3', '4', '5', '6', '7', '8',
       'a', 'A', 'd', 'D', 'w', 'W', 's', 'S'
     ]
     return arcadeKeys.includes(key)
+  }
+
+  /**
+   * Get theme from key (for theme system)
+   * Keys 1-4 trigger day mode, keys 5-8 trigger night mode
+   * @param {string} key
+   * @returns {string|null} 'day', 'night', or null
+   */
+  getThemeFromKey(key) {
+    if (['1', '2', '3', '4'].includes(key)) {
+      return 'day'
+    }
+    if (['5', '6', '7', '8'].includes(key)) {
+      return 'night'
+    }
+    return null
   }
 
   /**

@@ -32,6 +32,50 @@
       src: url('/fonts/Google-Sans-Mono-SemiBold.ttf') format('truetype');
     }
 
+    /* ===== THEME SYSTEM - CSS VARIABLES ===== */
+    :root {
+      --google-blue: #4285F4;
+      --google-red: #EA4335;
+      --google-green: #34A853;
+      --google-yellow: #FBBC04;
+    }
+
+    :root[data-theme="day"] {
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F8F9FA;
+      --bg-card: #FFFFFF;
+      --text-primary: #202124;
+      --text-secondary: #7D7D7D;
+      --text-tertiary: #5F6368;
+      --highlight-blue: var(--google-blue);
+      --highlight-red: var(--google-red);
+      --highlight-green: var(--google-green);
+      --highlight-yellow: var(--google-yellow);
+      --border-color: #DADCE0;
+      --video-overlay: rgba(255, 255, 255, 0.3);
+      /* Code screen inverted: day=dark terminal */
+      --code-bg: #33333E;
+      --code-text: #E8EAED;
+    }
+
+    :root[data-theme="night"] {
+      --bg-primary: #1A1A1A;
+      --bg-secondary: #2D2D2D;
+      --bg-card: #242424;
+      --text-primary: #E8EAED;
+      --text-secondary: #9AA0A6;
+      --text-tertiary: #7B8087;
+      --highlight-blue: var(--google-blue);
+      --highlight-red: var(--google-red);
+      --highlight-green: var(--google-green);
+      --highlight-yellow: var(--google-yellow);
+      --border-color: #3C4043;
+      --video-overlay: rgba(0, 0, 0, 0.5);
+      /* Code screen inverted: night=light terminal */
+      --code-bg: #FFFFFF;
+      --code-text: #202124;
+    }
+
     /* ===== RESET & BASE ===== */
     * {
       margin: 0;
@@ -41,8 +85,8 @@
 
     body {
       font-family: 'Google Sans Flex', Arial, sans-serif;
-      background-color: #FFFFFF;
-      color: #202124;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
       overflow: hidden;
       width: 100vw;
       height: 100vh;
@@ -128,6 +172,7 @@
     import { InputManager } from './src/installation/InputManager.js'
     import { IframeComm } from './src/installation/IframeComm.js'
     import { ResetManager } from './src/installation/ResetManager.js'
+    import { ThemeManager } from './src/installation/ThemeManager.js'
 
     // ===== IMPORT RESET SYSTEM =====
     import { ResetCircleUI } from './src/utils/ResetCircleUI.js'
@@ -150,8 +195,30 @@
     const storageManager = new StorageManager()
     const inputManager = new InputManager()
     const iframeComm = new IframeComm()
+    const themeManager = new ThemeManager()
 
     console.log('✓ Managers initialized')
+
+    // ===== CONNECT THEME MANAGER TO INPUT MANAGER =====
+    inputManager.onKeyPress((key, event) => {
+      const theme = inputManager.getThemeFromKey(key)
+      if (theme) {
+        console.log(`Theme change requested: ${theme}`)
+        themeManager.setTheme(theme)
+      }
+    })
+
+    // ===== CONNECT THEME MANAGER TO VIDEO SYSTEM =====
+    themeManager.addObserver((theme) => {
+      console.log(`Video system: Theme changed to ${theme}`)
+      updateVideoSources(theme)
+    })
+
+    // Initialize video sources with current theme
+    updateVideoSources(themeManager.getTheme())
+
+    console.log('✓ Theme system connected (keys 1-4: day, 5-8: night)')
+    console.log('✓ Video system connected to theme')
 
     // ===== INITIALIZE RESET SYSTEM =====
     const resetCircleUI = new ResetCircleUI()
@@ -166,7 +233,7 @@
       welcome: new WelcomeScreen(appState, inputManager),
       gallery: new GalleryScreen(appState, inputManager),
       code: new CodeAnimationScreen(appState, inputManager),
-      game: new GameScreen(appState, inputManager, iframeComm),
+      game: new GameScreen(appState, inputManager, iframeComm, themeManager),
       score: new ScoreEntryScreen(appState, inputManager, storageManager),
       leaderboard: new LeaderboardScreen(appState, inputManager, storageManager),
       qr: new QRCodeScreen(appState, inputManager)
@@ -178,6 +245,55 @@
     let currentScreenName = null
 
     // ===== VIDEO CONTROL =====
+
+    /**
+     * Update video sources based on current theme
+     * Day mode: idle.mp4 / loop.mp4
+     * Night mode: idle_dark.mp4 / loop_dark.mp4
+     */
+    function updateVideoSources(theme) {
+      const vidIdle = document.getElementById('bg-video-idle')
+      const vidLoop = document.getElementById('bg-video-loop')
+
+      if (!vidIdle || !vidLoop) return
+
+      // Determine video filenames based on theme
+      const suffix = theme === 'night' ? '_dark' : ''
+      const idleSrc = `/videos/idle${suffix}.mp4`
+      const loopSrc = `/videos/loop${suffix}.mp4`
+
+      // Only change if different (avoid unnecessary reloads)
+      if (vidIdle.src !== window.location.origin + idleSrc) {
+        const wasPlaying = !vidIdle.paused
+        const currentTime = vidIdle.currentTime
+
+        vidIdle.src = idleSrc
+        vidIdle.load()
+
+        // Resume playback if it was playing
+        if (wasPlaying) {
+          vidIdle.currentTime = currentTime
+          vidIdle.play().catch(e => console.log('Idle video play prevented:', e))
+        }
+      }
+
+      if (vidLoop.src !== window.location.origin + loopSrc) {
+        const wasPlaying = !vidLoop.paused
+        const currentTime = vidLoop.currentTime
+
+        vidLoop.src = loopSrc
+        vidLoop.load()
+
+        // Resume playback if it was playing
+        if (wasPlaying) {
+          vidLoop.currentTime = currentTime
+          vidLoop.play().catch(e => console.log('Loop video play prevented:', e))
+        }
+      }
+
+      console.log(`Video sources updated for ${theme} mode: ${idleSrc}, ${loopSrc}`)
+    }
+
     function updateVideoBackground(screenName) {
       const vidIdle = document.getElementById('bg-video-idle')
       const vidLoop = document.getElementById('bg-video-loop')

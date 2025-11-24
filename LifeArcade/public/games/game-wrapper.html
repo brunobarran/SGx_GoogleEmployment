@@ -151,6 +151,28 @@
 
       console.log(`Loading game: ${gameName}`)
     }
+
+    // ===== THEME SYSTEM =====
+    // Listen for theme changes from parent window
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'themeChange') {
+        const theme = event.data.payload?.theme
+        if (theme === 'day' || theme === 'night') {
+          applyTheme(theme)
+          console.log(`game-wrapper: Theme changed to ${theme}`)
+        }
+      }
+    })
+
+    function applyTheme(theme) {
+      const isDark = theme === 'night'
+      const textColor = isDark ? '#E8EAED' : '#202124'
+
+      // Update all text elements
+      document.getElementById('game-title').style.color = textColor
+      document.querySelectorAll('.stat-label').forEach(el => el.style.color = textColor)
+      document.querySelectorAll('.stat-value').forEach(el => el.style.color = textColor)
+    }
   </script>
 </body>
 </html>

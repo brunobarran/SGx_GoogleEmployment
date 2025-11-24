@@ -23,6 +23,7 @@ import {
   calculateCanvasDimensions,
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
+import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
 
 // ============================================
 // GAME CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -183,6 +184,13 @@ function setup() {
 
   // Create video gradient renderer (KISS)
   maskedRenderer = new VideoGradientRenderer(this)
+
+  // Initialize theme receiver
+  initThemeReceiver((theme) => {
+    CONFIG.ui.backgroundColor = getBackgroundColor(theme)
+    CONFIG.ui.score.color = getTextColor(theme)
+    console.log(`Space Invaders: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+  })
 
   initGame()
 }

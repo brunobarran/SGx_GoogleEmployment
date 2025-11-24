@@ -77,6 +77,7 @@ export class CodeAnimationScreen {
     const { containerWidth, containerHeight } = getResponsiveDimensions()
 
     // Add styles with responsive dimensions
+    // Note: Background inverted from theme - day=dark, night=light
     this.element.style.cssText = `
       position: fixed;
       top: 50%;
@@ -87,7 +88,7 @@ export class CodeAnimationScreen {
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #33333E;
+      background: var(--code-bg);
       z-index: 100;
       animation: fadeIn 0.3s ease-in;
       overflow: hidden;
@@ -125,7 +126,7 @@ export class CodeAnimationScreen {
         .code-content {
           font-size: clamp(18px, 2.34cqh, 45px);
           line-height: 1.2;
-          color: #FFFFFF;
+          color: var(--code-text);
           white-space: pre-wrap;
           word-wrap: break-word;
           font-weight: 400;
@@ -136,26 +137,26 @@ export class CodeAnimationScreen {
         }
 
         .code-content .highlight.red {
-          color: #FF5145;
+          color: var(--highlight-red);
         }
 
         .code-content .highlight.green {
-          color: #38A952;
+          color: var(--highlight-green);
         }
 
         .code-content .highlight.blue {
-          color: #438FF0;
+          color: var(--highlight-blue);
         }
 
         .code-content .highlight.yellow {
-          color: #F7B200;
+          color: var(--highlight-yellow);
         }
 
         .code-content .cursor {
           display: inline-block;
           width: 0.6em;
           height: 1em;
-          background: #FFFFFF;
+          background: var(--code-text);
           animation: blink 0.8s infinite;
           vertical-align: text-bottom;
           margin-left: 2px;
@@ -273,7 +274,7 @@ export class CodeAnimationScreen {
           }, 500)
         }, 1000)
       }
-    }, 15)
+    }, 5)
   }
 
   /**

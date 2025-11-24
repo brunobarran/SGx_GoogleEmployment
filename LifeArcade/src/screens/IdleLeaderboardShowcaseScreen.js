@@ -138,7 +138,7 @@ export class IdleLeaderboardShowcaseScreen {
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
-      color: #202124;
+      color: var(--text-primary);
       font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -188,7 +188,7 @@ export class IdleLeaderboardShowcaseScreen {
     const headerRank = document.createElement('div')
     headerRank.textContent = 'Rank'
     headerRank.style.cssText = `
-      color: #7D7D7D;
+      color: var(--text-secondary);
       font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -200,7 +200,7 @@ export class IdleLeaderboardShowcaseScreen {
     const headerScore = document.createElement('div')
     headerScore.textContent = 'Score'
     headerScore.style.cssText = `
-      color: #7D7D7D;
+      color: var(--text-secondary);
       font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -212,7 +212,7 @@ export class IdleLeaderboardShowcaseScreen {
     const headerPlayer = document.createElement('div')
     headerPlayer.textContent = 'Player'
     headerPlayer.style.cssText = `
-      color: #7D7D7D;
+      color: var(--text-secondary);
       font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -243,7 +243,7 @@ export class IdleLeaderboardShowcaseScreen {
       emptyMessage.style.cssText = `
         text-align: center;
         font-size: clamp(18px, 1.46cqh, 28px);
-        color: #5f6368;
+        color: var(--text-tertiary);
         padding: clamp(30px, 3.13cqh, 60px) 0;
         font-family: 'Google Sans Flex', sans-serif;
       `
@@ -271,14 +271,14 @@ export class IdleLeaderboardShowcaseScreen {
       justify-content: space-between;
       align-items: center;
       padding: clamp(20px, 2.45cqh, 47px) clamp(10px, 1.56cqw, 30px);
-      border-bottom: ${isTopPlayer ? '4px' : '3px'} solid ${isTopPlayer ? '#202124' : '#CACACA'};
+      border-bottom: ${isTopPlayer ? '4px' : '3px'} solid ${isTopPlayer ? 'var(--text-primary)' : 'var(--text-tertiary)'};
     `
 
     // Rank
     const rankCol = document.createElement('div')
     rankCol.textContent = `${rank}`
     rankCol.style.cssText = `
-      color: ${isTopPlayer ? '#202124' : '#CACACA'};
+      color: ${isTopPlayer ? 'var(--text-primary)' : 'var(--text-tertiary)'};
       font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -292,7 +292,7 @@ export class IdleLeaderboardShowcaseScreen {
     const scoreCol = document.createElement('div')
     scoreCol.textContent = entry.score.toString()
     scoreCol.style.cssText = `
-      color: ${isTopPlayer ? '#202124' : '#CACACA'};
+      color: ${isTopPlayer ? 'var(--text-primary)' : 'var(--text-tertiary)'};
       font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -305,7 +305,7 @@ export class IdleLeaderboardShowcaseScreen {
     const nameCol = document.createElement('div')
     nameCol.textContent = entry.name
     nameCol.style.cssText = `
-      color: ${isTopPlayer ? '#202124' : '#CACACA'};
+      color: ${isTopPlayer ? 'var(--text-primary)' : 'var(--text-tertiary)'};
       font-size: clamp(32px, 3.65cqh, 70px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;

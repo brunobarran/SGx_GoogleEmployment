@@ -143,11 +143,11 @@ export class QRCodeScreen {
         }
 
         .qr-title-text {
-          color: #202124;
+          color: var(--text-primary);
         }
 
         .qr-title-highlight {
-          color: #FF5145;
+          color: var(--highlight-red);
         }
 
         .qr-center {
@@ -163,7 +163,7 @@ export class QRCodeScreen {
         .qr-scan-prompt {
           font-size: clamp(24px, 2.86cqh, 55px);
           font-weight: 500;
-          color: #7D7D7D;
+          color: var(--text-secondary);
           text-align: center;
           line-height: 1;
           margin: 0;
@@ -202,7 +202,7 @@ export class QRCodeScreen {
         /* Corner decorations */
         .qr-decoration {
           position: absolute;
-          background: #E8E8E8;
+          background: var(--border-color);
           opacity: 0.6;
           border-radius: 8px;
         }

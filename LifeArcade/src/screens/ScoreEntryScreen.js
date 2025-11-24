@@ -108,7 +108,7 @@ export class ScoreEntryScreen {
         .score-entry-gameover {
           font-size: clamp(48px, 6.25cqh, 120px);
           font-weight: 500;
-          color: #202124;
+          color: var(--text-primary);
           margin: 0;
           line-height: 1;
           text-align: center;
@@ -135,11 +135,11 @@ export class ScoreEntryScreen {
         }
 
         .score-entry-header-text {
-          color: #202124;
+          color: var(--text-primary);
         }
 
         .score-entry-header-highlight {
-          color: #38A952;
+          color: var(--highlight-green);
         }
 
         .score-entry-card {
@@ -154,7 +154,7 @@ export class ScoreEntryScreen {
         .score-entry-number {
           font-size: clamp(94px, 12.19cqh, 234px);
           font-weight: 500;
-          color: #202124;
+          color: var(--text-primary);
           line-height: 1;
           text-align: center;
         }
@@ -162,7 +162,7 @@ export class ScoreEntryScreen {
         .score-entry-game-name {
           font-size: clamp(24px, 3.66cqh, 70px);
           font-weight: 500;
-          color: #202124;
+          color: var(--text-primary);
           line-height: 1;
           text-align: center;
           white-space: nowrap;
@@ -171,7 +171,7 @@ export class ScoreEntryScreen {
         .score-entry-continue {
           font-size: clamp(16px, 2.12cqh, 41px);
           font-weight: 500;
-          color: #7D7D7D;
+          color: var(--text-secondary);
           text-align: center;
           width: 100%;
           line-height: 1;
@@ -207,14 +207,14 @@ export class ScoreEntryScreen {
         .score-entry-letter-char {
           font-size: clamp(80px, 12.19cqh, 234px);
           font-weight: 400;
-          color: #CACACA;
+          color: var(--text-tertiary);
           line-height: 1;
           text-align: center;
           transition: color 0.3s ease, font-weight 0.3s ease;
         }
 
         .score-entry-letter-char.active {
-          color: #000000;
+          color: var(--text-primary);
           font-weight: 500;
         }
 
@@ -222,7 +222,7 @@ export class ScoreEntryScreen {
           width: clamp(120px, 22cqw, 250px);
           height: 0;
           border: none;
-          border-top: clamp(4px, 0.57cqh, 11px) solid #000000;
+          border-top: clamp(4px, 0.57cqh, 11px) solid var(--text-primary);
           position: relative;
         }
 
@@ -236,7 +236,7 @@ export class ScoreEntryScreen {
           height: 0;
           border-left: clamp(15px, 2cqh, 40px) solid transparent;
           border-right: clamp(15px, 2cqh, 40px) solid transparent;
-          border-bottom: clamp(20px, 2.6cqh, 50px) solid #000000;
+          border-bottom: clamp(20px, 2.6cqh, 50px) solid var(--text-primary);
           opacity: 0;
           transition: opacity 0.3s ease;
         }

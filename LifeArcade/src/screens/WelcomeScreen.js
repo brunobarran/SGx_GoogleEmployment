@@ -99,7 +99,7 @@ export class WelcomeScreen {
         .welcome-title {
           font-size: clamp(36px, 5cqh, 95px);
           font-weight: 500;
-          color: #202124;
+          color: var(--text-primary);
           margin: 0 0 clamp(32px, 4cqh, 76px) 0;
           line-height: 1;
           opacity: 0;
@@ -110,7 +110,7 @@ export class WelcomeScreen {
           font-size: clamp(36px, 5cqh, 95px);
           font-weight: 500;
           line-height: 1;
-          color: #202124;
+          color: var(--text-primary);
           display: flex;
           flex-direction: column;
           gap: 0;
@@ -134,19 +134,19 @@ export class WelcomeScreen {
         }
 
         .welcome-subtitle .highlight.green {
-          color: #38A952;
+          color: var(--highlight-green);
         }
 
         .welcome-subtitle .highlight.yellow {
-          color: #F7B200;
+          color: var(--highlight-yellow);
         }
 
         .welcome-subtitle .highlight.red {
-          color: #FF5145;
+          color: var(--highlight-red);
         }
 
         .welcome-subtitle .highlight.blue {
-          color: #438FF0;
+          color: var(--highlight-blue);
         }
       `
       document.head.appendChild(style)

@@ -67,6 +67,55 @@ export const GOOGLE_COLORS = {
 
 **Defined in:** `src/utils/GradientPresets.js`
 
+### Theme System (Day/Night Mode)
+
+**Implemented:** 2025-11-24
+
+The installation supports **instantaneous theme switching** between day and night modes.
+
+**Architecture:**
+- **CSS Variables**: All colors defined as CSS custom properties in `:root[data-theme="day"]` and `:root[data-theme="night"]`
+- **ThemeManager**: Central state management, observer pattern for extensibility
+- **InputManager Integration**: Keys 1-4 trigger day mode, keys 5-8 trigger night mode
+- **Dynamic Video Backgrounds**: Day mode uses `idle.mp4`/`loop.mp4`, night mode uses `idle_dark.mp4`/`loop_dark.mp4`
+
+**Key Design Decisions:**
+- **KISS Principle**: Instantaneous switching (no transitions), no persistence (resets on reload)
+- **No iframe propagation**: Games continue with current theme (future enhancement)
+- **Observation Pattern**: ThemeManager notifies observers (e.g., video system) when theme changes
+
+**CSS Variables:**
+```css
+:root[data-theme="day"] {
+  --bg-primary: #FFFFFF;
+  --text-primary: #202124;
+  --highlight-blue: #4285F4;
+  /* ... */
+}
+
+:root[data-theme="night"] {
+  --bg-primary: #1A1A1A;
+  --text-primary: #E8EAED;
+  --highlight-blue: #4285F4;
+  /* ... */
+}
+```
+
+**Files:**
+- `src/installation/ThemeManager.js` - Theme state and observer pattern
+- `src/installation/InputManager.js` - Key detection (getThemeFromKey)
+- `installation.html` - CSS variables, theme connection, video switching
+- All 9 screen files - Updated to use CSS variables
+
+**Tests:**
+- `tests/installation/test_ThemeManager.js` - 14/14 passing
+- `tests/installation/test_InputManager.js` - 45/45 passing
+
+**Future Enhancements:**
+- Propagate theme changes to iframe games via postMessage
+- Add theme persistence in localStorage (if requested)
+- Implement fade transitions (if requested)
+
 ---
 
 ## 3. Project Architecture

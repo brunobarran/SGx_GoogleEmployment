@@ -25,6 +25,7 @@ import {
   calculateCanvasDimensions,
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
+import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
 
 // ============================================
 // CONFIGURATION - Using GameBaseConfig
@@ -115,6 +116,13 @@ function setup() {
 
   // Create gradient renderer
   maskedRenderer = new VideoGradientRenderer(this)
+
+  // Initialize theme receiver
+  initThemeReceiver((theme) => {
+    CONFIG.ui.backgroundColor = getBackgroundColor(theme)
+    CONFIG.ui.score.color = getTextColor(theme)
+    console.log(`Breakout: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+  })
 
   initGame()
 }

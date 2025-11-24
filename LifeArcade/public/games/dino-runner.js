@@ -25,6 +25,7 @@ import {
   calculateCanvasDimensions,
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
+import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -245,6 +246,13 @@ function setup() {
 
   // Initialize hitbox debugging (press H to toggle)
   initHitboxDebug()
+
+  // Initialize theme receiver
+  initThemeReceiver((theme) => {
+    CONFIG.ui.backgroundColor = getBackgroundColor(theme)
+    CONFIG.ui.score.color = getTextColor(theme)
+    console.log(`Dino Runner: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+  })
 
   initGame()
 }

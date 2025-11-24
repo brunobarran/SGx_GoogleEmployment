@@ -29,6 +29,7 @@ import {
   calculateCanvasDimensions,
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
+import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -268,6 +269,14 @@ function setup() {
   frameRate(60)
   maskedRenderer = new VideoGradientRenderer(this)
   initHitboxDebug()  // Initialize hitbox debugging (press H to toggle)
+
+  // Initialize theme receiver
+  initThemeReceiver((theme) => {
+    CONFIG.ui.backgroundColor = getBackgroundColor(theme)
+    CONFIG.ui.score.color = getTextColor(theme)
+    console.log(`Flappy Bird: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+  })
+
   initGame()
 }
 

@@ -88,7 +88,7 @@ export class IdleScreen {
     this.titleElement.style.cssText = `
       width: 100%;
       text-align: center;
-      color: #202124;
+      color: var(--text-primary);
       font-size: clamp(48px, 7cqh, 134px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -115,7 +115,7 @@ export class IdleScreen {
     this.promptElement.style.cssText = `
       width: 100%;
       text-align: center;
-      color: #7D7D7D;
+      color: var(--text-secondary);
       font-size: clamp(24px, 2.9cqh, 55px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;

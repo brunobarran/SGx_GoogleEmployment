@@ -26,28 +26,28 @@ export class GalleryScreen {
   static GAMES = [
     {
       id: 'space-invaders',
-      name: 'Gemini Invaders',
+      name: 'CELLFRONT COMMAND',
       prompt: spaceInvadersPrompt,
       path: 'games/game-wrapper.html?game=space-invaders',
       key: '1'
     },
     {
       id: 'dino-runner',
-      name: 'GoL Runner',
+      name: 'AUTOMATA RUSH',
       prompt: dinoRunnerPrompt,
       path: 'games/game-wrapper.html?game=dino-runner',
       key: '2'
     },
     {
       id: 'breakout',
-      name: 'Cell Breaker',
+      name: 'CELLULAR SHATTER',
       prompt: breakoutPrompt,
       path: 'games/game-wrapper.html?game=breakout',
       key: '3'
     },
     {
       id: 'flappy-bird',
-      name: 'Flappy Life',
+      name: 'HOPPY GLIDER',
       prompt: flappyBirdPrompt,
       path: 'games/game-wrapper.html?game=flappy-bird',
       key: '4'
@@ -107,7 +107,7 @@ export class GalleryScreen {
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
-      color: #202124;
+      color: var(--text-primary);
       font-size: clamp(32px, 3.65cqh, 70px);
       font-weight: 500;
       line-height: 1;
@@ -197,7 +197,7 @@ export class GalleryScreen {
     cardTitle.textContent = game.name
     cardTitle.style.cssText = `
       text-align: center;
-      color: #7D7D7D;
+      color: var(--text-secondary);
       font-size: clamp(20px, 2.12cqh, 40.67px);
       font-family: 'Google Sans Flex', sans-serif;
       font-weight: 500;
@@ -219,7 +219,7 @@ export class GalleryScreen {
     promptText.textContent = game.prompt
     promptText.style.cssText = `
       text-align: justify;
-      color: #202124;
+      color: var(--text-primary);
       font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Mono', monospace;
       font-weight: 500;
@@ -229,14 +229,15 @@ export class GalleryScreen {
     `
 
     // Extended gradient overlay for smoother fade effect
+    // Uses CSS variable --bg-card for theme support
     const gradientOverlay = document.createElement('div')
+    gradientOverlay.className = 'gallery-card-gradient'
     gradientOverlay.style.cssText = `
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       height: clamp(150px, 20cqh, 384px);
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 1) 100%);
       pointer-events: none;
     `
 
@@ -252,7 +253,7 @@ export class GalleryScreen {
       min-width: 350px;
       max-width: 840px;
       padding: clamp(30px, 3.28cqh, 63px) clamp(30px, 3.65cqh, 70px) clamp(40px, 4.53cqh, 87px) clamp(30px, 3.65cqh, 70px);
-      background: #FFFFFF;
+      background: var(--bg-card);
       border-radius: clamp(18px, 1.82cqh, 35px);
       transition: all 0.3s ease;
       transform-style: preserve-3d;
@@ -305,6 +306,17 @@ export class GalleryScreen {
 
       #gallery-screen {
         animation: fadeIn 0.3s ease-in;
+      }
+
+      /* Gradient overlay that adapts to theme */
+      .gallery-card-gradient {
+        background: linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-card) 0%, transparent) 0%,
+          color-mix(in srgb, var(--bg-card) 30%, transparent) 25%,
+          color-mix(in srgb, var(--bg-card) 70%, transparent) 50%,
+          var(--bg-card) 100%
+        );
       }
     `
     document.head.appendChild(style)
