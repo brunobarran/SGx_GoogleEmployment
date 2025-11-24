@@ -20,6 +20,10 @@ export default defineConfig({
         {
           src: 'src',
           dest: '.'
+        },
+        {
+          src: 'public/games/*.txt',
+          dest: 'games'
         }
       ]
     })
