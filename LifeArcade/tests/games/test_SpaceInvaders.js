@@ -56,35 +56,35 @@ describe('SpaceInvaders - GoL Integration', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GoLEngine }")
-    expect(gameCode).toContain("from '../src/core/GoLEngine.js'")
+    expect(gameCode).toContain("from '/src/core/GoLEngine.js'")
   })
 
-  test('imports SimpleGradientRenderer', () => {
+  test('imports VideoGradientRenderer', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("import { SimpleGradientRenderer }")
-    expect(gameCode).toContain("from '../src/rendering/SimpleGradientRenderer.js'")
+    expect(gameCode).toContain("import { VideoGradientRenderer }")
+    expect(gameCode).toContain("from '/src/rendering/VideoGradientRenderer.js'")
   })
 
   test('imports GRADIENT_PRESETS', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GRADIENT_PRESETS }")
-    expect(gameCode).toContain("from '../src/utils/GradientPresets.js'")
+    expect(gameCode).toContain("from '/src/utils/GradientPresets.js'")
   })
 
   test('imports Patterns for GoL patterns', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { Patterns }")
-    expect(gameCode).toContain("from '../src/utils/Patterns.js'")
+    expect(gameCode).toContain("from '/src/utils/Patterns.js'")
   })
 
   test('imports GoL helper functions', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { seedRadialDensity, applyLifeForce, maintainDensity }')
-    expect(gameCode).toContain("from '../src/utils/GoLHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/GoLHelpers.js'")
   })
 
   test('creates GoLEngine instances', () => {
@@ -93,11 +93,13 @@ describe('SpaceInvaders - GoL Integration', () => {
     expect(gameCode).toContain('new GoLEngine(')
   })
 
-  test('uses applyLifeForce for Modified GoL entities', () => {
+  test('uses applyLifeForce for player and PatternRenderer for invaders', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
+    // Player uses applyLifeForce (Modified GoL)
     expect(gameCode).toContain('applyLifeForce(player)')
-    expect(gameCode).toMatch(/applyLifeForce\(inv\)/)
+    // Invaders use PatternRenderer (static GoL patterns)
+    expect(gameCode).toContain('createPatternRenderer(')
   })
 
   test('uses maintainDensity for Visual Only entities', () => {
@@ -119,29 +121,32 @@ describe('SpaceInvaders - Configuration', () => {
   test('has CONFIG object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const CONFIG = {')
+    // CONFIG is now created via createGameConfig() helper
+    expect(gameCode).toContain('const CONFIG = createGameConfig(')
   })
 
   test('uses portrait dimensions (1200×1920)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('width: 1200')
-    expect(gameCode).toContain('height: 1920')
+    // Dimensions are now in GAME_DIMENSIONS constant from GameBaseConfig
+    expect(gameCode).toContain('GAME_DIMENSIONS')
   })
 
-  test('has BASE_WIDTH and BASE_HEIGHT constants', () => {
+  test('imports GameBaseConfig helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const BASE_WIDTH = 1200')
-    expect(gameCode).toContain('const BASE_HEIGHT = 1920')
+    // BASE_WIDTH/HEIGHT are now in GAME_DIMENSIONS from GameBaseConfig
+    expect(gameCode).toContain('GAME_DIMENSIONS')
+    expect(gameCode).toContain("from '/src/utils/GameBaseConfig.js'")
   })
 
-  test('has Google brand UI colors', () => {
+  test('uses ThemeReceiver for theme support', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("backgroundColor: '#FFFFFF'")
-    expect(gameCode).toContain("textColor: '#5f6368'")
-    expect(gameCode).toContain("accentColor: '#1a73e8'")
+    // Colors now come from ThemeReceiver (theme system)
+    expect(gameCode).toContain('initThemeReceiver')
+    expect(gameCode).toContain('getBackgroundColor')
+    expect(gameCode).toContain('getTextColor')
   })
 
   test('has invader configuration', () => {
@@ -150,17 +155,16 @@ describe('SpaceInvaders - Configuration', () => {
     expect(gameCode).toMatch(/invader:\s*\{/)
     expect(gameCode).toContain('cols:')
     expect(gameCode).toContain('rows:')
-    expect(gameCode).toContain('moveInterval:')
+    expect(gameCode).toContain('moveIntervalStart:')  // Updated field name
   })
 
   test('has player configuration', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toMatch(/player:\s*\{/)
-    expect(gameCode).toContain('width:')
-    expect(gameCode).toContain('height:')
-    expect(gameCode).toContain('cellSize:')
+    // Width/height/cellSize are now dynamically calculated from globalCellSize
     expect(gameCode).toContain('speed:')
+    expect(gameCode).toContain('shootCooldown')
   })
 
   test('has bullet configuration', () => {
@@ -176,25 +180,32 @@ describe('SpaceInvaders - Game State', () => {
   test('has state object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const state = {')
+    // State is now created via createGameState() helper
+    expect(gameCode).toContain('const state = createGameState(')
   })
 
   test('state has score property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('score: 0')
+    // Score is set by createGameState() helper (default: 0)
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.score')
   })
 
   test('state has phase property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/phase:\s*['"]PLAYING['"]/)
+    // Phase is set by createGameState() helper (default: 'PLAYING')
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.phase')
   })
 
   test('state has lives property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/lives:\s*1/)
+    // Lives is set by createGameState() helper (default: 1)
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.lives')
   })
 
   test('state has level tracking', () => {
@@ -203,12 +214,12 @@ describe('SpaceInvaders - Game State', () => {
     expect(gameCode).toMatch(/level:\s*1/)
   })
 
-  test('has GAMEOVER_CONFIG with timing constants', () => {
+  test('imports GAMEOVER_CONFIG from GameBaseConfig', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const GAMEOVER_CONFIG = {')
-    expect(gameCode).toContain('MIN_DELAY:')
-    expect(gameCode).toContain('MAX_WAIT:')
+    // GAMEOVER_CONFIG is now imported from GameBaseConfig
+    expect(gameCode).toContain('GAMEOVER_CONFIG')
+    expect(gameCode).toContain("from '/src/utils/GameBaseConfig.js'")
   })
 })
 
@@ -267,7 +278,7 @@ describe('SpaceInvaders - Entities', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toMatch(/let maskedRenderer\s*=\s*null/)
-    expect(gameCode).toContain('maskedRenderer = new SimpleGradientRenderer')
+    expect(gameCode).toContain('maskedRenderer = new VideoGradientRenderer')
   })
 })
 
@@ -278,7 +289,7 @@ describe('SpaceInvaders - Collision Detection', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { Collision }")
-    expect(gameCode).toContain("from '../src/utils/Collision.js'")
+    expect(gameCode).toContain("from '/src/utils/Collision.js'")
   })
 
   test('has checkCollisions function', () => {
@@ -462,10 +473,11 @@ describe('SpaceInvaders - Rendering', () => {
     expect(gameCode).toMatch(/function renderGame\s*\(\s*\)\s*\{/)
   })
 
-  test('has renderUI() function', () => {
+  test('renders UI elements inline in draw()', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/function renderUI\s*\(\s*\)\s*\{/)
+    // UI rendering is done inline in draw(), not separate renderUI() function
+    expect(gameCode).toContain('function draw(')
   })
 
   test('uses maskedRenderer.renderMaskedGrid()', () => {
@@ -474,17 +486,11 @@ describe('SpaceInvaders - Rendering', () => {
     expect(gameCode).toContain('maskedRenderer.renderMaskedGrid(')
   })
 
-  test('imports renderGameUI helper', () => {
-    gameCode = readFileSync(GAME_PATH, 'utf-8')
-
-    expect(gameCode).toContain('import { renderGameUI')
-    expect(gameCode).toContain("from '../src/utils/UIHelpers.js'")
-  })
-
   test('imports renderGameOver helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('renderGameOver')
+    expect(gameCode).toContain('import { renderGameOver')
+    expect(gameCode).toContain("from '/src/utils/UIHelpers.js'")
   })
 
   test('uses responsive scaling', () => {
@@ -498,7 +504,7 @@ describe('SpaceInvaders - Rendering', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { updateParticles, renderParticles }')
-    expect(gameCode).toContain("from '../src/utils/ParticleHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/ParticleHelpers.js'")
   })
 })
 

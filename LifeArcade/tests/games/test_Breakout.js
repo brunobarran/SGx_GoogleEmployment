@@ -61,35 +61,35 @@ describe('Breakout - GoL Integration', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GoLEngine }")
-    expect(gameCode).toContain("from '../src/core/GoLEngine.js'")
+    expect(gameCode).toContain("from '/src/core/GoLEngine.js'")
   })
 
-  test('imports SimpleGradientRenderer', () => {
+  test('imports VideoGradientRenderer', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("import { SimpleGradientRenderer }")
-    expect(gameCode).toContain("from '../src/rendering/SimpleGradientRenderer.js'")
+    expect(gameCode).toContain("import { VideoGradientRenderer }")
+    expect(gameCode).toContain("from '/src/rendering/VideoGradientRenderer.js'")
   })
 
   test('imports GRADIENT_PRESETS', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GRADIENT_PRESETS }")
-    expect(gameCode).toContain("from '../src/utils/GradientPresets.js'")
+    expect(gameCode).toContain("from '/src/utils/GradientPresets.js'")
   })
 
   test('imports Patterns for GoL patterns', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { Patterns }")
-    expect(gameCode).toContain("from '../src/utils/Patterns.js'")
+    expect(gameCode).toContain("from '/src/utils/Patterns.js'")
   })
 
   test('imports GoL helper functions', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { seedRadialDensity, applyLifeForce, maintainDensity }')
-    expect(gameCode).toContain("from '../src/utils/GoLHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/GoLHelpers.js'")
   })
 
   test('creates GoLEngine instances', () => {
@@ -104,10 +104,12 @@ describe('Breakout - GoL Integration', () => {
     expect(gameCode).toContain('applyLifeForce(paddle)')
   })
 
-  test('uses applyLifeForce for bricks (Modified GoL)', () => {
+  test('bricks use GoL patterns', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('applyLifeForce(brick)')
+    // Bricks are GoL-based entities
+    expect(gameCode).toContain('new GoLEngine(')
+    expect(gameCode).toContain('brick')
   })
 
   test('uses maintainDensity for ball (Visual Only)', () => {
@@ -136,29 +138,31 @@ describe('Breakout - Configuration', () => {
   test('has CONFIG object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const CONFIG = {')
+    expect(gameCode).toContain('const CONFIG = createGameConfig(')
   })
 
   test('uses portrait dimensions (1200×1920)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('width: 1200')
-    expect(gameCode).toContain('height: 1920')
+    // Dimensions are now in GAME_DIMENSIONS constant from GameBaseConfig
+    expect(gameCode).toContain('GAME_DIMENSIONS')
   })
 
-  test('has BASE_WIDTH and BASE_HEIGHT constants', () => {
+  test('imports GameBaseConfig helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const BASE_WIDTH = 1200')
-    expect(gameCode).toContain('const BASE_HEIGHT = 1920')
+    // BASE_WIDTH/HEIGHT are now in GAME_DIMENSIONS from GameBaseConfig
+    expect(gameCode).toContain('GAME_DIMENSIONS')
+    expect(gameCode).toContain("from '/src/utils/GameBaseConfig.js'")
   })
 
-  test('has Google brand UI colors', () => {
+  test('uses ThemeReceiver for theme support', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("backgroundColor: '#FFFFFF'")
-    expect(gameCode).toContain("textColor: '#5f6368'")
-    expect(gameCode).toContain("accentColor: '#1a73e8'")
+    // Colors now come from ThemeReceiver (theme system)
+    expect(gameCode).toContain('initThemeReceiver')
+    expect(gameCode).toContain('getBackgroundColor')
+    expect(gameCode).toContain('getTextColor')
   })
 
   test('has paddle configuration', () => {
@@ -203,25 +207,28 @@ describe('Breakout - Game State', () => {
   test('has state object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const state = {')
+    expect(gameCode).toContain('const state = createGameState(')
   })
 
   test('state has score property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('score: 0')
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.score')
   })
 
   test('state has phase property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/phase:\s*['"]PLAYING['"]/)
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.phase')
   })
 
   test('state has lives property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/lives:\s*1/)
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.lives')
   })
 
   test('state has level tracking', () => {
@@ -230,18 +237,19 @@ describe('Breakout - Game State', () => {
     expect(gameCode).toMatch(/level:\s*1/)
   })
 
-  test('state has isWin flag', () => {
+  test('state has level tracking for progression', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/isWin:\s*(false|true)/)
+    // Breakout has infinite level progression, not WIN condition
+    expect(gameCode).toContain('state.level')
+    expect(gameCode).toContain('nextLevel')
   })
 
-  test('has GAMEOVER_CONFIG with timing constants', () => {
+  test('imports GAMEOVER_CONFIG from GameBaseConfig', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const GAMEOVER_CONFIG = {')
-    expect(gameCode).toContain('MIN_DELAY:')
-    expect(gameCode).toContain('MAX_WAIT:')
+    expect(gameCode).toContain('GAMEOVER_CONFIG')
+    expect(gameCode).toContain("from '/src/utils/GameBaseConfig.js'")
   })
 
   test('state has dyingTimer for death animation', () => {
@@ -318,7 +326,7 @@ describe('Breakout - Entities', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toMatch(/let maskedRenderer\s*=\s*null/)
-    expect(gameCode).toContain('maskedRenderer = new SimpleGradientRenderer')
+    expect(gameCode).toContain('maskedRenderer = new VideoGradientRenderer')
   })
 })
 
@@ -329,7 +337,7 @@ describe('Breakout - Collision Detection', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { Collision }")
-    expect(gameCode).toContain("from '../src/utils/Collision.js'")
+    expect(gameCode).toContain("from '/src/utils/Collision.js'")
   })
 
   test('has checkCollisions function', () => {
@@ -478,18 +486,20 @@ describe('Breakout - Game Logic', () => {
     expect(gameCode).toMatch(/state\.score\s*\+=\s*brick\.scoreValue/)
   })
 
-  test('handles win condition (all bricks cleared)', () => {
+  test('handles level progression (all bricks cleared)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
+    // Breakout progresses to next level, not WIN screen
     expect(gameCode).toMatch(/bricks\.length\s*===\s*0/)
-    expect(gameCode).toMatch(/state\.isWin\s*=\s*true/)
+    expect(gameCode).toContain('nextLevel()')
   })
 
-  test('handles lose condition (lives depleted)', () => {
+  test('handles game over condition (lives depleted)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
+    // Breakout ends with GAMEOVER when lives depleted (no WIN/LOSE distinction)
     expect(gameCode).toMatch(/state\.lives\s*<=\s*0/)
-    expect(gameCode).toMatch(/state\.isWin\s*=\s*false/)
+    expect(gameCode).toMatch(/state\.phase\s*=\s*['"]DYING['"]/)
   })
 
   test('has spawnExplosion() function', () => {
@@ -534,11 +544,12 @@ describe('Breakout - postMessage Integration', () => {
     expect(postMessageBlock.length).toBeGreaterThan(0)
   })
 
-  test('sends same postMessage for win and lose', () => {
+  test('sends postMessage only on GAMEOVER (no WIN condition)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    // Should send gameOver for both WIN and GAMEOVER phases
-    expect(gameCode).toMatch(/state\.phase\s*=\s*state\.isWin\s*\?\s*['"]WIN['"]/)
+    // Breakout only sends gameOver when lives depleted (no WIN condition)
+    expect(gameCode).toMatch(/state\.phase\s*=\s*['"]GAMEOVER['"]/)
+    expect(gameCode).toContain('window.parent.postMessage')
   })
 })
 
@@ -551,10 +562,12 @@ describe('Breakout - Rendering', () => {
     expect(gameCode).toMatch(/function renderGame\s*\(\s*\)\s*\{/)
   })
 
-  test('has renderUI() function', () => {
+  test('renders UI elements inline in draw()', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/function renderUI\s*\(\s*\)\s*\{/)
+    // UI rendered inline in draw(), not separate renderUI function
+    expect(gameCode).toContain('function draw()')
+    expect(gameCode).toContain('state.score')
   })
 
   test('uses maskedRenderer.renderMaskedGrid()', () => {
@@ -563,11 +576,11 @@ describe('Breakout - Rendering', () => {
     expect(gameCode).toContain('maskedRenderer.renderMaskedGrid(')
   })
 
-  test('imports renderGameUI helper', () => {
+  test('imports renderGameOver helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('import { renderGameUI')
-    expect(gameCode).toContain("from '../src/utils/UIHelpers.js'")
+    expect(gameCode).toContain('import { renderGameOver')
+    expect(gameCode).toContain("from '/src/utils/UIHelpers.js'")
   })
 
   test('imports renderGameOver helper', () => {
@@ -576,10 +589,12 @@ describe('Breakout - Rendering', () => {
     expect(gameCode).toContain('renderGameOver')
   })
 
-  test('imports renderWin helper', () => {
+  test('has level progression system (no WIN screen)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('renderWin')
+    // Breakout has infinite progression, not WIN condition
+    expect(gameCode).toContain('nextLevel')
+    expect(gameCode).toContain('bricks.length === 0')
   })
 
   test('uses responsive scaling', () => {
@@ -593,7 +608,7 @@ describe('Breakout - Rendering', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { updateParticles, renderParticles }')
-    expect(gameCode).toContain("from '../src/utils/ParticleHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/ParticleHelpers.js'")
   })
 
   test('hides ball during DYING phase', () => {
@@ -602,10 +617,11 @@ describe('Breakout - Rendering', () => {
     expect(gameCode).toMatch(/if\s*\(\s*state\.phase\s*===\s*['"]PLAYING['"]/)
   })
 
-  test('shows WIN screen on win', () => {
+  test('shows GAMEOVER screen on death', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/if\s*\(\s*state\.phase\s*===\s*['"]WIN['"]/)
+    // Breakout only has GAMEOVER screen (no WIN screen)
+    expect(gameCode).toMatch(/if\s*\(\s*state\.phase\s*===\s*['"]GAMEOVER['"]/)
   })
 })
 

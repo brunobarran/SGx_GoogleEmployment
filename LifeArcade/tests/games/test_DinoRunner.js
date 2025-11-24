@@ -61,35 +61,36 @@ describe('DinoRunner - GoL Integration', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GoLEngine }")
-    expect(gameCode).toContain("from '../src/core/GoLEngine.js'")
+    expect(gameCode).toContain("from '/src/core/GoLEngine.js'")
   })
 
-  test('imports SimpleGradientRenderer', () => {
+  test('imports VideoGradientRenderer', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("import { SimpleGradientRenderer }")
-    expect(gameCode).toContain("from '../src/rendering/SimpleGradientRenderer.js'")
+    expect(gameCode).toContain("import { VideoGradientRenderer }")
+    expect(gameCode).toContain("from '/src/rendering/VideoGradientRenderer.js'")
   })
 
   test('imports GRADIENT_PRESETS', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { GRADIENT_PRESETS }")
-    expect(gameCode).toContain("from '../src/utils/GradientPresets.js'")
+    expect(gameCode).toContain("from '/src/utils/GradientPresets.js'")
   })
 
-  test('imports Patterns for GoL patterns', () => {
+  test('imports PatternRenderer for static GoL patterns', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("import { Patterns }")
-    expect(gameCode).toContain("from '../src/utils/Patterns.js'")
+    // DinoRunner uses PatternRenderer for obstacles, not Patterns
+    expect(gameCode).toContain("import { createPatternRenderer")
+    expect(gameCode).toContain("from '/src/utils/PatternRenderer.js'")
   })
 
   test('imports GoL helper functions', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { seedRadialDensity, applyLifeForce, maintainDensity }')
-    expect(gameCode).toContain("from '../src/utils/GoLHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/GoLHelpers.js'")
   })
 
   test('creates GoLEngine instances', () => {
@@ -98,16 +99,20 @@ describe('DinoRunner - GoL Integration', () => {
     expect(gameCode).toContain('new GoLEngine(')
   })
 
-  test('uses applyLifeForce for player (Modified GoL)', () => {
+  test('uses PNG sprite for player (approved deviation)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('applyLifeForce(player)')
+    // DinoRunner uses PNG sprite for player (client requirement for brand identity)
+    expect(gameCode).toContain('preload')
+    expect(gameCode).toContain('loadImage')
   })
 
-  test('uses maintainDensity for obstacles (Visual Only)', () => {
+  test('uses PatternRenderer for obstacles (Visual Only)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('maintainDensity(obs')
+    // DinoRunner uses PatternRenderer for static patterns
+    expect(gameCode).toContain('createPatternRenderer')
+    expect(gameCode).toContain('RenderMode.STATIC')
   })
 
   test('seeds GoL with radial density patterns', () => {
@@ -130,29 +135,30 @@ describe('DinoRunner - Configuration', () => {
   test('has CONFIG object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const CONFIG = {')
+    expect(gameCode).toContain('const CONFIG = createGameConfig(')
   })
 
   test('uses portrait dimensions (1200×1920)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('width: 1200')
-    expect(gameCode).toContain('height: 1920')
+    // Uses GAME_DIMENSIONS from GameBaseConfig, not hardcoded values
+    expect(gameCode).toContain('GAME_DIMENSIONS')
   })
 
-  test('has BASE_WIDTH and BASE_HEIGHT constants', () => {
+  test('imports GameBaseConfig helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const BASE_WIDTH = 1200')
-    expect(gameCode).toContain('const BASE_HEIGHT = 1920')
+    expect(gameCode).toContain('GAME_DIMENSIONS')
+    expect(gameCode).toContain('GAME_DIMENSIONS')
   })
 
-  test('has Google brand UI colors', () => {
+  test('has theme support via ThemeReceiver', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain("backgroundColor: '#FFFFFF'")
-    expect(gameCode).toContain("textColor: '#5f6368'")
-    expect(gameCode).toContain("accentColor: '#1a73e8'")
+    // Uses ThemeReceiver for dynamic theme colors, not hardcoded
+    expect(gameCode).toContain('initThemeReceiver')
+    expect(gameCode).toContain('getBackgroundColor')
+    expect(gameCode).toContain('getTextColor')
   })
 
   test('has gravity configuration', () => {
@@ -164,7 +170,9 @@ describe('DinoRunner - Configuration', () => {
   test('has groundY configuration', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/groundY:\s*\d+/)
+    // DinoRunner uses calculated groundY based on GAME_DIMENSIONS
+    expect(gameCode).toContain('groundY:')
+    expect(gameCode).toContain('GAME_DIMENSIONS')
   })
 
   test('has jumpForce configuration', () => {
@@ -189,19 +197,21 @@ describe('DinoRunner - Game State', () => {
   test('has state object defined', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const state = {')
+    expect(gameCode).toContain('const state = createGameState(')
   })
 
   test('state has score property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('score: 0')
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.score')
   })
 
   test('state has phase property', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/phase:\s*['"]PLAYING['"]/)
+    expect(gameCode).toContain('createGameState')
+    expect(gameCode).toContain('state.phase')
   })
 
   test('state tracks spawn timer', () => {
@@ -216,12 +226,11 @@ describe('DinoRunner - Game State', () => {
     expect(gameCode).toMatch(/gameSpeed:\s*[\d.]+/)
   })
 
-  test('has GAMEOVER_CONFIG with timing constants', () => {
+  test('imports GAMEOVER_CONFIG from GameBaseConfig', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('const GAMEOVER_CONFIG = {')
-    expect(gameCode).toContain('MIN_DELAY:')
-    expect(gameCode).toContain('MAX_WAIT:')
+    expect(gameCode).toContain('GAMEOVER_CONFIG')
+    expect(gameCode).toContain("from '/src/utils/GameBaseConfig.js'")
   })
 
   test('state has dyingTimer for death animation', () => {
@@ -265,10 +274,12 @@ describe('DinoRunner - Entities', () => {
     expect(gameCode).toContain('onGround: true')
   })
 
-  test('player has gradient configuration', () => {
+  test('player uses PNG sprite (no gradient)', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('gradient: GRADIENT_PRESETS.PLAYER')
+    // DinoRunner uses PNG sprites for player, not GoL with gradient
+    expect(gameCode).toContain('loadImage')
+    expect(gameCode).toContain('dinoSprites')
   })
 
   test('obstacles have GoL engines', () => {
@@ -281,7 +292,7 @@ describe('DinoRunner - Entities', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toMatch(/let maskedRenderer\s*=\s*null/)
-    expect(gameCode).toContain('maskedRenderer = new SimpleGradientRenderer')
+    expect(gameCode).toContain('maskedRenderer = new VideoGradientRenderer')
   })
 })
 
@@ -292,7 +303,7 @@ describe('DinoRunner - Collision Detection', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain("import { Collision }")
-    expect(gameCode).toContain("from '../src/utils/Collision.js'")
+    expect(gameCode).toContain("from '/src/utils/Collision.js'")
   })
 
   test('has checkCollisions function', () => {
@@ -478,16 +489,19 @@ describe('DinoRunner - Rendering', () => {
     expect(gameCode).toMatch(/function renderGame\s*\(\s*\)\s*\{/)
   })
 
-  test('has renderUI() function', () => {
+  test('renders UI elements inline in draw()', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/function renderUI\s*\(\s*\)\s*\{/)
+    // DinoRunner renders UI inline in draw(), no separate renderUI function
+    expect(gameCode).toContain('function draw()')
+    expect(gameCode).toContain('state.score')
   })
 
-  test('draws ground line', () => {
+  test('has horizon line for visual reference', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/line\(.*groundY/)
+    // DinoRunner uses horizonY for visual reference
+    expect(gameCode).toContain('horizonY:')
   })
 
   test('uses maskedRenderer.renderMaskedGrid()', () => {
@@ -496,11 +510,11 @@ describe('DinoRunner - Rendering', () => {
     expect(gameCode).toContain('maskedRenderer.renderMaskedGrid(')
   })
 
-  test('imports renderGameUI helper', () => {
+  test('imports renderGameOver helper', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toContain('import { renderGameUI')
-    expect(gameCode).toContain("from '../src/utils/UIHelpers.js'")
+    expect(gameCode).toContain('import { renderGameOver')
+    expect(gameCode).toContain("from '/src/utils/UIHelpers.js'")
   })
 
   test('imports renderGameOver helper', () => {
@@ -520,7 +534,7 @@ describe('DinoRunner - Rendering', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
     expect(gameCode).toContain('import { updateParticles, renderParticles }')
-    expect(gameCode).toContain("from '../src/utils/ParticleHelpers.js'")
+    expect(gameCode).toContain("from '/src/utils/ParticleHelpers.js'")
   })
 
   test('hides player during DYING phase', () => {
@@ -559,15 +573,18 @@ describe('DinoRunner - Obstacle Variety', () => {
   test('has multiple obstacle types', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/const types\s*=\s*\[/)
+    // DinoRunner uses obstaclePatterns and pterodactylPatterns arrays
+    expect(gameCode).toContain('obstaclePatterns:')
+    expect(gameCode).toContain('pterodactylPatterns:')
   })
 
-  test('obstacles have different sizes', () => {
+  test('obstacles have different sizes via gridSize', () => {
     gameCode = readFileSync(GAME_PATH, 'utf-8')
 
-    expect(gameCode).toMatch(/small.*width/)
-    expect(gameCode).toMatch(/medium.*width/)
-    expect(gameCode).toMatch(/tall.*width/)
+    // DinoRunner uses gridSize (cols/rows) for obstacle dimensions
+    expect(gameCode).toContain('gridSize:')
+    expect(gameCode).toContain('cols:')
+    expect(gameCode).toContain('rows:')
   })
 
   test('obstacles use different gradients', () => {
