@@ -8,30 +8,44 @@
  * @license ISC
  */
 
+import { getBackgroundColor as getBgColor, getTextColorRgb } from './ThemeConstants.js'
+import { debugLog } from './Logger.js'
+
 /**
  * Initialize theme receiver for a game
  * @param {function} onThemeChange - Callback when theme changes: (theme) => void
  * @returns {function} cleanup function
  */
 export function initThemeReceiver(onThemeChange) {
+  // Read initial theme from URL (passed by GameScreen)
+  const urlParams = new URLSearchParams(window.location.search)
+  const initialTheme = urlParams.get('theme') || 'day'
+
+  // Apply initial theme immediately (before first draw)
+  if (initialTheme === 'day' || initialTheme === 'night') {
+    debugLog(`ThemeReceiver: Applying initial theme from URL: "${initialTheme}"`)
+    onThemeChange(initialTheme)
+  }
+
+  // Listen for theme changes via postMessage
   const handler = (event) => {
     // Only accept messages with themeChange type
     if (event.data && event.data.type === 'themeChange') {
       const theme = event.data.payload?.theme
       if (theme === 'day' || theme === 'night') {
-        console.log(`ThemeReceiver: Received theme "${theme}"`)
+        debugLog(`ThemeReceiver: Received theme "${theme}"`)
         onThemeChange(theme)
       }
     }
   }
 
   window.addEventListener('message', handler)
-  console.log('ThemeReceiver: Listening for theme changes')
+  debugLog('ThemeReceiver: Listening for theme changes')
 
   // Return cleanup function
   return () => {
     window.removeEventListener('message', handler)
-    console.log('ThemeReceiver: Stopped listening')
+    debugLog('ThemeReceiver: Stopped listening')
   }
 }
 
@@ -41,7 +55,7 @@ export function initThemeReceiver(onThemeChange) {
  * @returns {string} Hex color
  */
 export function getBackgroundColor(theme) {
-  return theme === 'night' ? '#1A1A1A' : '#FFFFFF'
+  return getBgColor(theme)
 }
 
 /**
@@ -50,5 +64,5 @@ export function getBackgroundColor(theme) {
  * @returns {number[]} RGB array [r, g, b]
  */
 export function getTextColor(theme) {
-  return theme === 'night' ? [232, 234, 237] : [95, 99, 104]  // #E8EAED : #5f6368
+  return getTextColorRgb(theme)
 }

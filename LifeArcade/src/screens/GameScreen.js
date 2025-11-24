@@ -30,11 +30,8 @@ export class GameScreen {
     // Timeout handle
     this.gameTimeoutHandle = null
 
-    // Escape handler
-    this.escapeHandler = null
-
-    // Theme key handler
-    this.themeKeyHandler = null
+    // Game message handler (postMessage from iframe)
+    this.gameMessageHandler = null
 
     // Theme observer handle
     this.themeObserverCleanup = null
@@ -68,7 +65,12 @@ export class GameScreen {
 
     // Create iframe
     this.iframe = document.createElement('iframe')
-    this.iframe.src = game.path
+
+    // Add current theme to URL to prevent white flash on load
+    const currentTheme = this.themeManager.getTheme()
+    const separator = game.path.includes('?') ? '&' : '?'
+    this.iframe.src = `${game.path}${separator}theme=${currentTheme}`
+
     this.iframe.tabIndex = 0  // Make iframe focusable
     this.iframe.style.cssText = `
       position: fixed;
@@ -89,24 +91,22 @@ export class GameScreen {
     // Auto-focus iframe when loaded so keyboard events work immediately
     this.iframe.onload = () => {
       try {
-        // Give iframe focus after a short delay (ensures it's fully loaded)
-        setTimeout(() => {
-          this.iframe.focus()
+        // Focus iframe immediately (no delay needed - theme already applied via URL)
+        this.iframe.focus()
 
-          // Also focus the content window for better compatibility
-          if (this.iframe.contentWindow) {
-            this.iframe.contentWindow.focus()
-          }
+        // Also focus the content window for better compatibility
+        if (this.iframe.contentWindow) {
+          this.iframe.contentWindow.focus()
+        }
 
-          // Simulate a click on the iframe to ensure it gets focus
-          this.iframe.click()
+        // Simulate a click on the iframe to ensure it gets focus
+        this.iframe.click()
 
-          console.log('GameScreen: Iframe focused - keyboard events ready')
-          console.log('GameScreen: Active element:', document.activeElement)
+        console.log('GameScreen: Iframe focused - keyboard events ready')
+        console.log('GameScreen: Active element:', document.activeElement)
 
-          // Send current theme to iframe
-          this.sendThemeToGame(this.themeManager.getTheme())
-        }, 100)
+        // Note: Theme already applied via URL parameter (synchronous)
+        // No need to send postMessage here - theme is set before first render
       } catch (error) {
         console.warn('GameScreen: Could not auto-focus iframe:', error)
       }
@@ -147,25 +147,32 @@ export class GameScreen {
     this.inputManager.stopListening()
     console.log('GameScreen: InputManager disabled - iframe has full keyboard control')
 
-    // Listen for Escape key only (using native event listener)
-    this.escapeHandler = (e) => {
-      if (e.key === 'Escape') {
-        console.log('GameScreen: Escape pressed - exiting to Idle')
-        this.exitToIdle()
+    // Listen for postMessages from game-wrapper (exitGame, themeChangeFromGame)
+    this.gameMessageHandler = (event) => {
+      // Only accept messages from same origin
+      if (event.origin !== window.location.origin) {
+        return
       }
-    }
-    window.addEventListener('keydown', this.escapeHandler)
 
-    // Listen for theme keys (1-8) to allow theme changes during gameplay
-    this.themeKeyHandler = (e) => {
-      const theme = this.inputManager.getThemeFromKey(e.key)
-      if (theme) {
-        console.log(`GameScreen: Theme key pressed (${e.key}) - changing to ${theme}`)
-        this.themeManager.setTheme(theme)
-        // Note: ThemeManager automatically broadcasts to iframe and notifies observers
+      // Handle exit game (Escape key from game-wrapper)
+      if (event.data && event.data.type === 'exitGame') {
+        console.log('GameScreen: Received exitGame message from iframe')
+        this.exitToIdle()
+        return
+      }
+
+      // Handle theme change from game (keys 1-8 from game-wrapper)
+      if (event.data && event.data.type === 'themeChangeFromGame') {
+        const theme = event.data.payload?.theme
+        if (theme === 'day' || theme === 'night') {
+          console.log(`GameScreen: Received themeChangeFromGame message - changing to ${theme}`)
+          this.themeManager.setTheme(theme)
+          // Note: ThemeManager will broadcast back to iframe, but that's OK (idempotent)
+        }
+        return
       }
     }
-    window.addEventListener('keydown', this.themeKeyHandler)
+    window.addEventListener('message', this.gameMessageHandler)
 
     // Set game timeout
     this.gameTimeoutHandle = setTimeout(() => {
@@ -221,16 +228,10 @@ export class GameScreen {
     this.inputManager.startListening()
     console.log('GameScreen: InputManager re-enabled')
 
-    // Remove native Escape listener
-    if (this.escapeHandler) {
-      window.removeEventListener('keydown', this.escapeHandler)
-      this.escapeHandler = null
-    }
-
-    // Remove native theme key listener
-    if (this.themeKeyHandler) {
-      window.removeEventListener('keydown', this.themeKeyHandler)
-      this.themeKeyHandler = null
+    // Remove game message listener (postMessage from iframe)
+    if (this.gameMessageHandler) {
+      window.removeEventListener('message', this.gameMessageHandler)
+      this.gameMessageHandler = null
     }
 
     // Clear timeout

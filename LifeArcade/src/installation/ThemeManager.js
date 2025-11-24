@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog, debugError } from '../utils/Logger.js'
+
 export class ThemeManager {
   /**
    * Valid theme names
@@ -27,7 +29,7 @@ export class ThemeManager {
     // Apply initial theme
     this.applyTheme(this.currentTheme)
 
-    console.log('ThemeManager: Initialized with day theme')
+    debugLog('ThemeManager: Initialized with day theme')
   }
 
   /**
@@ -58,7 +60,7 @@ export class ThemeManager {
     // Broadcast to iframes
     this.broadcastToIframes(theme)
 
-    console.log(`ThemeManager: Theme changed to ${theme}`)
+    debugLog(`ThemeManager: Theme changed to ${theme}`)
   }
 
   /**
@@ -87,12 +89,12 @@ export class ThemeManager {
    */
   addObserver(callback) {
     if (typeof callback !== 'function') {
-      console.error('ThemeManager: Observer must be a function')
+      debugError('ThemeManager: Observer must be a function')
       return
     }
 
     this.observers.push(callback)
-    console.log(`ThemeManager: Observer added (total: ${this.observers.length})`)
+    debugLog(`ThemeManager: Observer added (total: ${this.observers.length})`)
   }
 
   /**
@@ -103,7 +105,7 @@ export class ThemeManager {
     const index = this.observers.indexOf(callback)
     if (index > -1) {
       this.observers.splice(index, 1)
-      console.log(`ThemeManager: Observer removed (total: ${this.observers.length})`)
+      debugLog(`ThemeManager: Observer removed (total: ${this.observers.length})`)
     }
   }
 
@@ -116,7 +118,7 @@ export class ThemeManager {
       try {
         callback(theme)
       } catch (error) {
-        console.error('ThemeManager: Observer callback error:', error)
+        debugError('ThemeManager: Observer callback error:', error)
       }
     })
   }
@@ -141,10 +143,10 @@ export class ThemeManager {
           )
         }
       } catch (error) {
-        console.error('ThemeManager: Failed to broadcast to iframe:', error)
+        debugError('ThemeManager: Failed to broadcast to iframe:', error)
       }
     })
 
-    console.log(`ThemeManager: Broadcasted theme '${theme}' to ${iframes.length} iframe(s)`)
+    debugLog(`ThemeManager: Broadcasted theme '${theme}' to ${iframes.length} iframe(s)`)
   }
 }

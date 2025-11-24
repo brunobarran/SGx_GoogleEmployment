@@ -33,7 +33,7 @@
     body {
       margin: 0;
       padding: 0;
-      background-color: #FFFFFF;
+      /* background-color removed - set by JavaScript applyTheme() */
       display: flex;
       justify-content: center;
       align-items: center;
@@ -117,6 +117,49 @@
   <!-- p5.js (Local - Offline) -->
   <script src="/lib/p5.min.js"></script>
   <script type="module">
+    // Import theme constants and logger
+    import { getBackgroundColor, getTextColor } from '/src/utils/ThemeConstants.js'
+    import { debugLog } from '/src/utils/Logger.js'
+
+    // ===== INITIAL THEME FROM URL =====
+    // Apply theme IMMEDIATELY to prevent white flash
+    const urlParams = new URLSearchParams(window.location.search)
+    const initialTheme = urlParams.get('theme') || 'day'
+
+    // Track current theme to prevent redundant applications
+    let currentTheme = null
+
+    // Apply theme to body and header BEFORE game loads
+    applyTheme(initialTheme, true)
+
+    /**
+     * Apply theme colors to wrapper elements
+     * @param {string} theme - 'day' or 'night'
+     * @param {boolean} updateBodyBg - Whether to update body background (true on initial load only)
+     */
+    function applyTheme(theme, updateBodyBg = false) {
+      // Guard: Skip if already applied (unless updating body)
+      if (theme === currentTheme && !updateBodyBg) {
+        return
+      }
+      currentTheme = theme
+
+      const textColor = getTextColor(theme)
+
+      // Apply to body background (only on initial load)
+      if (updateBodyBg) {
+        const bgColor = getBackgroundColor(theme)
+        document.body.style.backgroundColor = bgColor
+      }
+
+      // Apply to header elements
+      document.getElementById('game-title').style.color = textColor
+      document.querySelectorAll('.stat-label').forEach(el => el.style.color = textColor)
+      document.querySelectorAll('.stat-value').forEach(el => el.style.color = textColor)
+
+      debugLog(`game-wrapper: Theme applied: ${theme}`)
+    }
+
     // Game title mapping
     const GAME_TITLES = {
       'space-invaders': 'Gemini Invaders',
@@ -126,7 +169,6 @@
     }
 
     // Get game name from URL parameter
-    const urlParams = new URLSearchParams(window.location.search)
     const gameName = urlParams.get('game')
 
     if (!gameName) {
@@ -158,21 +200,50 @@
       if (event.data && event.data.type === 'themeChange') {
         const theme = event.data.payload?.theme
         if (theme === 'day' || theme === 'night') {
-          applyTheme(theme)
-          console.log(`game-wrapper: Theme changed to ${theme}`)
+          applyTheme(theme)  // Uses unified function (without body BG update)
         }
       }
     })
 
-    function applyTheme(theme) {
-      const isDark = theme === 'night'
-      const textColor = isDark ? '#E8EAED' : '#202124'
+    // ===== KEYBOARD INTERCEPTOR =====
+    // Intercept system keys (Escape, 1-8) BEFORE they reach the game
+    window.addEventListener('keydown', (e) => {
+      // Handle Escape key - Exit game
+      if (e.key === 'Escape') {
+        e.preventDefault()  // Prevent game from receiving
+        e.stopPropagation() // Stop propagation
+        debugLog('game-wrapper: Escape pressed - sending exitGame message')
+        window.parent.postMessage({ type: 'exitGame' }, '*')
+        return
+      }
 
-      // Update all text elements
-      document.getElementById('game-title').style.color = textColor
-      document.querySelectorAll('.stat-label').forEach(el => el.style.color = textColor)
-      document.querySelectorAll('.stat-value').forEach(el => el.style.color = textColor)
-    }
+      // Handle theme keys (1-8)
+      const themeKeys = ['1', '2', '3', '4', '5', '6', '7', '8']
+      if (themeKeys.includes(e.key)) {
+        e.preventDefault()  // Prevent game from receiving
+        e.stopPropagation() // Stop propagation
+
+        // Determine theme from key
+        const theme = ['1', '2', '3', '4'].includes(e.key) ? 'day' : 'night'
+
+        debugLog(`game-wrapper: Theme key ${e.key} pressed - changing to ${theme}`)
+
+        // 1. Apply theme locally (update header text color)
+        applyTheme(theme)
+
+        // 2. Notify parent window to sync theme
+        window.parent.postMessage({
+          type: 'themeChangeFromGame',
+          payload: { theme }
+        }, '*')
+
+        return
+      }
+
+      // Other keys → let them reach the game (do nothing)
+    }, { capture: true })  // Use capture phase to intercept BEFORE p5.js
+
+    debugLog('game-wrapper: Keyboard interceptor initialized (Escape, 1-8)')
   </script>
 </body>
 </html>
