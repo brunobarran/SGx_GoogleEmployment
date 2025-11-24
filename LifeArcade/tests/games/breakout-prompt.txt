@@ -1,0 +1,9 @@
+Create a Breakout/Arkanoid style game where bricks are replaced with Conway's Game of Life patterns.
+
+The player controls a paddle at the bottom that bounces a ball upward. The top portion contains a grid of "bricks" that are actually live cells in a GoL simulation.
+
+When the ball hits a live cell, it destroys that cell, potentially causing chain reactions as the GoL rules apply on each tick. Some patterns (oscillators, still lifes) create interesting destruction cascades.
+
+The paddle and ball physics follow traditional Breakout mechanics. Special "power-up" patterns (pulsars, penta-decathlons) drop when destroyed, granting temporary abilities.
+
+Win condition: Clear all live cells. Lose condition: Ball falls below paddle three times.

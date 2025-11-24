@@ -1,0 +1,9 @@
+Design an endless runner game inspired by Chrome's Dino Game, but with a Game of Life twist.
+
+The player character is a simple dino sprite that automatically runs forward. The player can only jump (spacebar) to avoid obstacles.
+
+Obstacles are procedurally generated using Conway's Game of Life patterns - still lifes (blocks, beehives) as ground obstacles and spaceships (gliders, LWSS) as flying obstacles.
+
+The background features parallax layers of GoL still life patterns that scroll at different speeds to create depth. Speed increases gradually over time.
+
+Game ends when the player collides with any obstacle. Score is based on distance traveled and obstacles cleared.

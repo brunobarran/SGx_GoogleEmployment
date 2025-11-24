@@ -1,0 +1,9 @@
+Implement a Flappy Bird clone where the environment is generated using Game of Life principles.
+
+The player controls a bird that falls due to gravity and flaps upward when spacebar is pressed. The bird must navigate through gaps between pipe pairs.
+
+Pipes are decorated with GoL patterns (blinkers, toads) that animate according to B3/S23 rules, creating visual interest. The gap size and pipe spacing create a challenging rhythm.
+
+Background features multiple parallax layers with GoL still life patterns (blocks, beehives, boats) scrolling at different speeds.
+
+Score increases with each pipe successfully passed. Game ends on collision with pipes or ground. Difficulty increases by narrowing gaps over time.

@@ -61,7 +61,7 @@ export class WelcomeScreen {
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #FFFFFF;
+      background: transparent;
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;

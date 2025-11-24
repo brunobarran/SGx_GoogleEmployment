@@ -101,7 +101,7 @@ export class LeaderboardScreen {
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #FFFFFF;
+      background: transparent;
       z-index: 100;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;

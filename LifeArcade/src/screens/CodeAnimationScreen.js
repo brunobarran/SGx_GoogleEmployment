@@ -12,6 +12,19 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
+// Import thinking text
+import spaceInvadersThinking from '../../tests/games/space-invaders-thinking.txt?raw'
+import dinoRunnerThinking from '../../tests/games/dino-runner-thinking.txt?raw'
+import breakoutThinking from '../../tests/games/breakout-thinking.txt?raw'
+import flappyBirdThinking from '../../tests/games/flappy-bird-thinking.txt?raw'
+
+const THINKING_TEXTS = {
+  'space-invaders': spaceInvadersThinking,
+  'dino-runner': dinoRunnerThinking,
+  'breakout': breakoutThinking,
+  'flappy-bird': flappyBirdThinking
+}
+
 export class CodeAnimationScreen {
   constructor(appState, inputManager) {
     this.appState = appState
@@ -46,13 +59,8 @@ export class CodeAnimationScreen {
     }
 
     // Mock text with colored keywords (from Figma)
-    this.targetText = `My primary goal was to deconstruct the user's hybrid concept into a precise and unambiguous technical specification for a coding AI.
-
-I began by isolating the <span class="highlight red">core mechanics</span> of "Space Invaders"—the bottom-screen player ship, upward single-shot, destructible bunkers, and the regimented alien grid with its movement and shooting.
-
-I then defined the <span class="highlight green">"Cellular Automata"</span> component, explicitly choosing Conway's <span class="highlight blue">Game of Life</span> (GofL) with its B3/S23 rules to provide concrete logic, noting the necessity of a <span class="highlight yellow">discrete grid</span> and a "tick" rate.
-
-The critical phase was the "translation" mapping: I decided the "aliens" would not be individuals, but a single...`
+    // Get thinking text for the selected game
+    this.targetText = THINKING_TEXTS[game.id] || THINKING_TEXTS['space-invaders']
 
     // Create screen element
     this.element = document.createElement('div')

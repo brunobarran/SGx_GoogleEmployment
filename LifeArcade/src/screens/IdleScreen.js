@@ -61,7 +61,7 @@ export class IdleScreen {
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #FFFFFF;
+      background: transparent;
       display: flex;
       flex-direction: column;
       justify-content: center;

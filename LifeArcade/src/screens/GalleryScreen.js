@@ -10,6 +10,12 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 
+// Import prompts
+import spaceInvadersPrompt from '../../tests/games/space-invaders-prompt.txt?raw'
+import dinoRunnerPrompt from '../../tests/games/dino-runner-prompt.txt?raw'
+import breakoutPrompt from '../../tests/games/breakout-prompt.txt?raw'
+import flappyBirdPrompt from '../../tests/games/flappy-bird-prompt.txt?raw'
+
 export class GalleryScreen {
   /**
    * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
@@ -21,60 +27,28 @@ export class GalleryScreen {
     {
       id: 'space-invaders',
       name: 'Gemini Invaders',
-      prompt: `Create a 2D arcade game that merges classic Space Invaders with Conway's Game of Life.
-
-The player controls a ship at the bottom of the screen, moving left and right and firing a single projectile upwards to destroy "alien" cells.
-
-The top 70% of the screen is a grid where the Game of Life simulation runs, acting as the enemy organism.
-
-This simulation follows standard GoL rules (B3/S23) but updates at a slow, fixed "tick" rate (e.g., every 2 seconds). Aliens are represented by "live" cells in the grid.
-
-When a bullet hits a live cell, it destroys that cell and potentially creates chain reactions based on GoL rules. The player wins by clearing all aliens (live cells) or loses if aliens reach the bottom.`,
+      prompt: spaceInvadersPrompt,
       path: 'games/game-wrapper.html?game=space-invaders',
       key: '1'
     },
     {
       id: 'dino-runner',
       name: 'GoL Runner',
-      prompt: `Design an endless runner game inspired by Chrome's Dino Game, but with a Game of Life twist.
-
-The player character is a simple dino sprite that automatically runs forward. The player can only jump (spacebar) to avoid obstacles.
-
-Obstacles are procedurally generated using Conway's Game of Life patterns - still lifes (blocks, beehives) as ground obstacles and spaceships (gliders, LWSS) as flying obstacles.
-
-The background features parallax layers of GoL still life patterns that scroll at different speeds to create depth. Speed increases gradually over time.
-
-Game ends when the player collides with any obstacle. Score is based on distance traveled and obstacles cleared.`,
+      prompt: dinoRunnerPrompt,
       path: 'games/game-wrapper.html?game=dino-runner',
       key: '2'
     },
     {
       id: 'breakout',
       name: 'Cell Breaker',
-      prompt: `Create a Breakout/Arkanoid style game where bricks are replaced with Conway's Game of Life patterns.
-
-The player controls a paddle at the bottom that bounces a ball upward. The top portion contains a grid of "bricks" that are actually live cells in a GoL simulation.
-
-When the ball hits a live cell, it destroys that cell, potentially causing chain reactions as the GoL rules apply on each tick. Some patterns (oscillators, still lifes) create interesting destruction cascades.
-
-The paddle and ball physics follow traditional Breakout mechanics. Special "power-up" patterns (pulsars, penta-decathlons) drop when destroyed, granting temporary abilities.
-
-Win condition: Clear all live cells. Lose condition: Ball falls below paddle three times.`,
+      prompt: breakoutPrompt,
       path: 'games/game-wrapper.html?game=breakout',
       key: '3'
     },
     {
       id: 'flappy-bird',
       name: 'Flappy Life',
-      prompt: `Implement a Flappy Bird clone where the environment is generated using Game of Life principles.
-
-The player controls a bird that falls due to gravity and flaps upward when spacebar is pressed. The bird must navigate through gaps between pipe pairs.
-
-Pipes are decorated with GoL patterns (blinkers, toads) that animate according to B3/S23 rules, creating visual interest. The gap size and pipe spacing create a challenging rhythm.
-
-Background features multiple parallax layers with GoL still life patterns (blocks, beehives, boats) scrolling at different speeds.
-
-Score increases with each pipe successfully passed. Game ends on collision with pipes or ground. Difficulty increases by narrowing gaps over time.`,
+      prompt: flappyBirdPrompt,
       path: 'games/game-wrapper.html?game=flappy-bird',
       key: '4'
     }
@@ -118,7 +92,7 @@ Score increases with each pipe successfully passed. Game ends on collision with 
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #FFFFFF;
+      background: transparent;
       z-index: 100;
       overflow: hidden;
       container-type: size; /* Enable Container Queries */

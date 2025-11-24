@@ -122,7 +122,7 @@ export class IdleLeaderboardShowcaseScreen {
       max-width: 100vw;
       max-height: 100vh;
       aspect-ratio: 10 / 16;
-      background: #FFFFFF;
+      background: transparent;
       z-index: 200;
       animation: fadeIn 0.5s ease-in;
       overflow: hidden;
