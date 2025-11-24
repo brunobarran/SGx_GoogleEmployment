@@ -155,6 +155,8 @@ export class LeaderboardScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(60px, 8cqw, 100px);
+      text-align: center;
     `
 
     const headerScore = document.createElement('div')
@@ -178,6 +180,7 @@ export class LeaderboardScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(100px, 12cqw, 150px);
     `
 
     headers.appendChild(headerRank)
@@ -343,11 +346,13 @@ export class LeaderboardScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(60px, 8cqw, 100px);
+      text-align: center;
     `
 
     // Score column
     const scoreCol = document.createElement('div')
-    scoreCol.textContent = entry.score.toLocaleString()
+    scoreCol.textContent = entry.score.toString()
     scoreCol.style.cssText = `
       color: ${isPlayerRow ? '#202124' : '#CACACA'};
       font-size: clamp(32px, 3.65cqh, 70px);
@@ -368,6 +373,7 @@ export class LeaderboardScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(100px, 12cqw, 150px);
     `
 
     row.appendChild(rankCol)

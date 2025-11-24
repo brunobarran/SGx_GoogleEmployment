@@ -111,7 +111,7 @@ export class IdleScreen {
 
     // Create prompt element
     this.promptElement = document.createElement('div')
-    this.promptElement.textContent = 'Press any key to start'
+    this.promptElement.textContent = 'Press any button to start'
     this.promptElement.style.cssText = `
       width: 100%;
       text-align: center;
@@ -160,6 +160,14 @@ export class IdleScreen {
    */
   showShowcase() {
     if (!this.showcaseScreen) {
+      // Hide text elements (keep video background visible)
+      if (this.titleElement) {
+        this.titleElement.style.visibility = 'hidden'
+      }
+      if (this.promptElement) {
+        this.promptElement.style.visibility = 'hidden'
+      }
+
       this.showcaseScreen = new IdleLeaderboardShowcaseScreen(
         this.appState,
         this.inputManager,
@@ -174,6 +182,14 @@ export class IdleScreen {
    * Handle showcase closed - restart timer
    */
   onShowcaseClosed() {
+    // Show text elements again
+    if (this.titleElement) {
+      this.titleElement.style.visibility = 'visible'
+    }
+    if (this.promptElement) {
+      this.promptElement.style.visibility = 'visible'
+    }
+
     this.showcaseScreen = null
     // Restart 2-minute timer
     this.startShowcaseTimer()

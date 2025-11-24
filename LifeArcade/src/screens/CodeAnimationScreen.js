@@ -219,7 +219,7 @@ export class CodeAnimationScreen {
     this.currentChar = 0
     this.currentText = ''
 
-    // Update every 30ms (~33 chars/sec, slower terminal effect)
+    // Update every 20ms (~50 chars/sec, faster terminal effect)
     this.intervalHandle = setInterval(() => {
       if (this.currentChar < this.targetText.length) {
         const char = this.targetText[this.currentChar]
@@ -273,7 +273,7 @@ export class CodeAnimationScreen {
           }, 500)
         }, 1000)
       }
-    }, 30)
+    }, 15)
   }
 
   /**

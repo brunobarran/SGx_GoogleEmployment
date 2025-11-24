@@ -298,7 +298,7 @@ export class ScoreEntryScreen {
             <span class="score-entry-header-text">Here's your final </span><span class="score-entry-header-highlight">score:</span>
           </div>
           <div class="score-entry-card">
-            <div class="score-entry-number">${score.toLocaleString()}</div>
+            <div class="score-entry-number">${score.toString()}</div>
             <div class="score-entry-game-name">${gameName}</div>
           </div>
           <div style="visibility: hidden; height: clamp(16px, 2.12cqh, 41px);"></div>

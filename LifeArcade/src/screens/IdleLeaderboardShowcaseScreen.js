@@ -194,6 +194,7 @@ export class IdleLeaderboardShowcaseScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(60px, 8cqw, 100px);
     `
 
     const headerScore = document.createElement('div')
@@ -217,6 +218,7 @@ export class IdleLeaderboardShowcaseScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(100px, 12cqw, 150px);
     `
 
     headers.appendChild(headerRank)
@@ -282,11 +284,13 @@ export class IdleLeaderboardShowcaseScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(60px, 8cqw, 100px);
+      text-align: center;
     `
 
     // Score
     const scoreCol = document.createElement('div')
-    scoreCol.textContent = entry.score.toLocaleString()
+    scoreCol.textContent = entry.score.toString()
     scoreCol.style.cssText = `
       color: ${isTopPlayer ? '#202124' : '#CACACA'};
       font-size: clamp(32px, 3.65cqh, 70px);
@@ -307,6 +311,7 @@ export class IdleLeaderboardShowcaseScreen {
       font-weight: 500;
       line-height: 1;
       flex: 0 0 auto;
+      min-width: clamp(100px, 12cqw, 150px);
     `
 
     row.appendChild(rankCol)
