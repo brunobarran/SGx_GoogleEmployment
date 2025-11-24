@@ -396,29 +396,19 @@ export class GalleryScreen {
     this.appState.clearTimeout('gallery-inactivity')
     this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
 
-    // Arrow navigation
-    if (key === 'ArrowLeft') {
+    // Arrow navigation (LEFT: ArrowLeft or A)
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       this.navigate('left')
-    } else if (key === 'ArrowRight') {
+    }
+    // Arrow navigation (RIGHT: ArrowRight or D)
+    else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       this.navigate('right')
     }
-    // Number keys for quick select
-    else if (key >= '1' && key <= '4') {
-      const index = parseInt(key) - 1
-      if (index < GAMES.length) {
-        this.currentIndex = index
-        this.updateCarousel()
-      }
-    }
-    // Space confirms selection
-    else if (key === ' ') {
+    // Space or N confirms selection
+    else if (key === ' ' || key === 'n' || key === 'N') {
       this.confirmSelection()
     }
-    // Escape returns to Idle
-    else if (key === 'Escape') {
-      console.log('GalleryScreen: Escape pressed - returning to Idle')
-      this.appState.reset()
-    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 
   /**

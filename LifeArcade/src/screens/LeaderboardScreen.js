@@ -474,25 +474,21 @@ export class LeaderboardScreen {
   handleKeyPress(key) {
     console.log('LeaderboardScreen: Key pressed:', key, 'Current selection:', this.selectedOption)
 
-    // Arrow keys navigate footer options
-    if (key === 'ArrowLeft') {
-      console.log('LeaderboardScreen: ArrowLeft - selecting Create game')
+    // Arrow keys or A/D navigate footer options
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+      console.log('LeaderboardScreen: Left - selecting Create game')
       this.selectedOption = 0  // Create game
       this.updateFooterSelection()
-    } else if (key === 'ArrowRight') {
-      console.log('LeaderboardScreen: ArrowRight - selecting Play again')
+    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+      console.log('LeaderboardScreen: Right - selecting Play again')
       this.selectedOption = 1  // Play again
       this.updateFooterSelection()
     }
-    // Space confirms selected option
-    else if (key === ' ') {
-      console.log('LeaderboardScreen: Space pressed - confirming selection', this.selectedOption)
+    // Space or N confirms selected option
+    else if (key === ' ' || key === 'n' || key === 'N') {
+      console.log('LeaderboardScreen: Key pressed - confirming selection', this.selectedOption)
       this.confirmSelection()
     }
-    // Escape returns to Idle
-    else if (key === 'Escape') {
-      console.log('LeaderboardScreen: Escape pressed - returning to Idle')
-      this.appState.reset()
-    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 }

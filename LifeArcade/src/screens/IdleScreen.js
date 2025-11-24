@@ -244,8 +244,11 @@ export class IdleScreen {
     // Clear and restart showcase timer on user interaction
     this.startShowcaseTimer()
 
-    // Any key advances to Welcome screen
-    console.log(`IdleScreen: Key "${key}" pressed - advancing to Welcome`)
-    this.appState.transition('welcome')
+    // SPACE or N advances to Welcome screen
+    if (key === ' ' || key === 'n' || key === 'N') {
+      console.log(`IdleScreen: Key "${key}" pressed - advancing to Welcome`)
+      this.appState.transition('welcome')
+    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M+N handled by ResetManager)
   }
 }

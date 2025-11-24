@@ -191,8 +191,11 @@ export class WelcomeScreen {
     this.appState.clearTimeout('welcome-inactivity')
     this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
 
-    // Any key advances to Gallery screen
-    console.log('WelcomeScreen: Key pressed - advancing to Gallery')
-    this.appState.transition('gallery')
+    // SPACE or N advances to Gallery screen
+    if (key === ' ' || key === 'n' || key === 'N') {
+      console.log('WelcomeScreen: Key pressed - advancing to Gallery')
+      this.appState.transition('gallery')
+    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 }

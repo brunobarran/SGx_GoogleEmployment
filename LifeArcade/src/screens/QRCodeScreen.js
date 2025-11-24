@@ -289,10 +289,11 @@ export class QRCodeScreen {
     this.appState.clearTimeout('qr-inactivity')
     this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
 
-    // Space or Escape returns to Idle (restart loop)
-    if (key === ' ' || key === 'Escape') {
+    // Space or N returns to Idle (restart loop)
+    if (key === ' ' || key === 'n' || key === 'N') {
       console.log('QRCodeScreen: Key pressed - returning to Idle')
       this.appState.reset()
     }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 }

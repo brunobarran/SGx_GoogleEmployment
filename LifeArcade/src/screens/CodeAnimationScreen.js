@@ -277,16 +277,12 @@ export class CodeAnimationScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Space skips animation
-    if (key === ' ') {
-      console.log('CodeAnimationScreen: Space pressed - skipping animation')
+    // Space or N skips animation
+    if (key === ' ' || key === 'n' || key === 'N') {
+      console.log('CodeAnimationScreen: Key pressed - skipping animation')
       this.advanceToGame()
     }
-    // Escape returns to Idle
-    else if (key === 'Escape') {
-      console.log('CodeAnimationScreen: Escape pressed - returning to Idle')
-      this.appState.reset()
-    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 
   /**

@@ -382,8 +382,8 @@ export class ScoreEntryScreen {
       this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
     }
 
-    // Space - Advance screen or confirm name
-    if (key === ' ') {
+    // Space or N - Advance screen or confirm name
+    if (key === ' ' || key === 'n' || key === 'N') {
       if (this.currentScreen < 3) {
         // Skip auto-advance and go to next screen immediately
         if (this.autoAdvanceTimeout) {
@@ -398,28 +398,24 @@ export class ScoreEntryScreen {
     }
     // Only allow letter controls on screen 3
     else if (this.currentScreen === 3) {
-      // Arrow Up - Increment letter
+      // Arrow Up or W - Increment letter
       if (key === 'ArrowUp' || key === 'w' || key === 'W') {
         this.changeLetter(1)
       }
-      // Arrow Down - Decrement letter
+      // Arrow Down or S - Decrement letter
       else if (key === 'ArrowDown' || key === 's' || key === 'S') {
         this.changeLetter(-1)
       }
-      // Arrow Right - Move to next letter
-      else if (key === 'ArrowRight') {
+      // Arrow Right or D - Move to next letter
+      else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
         this.nextLetter()
       }
-      // Arrow Left - Move to previous letter
-      else if (key === 'ArrowLeft') {
+      // Arrow Left or A - Move to previous letter
+      else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
         this.previousLetter()
       }
     }
-    // Escape - Return to Idle (works on all screens)
-    if (key === 'Escape') {
-      console.log('ScoreEntryScreen: Escape pressed - returning to Idle')
-      this.appState.reset()
-    }
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 
   /**

@@ -282,13 +282,15 @@ export class GameScreen {
   /**
    * Handle key press
    * @param {string} key - Pressed key
+   *
+   * NOTE: This handler should NEVER be called during gameplay because
+   * InputManager is disabled (stopListening) when GameScreen is active.
+   * All game controls (WASD, arrows, space) go directly to the iframe.
+   * Escape and theme keys (1-8) are handled by game-wrapper.html via postMessage.
    */
   handleKeyPress(key) {
-    // Escape exits to Idle (no score)
-    if (key === 'Escape') {
-      console.log('GameScreen: Escape pressed - exiting to Idle')
-      this.exitToIdle()
-    }
+    // No keys handled here - all input managed by iframe or game-wrapper
+    console.warn('GameScreen.handleKeyPress should not be called (InputManager disabled)')
   }
 
   /**
