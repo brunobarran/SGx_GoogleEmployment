@@ -13,6 +13,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { validateGame } from '../installation/GameRegistry.js'
 
 export class ScoreEntryScreen {
   /**
@@ -52,8 +53,8 @@ export class ScoreEntryScreen {
     const score = state.currentScore
     const game = state.selectedGame
 
-    if (score === null || !game) {
-      console.error('No score or game available')
+    if (score === null || !validateGame(game)) {
+      console.error('ScoreEntryScreen: Invalid score or game')
       this.appState.reset()
       return
     }

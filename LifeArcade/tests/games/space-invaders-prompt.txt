@@ -1,9 +1,0 @@
-Create a 2D arcade game that merges classic Space Invaders with Conway's Game of Life.
-
-The player controls a ship at the bottom of the screen, moving left and right and firing a single projectile upwards to destroy "alien" cells.
-
-The top 70% of the screen is a grid where the Game of Life simulation runs, acting as the enemy organism.
-
-This simulation follows standard GoL rules (B3/S23) but updates at a slow, fixed "tick" rate (e.g., every 2 seconds). Aliens are represented by "live" cells in the grid.
-
-When a bullet hits a live cell, it destroys that cell and potentially creates chain reactions based on GoL rules. The player wins by clearing all aliens (live cells) or loses if aliens reach the bottom.

@@ -10,6 +10,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { validateGame } from '../installation/GameRegistry.js'
 
 export class LeaderboardScreen {
   /**
@@ -45,8 +46,8 @@ export class LeaderboardScreen {
     const playerScore = state.currentScore
     const playerTimestamp = state.scoreTimestamp
 
-    if (!game) {
-      console.error('No game selected')
+    if (!validateGame(game)) {
+      console.error('LeaderboardScreen: Invalid or missing game')
       this.appState.reset()
       return
     }

@@ -11,19 +11,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
-
-// Import thinking text
-import spaceInvadersThinking from '../../tests/games/space-invaders-thinking.txt?raw'
-import dinoRunnerThinking from '../../tests/games/dino-runner-thinking.txt?raw'
-import breakoutThinking from '../../tests/games/breakout-thinking.txt?raw'
-import flappyBirdThinking from '../../tests/games/flappy-bird-thinking.txt?raw'
-
-const THINKING_TEXTS = {
-  'space-invaders': spaceInvadersThinking,
-  'dino-runner': dinoRunnerThinking,
-  'breakout': breakoutThinking,
-  'flappy-bird': flappyBirdThinking
-}
+import { getGameById } from '../installation/GameRegistry.js'
 
 export class CodeAnimationScreen {
   constructor(appState, inputManager) {
@@ -58,9 +46,16 @@ export class CodeAnimationScreen {
       return
     }
 
-    // Mock text with colored keywords (from Figma)
-    // Get thinking text for the selected game
-    this.targetText = THINKING_TEXTS[game.id] || THINKING_TEXTS['space-invaders']
+    // Get thinking text from GameRegistry
+    const gameData = getGameById(game.id)
+
+    if (!gameData || !gameData.thinking) {
+      console.error(`No thinking text found for game: ${game.id}`)
+      this.appState.reset()
+      return
+    }
+
+    this.targetText = gameData.thinking
 
     // Create screen element
     this.element = document.createElement('div')

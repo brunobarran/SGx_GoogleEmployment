@@ -9,50 +9,13 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
-
-// Import prompts
-import spaceInvadersPrompt from '../../tests/games/space-invaders-prompt.txt?raw'
-import dinoRunnerPrompt from '../../tests/games/dino-runner-prompt.txt?raw'
-import breakoutPrompt from '../../tests/games/breakout-prompt.txt?raw'
-import flappyBirdPrompt from '../../tests/games/flappy-bird-prompt.txt?raw'
+import { GAMES } from '../installation/GameRegistry.js'
 
 export class GalleryScreen {
   /**
    * Inactivity timeout (30 seconds) - returns to Idle if no key pressed
    */
   static INACTIVITY_TIMEOUT = 30000
-
-  // Games with their AI creation prompts
-  static GAMES = [
-    {
-      id: 'space-invaders',
-      name: 'CELLFRONT COMMAND',
-      prompt: spaceInvadersPrompt,
-      path: 'games/game-wrapper.html?game=space-invaders',
-      key: '1'
-    },
-    {
-      id: 'dino-runner',
-      name: 'AUTOMATA RUSH',
-      prompt: dinoRunnerPrompt,
-      path: 'games/game-wrapper.html?game=dino-runner',
-      key: '2'
-    },
-    {
-      id: 'breakout',
-      name: 'CELLULAR SHATTER',
-      prompt: breakoutPrompt,
-      path: 'games/game-wrapper.html?game=breakout',
-      key: '3'
-    },
-    {
-      id: 'flappy-bird',
-      name: 'HOPPY GLIDER',
-      prompt: flappyBirdPrompt,
-      path: 'games/game-wrapper.html?game=flappy-bird',
-      key: '4'
-    }
-  ]
 
   constructor(appState, inputManager) {
     this.appState = appState
@@ -130,7 +93,7 @@ export class GalleryScreen {
     `
 
     // Create cards
-    GalleryScreen.GAMES.forEach((game, index) => {
+    GAMES.forEach((game, index) => {
       const card = this.createCard(game, index)
       this.cardsContainer.appendChild(card)
     })
@@ -391,7 +354,7 @@ export class GalleryScreen {
     if (direction === 'left') {
       this.currentIndex = Math.max(0, this.currentIndex - 1)
     } else if (direction === 'right') {
-      this.currentIndex = Math.min(GalleryScreen.GAMES.length - 1, this.currentIndex + 1)
+      this.currentIndex = Math.min(GAMES.length - 1, this.currentIndex + 1)
     }
 
     this.updateCarousel()
@@ -442,7 +405,7 @@ export class GalleryScreen {
     // Number keys for quick select
     else if (key >= '1' && key <= '4') {
       const index = parseInt(key) - 1
-      if (index < GalleryScreen.GAMES.length) {
+      if (index < GAMES.length) {
         this.currentIndex = index
         this.updateCarousel()
       }
@@ -462,7 +425,7 @@ export class GalleryScreen {
    * Confirm selection and advance to Code Animation
    */
   confirmSelection() {
-    const selectedGame = GalleryScreen.GAMES[this.currentIndex]
+    const selectedGame = GAMES[this.currentIndex]
     console.log(`GalleryScreen: Confirmed selection - ${selectedGame.name}`)
 
     // Store selected game in AppState

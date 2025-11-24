@@ -10,6 +10,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { validateGame } from '../installation/GameRegistry.js'
 
 export class GameScreen {
   /**
@@ -50,8 +51,8 @@ export class GameScreen {
 
     // Get selected game
     const game = this.appState.getState().selectedGame
-    if (!game) {
-      console.error('No game selected')
+    if (!validateGame(game)) {
+      console.error('GameScreen: Invalid or missing game')
       this.appState.reset()
       return
     }

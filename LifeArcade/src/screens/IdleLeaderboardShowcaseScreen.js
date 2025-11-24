@@ -12,22 +12,13 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { GAMES } from '../installation/GameRegistry.js'
 
 export class IdleLeaderboardShowcaseScreen {
   /**
    * Auto-close timeout (20 seconds)
    */
   static AUTO_CLOSE_TIMEOUT = 20000
-
-  /**
-   * Available games (must match GalleryScreen.GAMES)
-   */
-  static AVAILABLE_GAMES = [
-    { id: 'space-invaders', name: 'Gemini Invaders' },
-    { id: 'dino-runner', name: 'GoL Runner' },
-    { id: 'breakout', name: 'Cell Breaker' },
-    { id: 'flappy-bird', name: 'Flappy Life' }
-  ]
 
   constructor(appState, inputManager, storageManager, onCloseCallback) {
     this.appState = appState
@@ -55,7 +46,7 @@ export class IdleLeaderboardShowcaseScreen {
    */
   selectRandomGame() {
     // Filter to games with scores
-    const gamesWithScores = IdleLeaderboardShowcaseScreen.AVAILABLE_GAMES.filter(game => {
+    const gamesWithScores = GAMES.filter(game => {
       const scores = this.storageManager.getScores(game.id)
       return scores.length > 0
     })

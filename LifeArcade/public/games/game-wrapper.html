@@ -117,9 +117,10 @@
   <!-- p5.js (Local - Offline) -->
   <script src="/lib/p5.min.js"></script>
   <script type="module">
-    // Import theme constants and logger
+    // Import theme constants, logger, and game registry
     import { getBackgroundColor, getTextColor } from '/src/utils/ThemeConstants.js'
     import { debugLog } from '/src/utils/Logger.js'
+    import { getGameById } from '/src/installation/GameRegistry.js'
 
     // ===== INITIAL THEME FROM URL =====
     // Apply theme IMMEDIATELY to prevent white flash
@@ -160,14 +161,6 @@
       debugLog(`game-wrapper: Theme applied: ${theme}`)
     }
 
-    // Game title mapping
-    const GAME_TITLES = {
-      'space-invaders': 'Gemini Invaders',
-      'dino-runner': 'Dino Runner',
-      'breakout': 'Breakout',
-      'flappy-bird': 'Flappy Bird'
-    }
-
     // Get game name from URL parameter
     const gameName = urlParams.get('game')
 
@@ -175,23 +168,30 @@
       console.error('No game specified in URL parameter')
       document.body.innerHTML = '<h1 style="color: #EA4335;">Error: No game specified</h1>'
     } else {
-      // Set game title
-      const gameTitle = GAME_TITLES[gameName] || gameName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-      document.getElementById('game-title').textContent = gameTitle
+      // Get game data from GameRegistry (single source of truth)
+      const gameData = getGameById(gameName)
 
-      // Note: Score is updated directly by the game script via DOM manipulation
-
-      // Dynamically load the game script
-      const script = document.createElement('script')
-      script.type = 'module'
-      script.src = `/games/${gameName}.js`
-      script.onerror = () => {
-        console.error(`Failed to load game: ${gameName}`)
+      if (!gameData) {
+        console.error(`Game not found in registry: ${gameName}`)
         document.body.innerHTML = `<h1 style="color: #EA4335;">Error: Game "${gameName}" not found</h1>`
-      }
-      document.body.appendChild(script)
+      } else {
+        // Set game title from GameRegistry
+        document.getElementById('game-title').textContent = gameData.name
 
-      console.log(`Loading game: ${gameName}`)
+        // Note: Score is updated directly by the game script via DOM manipulation
+
+        // Dynamically load the game script
+        const script = document.createElement('script')
+        script.type = 'module'
+        script.src = `/games/${gameName}.js`
+        script.onerror = () => {
+          console.error(`Failed to load game: ${gameName}`)
+          document.body.innerHTML = `<h1 style="color: #EA4335;">Error: Game "${gameName}" not found</h1>`
+        }
+        document.body.appendChild(script)
+
+        console.log(`Loading game: ${gameName} (${gameData.name})`)
+      }
     }
 
     // ===== THEME SYSTEM =====

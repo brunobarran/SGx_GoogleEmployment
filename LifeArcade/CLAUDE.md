@@ -264,6 +264,7 @@ LifeArcade/
 │   │   └── README_HitboxDebug.md # Hitbox debug documentation
 │   ├── installation/     # Installation system managers
 │   │   ├── AppState.js         # State machine (8 screens)
+│   │   ├── GameRegistry.js     # Central game catalog (single source of truth)
 │   │   ├── StorageManager.js   # localStorage leaderboards
 │   │   ├── InputManager.js     # Keyboard + arcade controls
 │   │   ├── ThemeManager.js     # Theme state management
@@ -312,6 +313,106 @@ LifeArcade/
 - Games send `postMessage` on Game Over
 - IframeComm handles game ↔ installation communication
 - StorageManager persists leaderboards in localStorage
+
+### Game Registry (Central Game Catalog)
+
+**File:** `src/installation/GameRegistry.js`
+**Tests:** `tests/installation/test_GameRegistry.js` (26/26 passing ✅)
+
+**Purpose:** Single Source of Truth for all available games in the installation.
+
+**Structure:**
+```javascript
+export const GAMES = [
+  {
+    id: 'space-invaders',        // Unique identifier (matches game file)
+    name: 'Cellfront Command',   // Official display name (used everywhere)
+    prompt: '...',               // AI creation prompt (Gallery carousel)
+    thinking: '...',             // Thinking process text (Code animation)
+    path: 'games/game-wrapper.html?game=space-invaders',  // iframe path
+    key: '1'                     // Keyboard shortcut
+  },
+  // ... 3 more games
+]
+```
+
+**Game Assets Location:**
+```
+public/games/
+├── space-invaders.js
+├── space-invaders-prompt.txt       # Gallery screen content
+├── space-invaders-thinking.txt     # Code animation content
+├── dino-runner.js
+├── dino-runner-prompt.txt
+├── dino-runner-thinking.txt
+├── breakout.js
+├── breakout-prompt.txt
+├── breakout-thinking.txt
+├── flappy-bird.js
+├── flappy-bird-prompt.txt
+├── flappy-bird-thinking.txt
+└── game-wrapper.html               # Universal iframe wrapper (title mapping)
+```
+
+**Utility Functions:**
+
+1. **`getGameById(id)`** - Retrieve game object by ID
+   ```javascript
+   const game = getGameById('space-invaders')
+   console.log(game.name)     // 'Cellfront Command'
+   console.log(game.thinking) // Full thinking text
+   ```
+
+2. **`validateGame(game)`** - Validate game object structure
+   ```javascript
+   if (!validateGame(game)) {
+     console.error('Invalid game')
+     appState.reset()
+     return
+   }
+   ```
+
+**Usage Examples:**
+
+```javascript
+// Import in screens
+import { GAMES, getGameById, validateGame } from '../installation/GameRegistry.js'
+
+// GalleryScreen - Display all games
+GAMES.forEach((game, index) => {
+  createCard(game, index)
+})
+
+// CodeAnimationScreen - Get thinking text
+const gameData = getGameById(selectedGame.id)
+this.targetText = gameData.thinking
+
+// GameScreen, LeaderboardScreen, ScoreEntryScreen - Validate
+const game = this.appState.getState().selectedGame
+if (!validateGame(game)) {
+  this.appState.reset()
+  return
+}
+```
+
+**Related Screens:**
+- **GalleryScreen** - Uses `GAMES` array and `prompt` field
+- **CodeAnimationScreen** - Uses `thinking` field via `getGameById()`
+- **IdleLeaderboardShowcaseScreen** - Uses `GAMES` for random selection
+- **GameScreen, LeaderboardScreen, ScoreEntryScreen** - Use `validateGame()` for safety
+- **game-wrapper.html** - `GAME_TITLES` mapping must match `name` field
+
+**Benefits:**
+- ✅ Single location to add/modify games
+- ✅ Consistent naming across all screens
+- ✅ Centralized validation
+- ✅ Type-safe structure (JSDoc typedefs)
+
+**To Add a 5th Game:**
+1. Add game files: `public/games/new-game.js`, `new-game-prompt.txt`, `new-game-thinking.txt`
+2. Add entry to `GAMES` array in `GameRegistry.js`
+3. Update `GAME_TITLES` in `game-wrapper.html`
+4. Done! (all screens update automatically)
 
 ### Portrait Display Specifications
 
