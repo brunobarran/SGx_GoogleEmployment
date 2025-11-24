@@ -13,7 +13,7 @@
 // IMPORTS - Standard imports for all games
 // ============================================
 import { GoLEngine } from '/src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js'
+import { VideoGradientRenderer } from '/src/rendering/VideoGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
@@ -266,7 +266,7 @@ function setup() {
 
   createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
-  maskedRenderer = new SimpleGradientRenderer(this)
+  maskedRenderer = new VideoGradientRenderer(this)
   initHitboxDebug()  // Initialize hitbox debugging (press H to toggle)
   initGame()
 }

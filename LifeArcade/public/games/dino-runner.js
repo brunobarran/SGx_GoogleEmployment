@@ -10,7 +10,7 @@
  */
 
 import { GoLEngine } from '/src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js'
+import { VideoGradientRenderer } from '/src/rendering/VideoGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
 import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
@@ -241,7 +241,7 @@ function setup() {
   frameRate(60)
 
   // Create gradient renderer
-  maskedRenderer = new SimpleGradientRenderer(this)
+  maskedRenderer = new VideoGradientRenderer(this)
 
   // Initialize hitbox debugging (press H to toggle)
   initHitboxDebug()

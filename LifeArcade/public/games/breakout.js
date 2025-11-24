@@ -11,7 +11,7 @@
  */
 
 import { GoLEngine } from '/src/core/GoLEngine.js'
-import { SimpleGradientRenderer } from '/src/rendering/SimpleGradientRenderer.js'
+import { VideoGradientRenderer } from '/src/rendering/VideoGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
@@ -114,7 +114,7 @@ function setup() {
   frameRate(60)
 
   // Create gradient renderer
-  maskedRenderer = new SimpleGradientRenderer(this)
+  maskedRenderer = new VideoGradientRenderer(this)
 
   initGame()
 }
