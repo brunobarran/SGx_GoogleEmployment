@@ -215,17 +215,61 @@ window.DEBUG = true  // Force enable logs
 window.DEBUG = false // Force disable logs
 ```
 
+#### Video Background Responsive
+
+**Implemented:** 2025-11-24
+
+Videos de fondo aplican las mismas dimensiones responsive que las pantallas:
+
+**Características:**
+- **Container dimensions**: `getResponsiveDimensions()` from `ScreenHelper.js`
+- **Aspect ratio**: 10:16 (idéntico a screens, portrait 1200×1920)
+- **Object fit**: `contain` (respeta proporción, no estira como `cover`)
+- **Centrado**: `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%)`
+- **Responsive**: Se adapta automáticamente al viewport (landscape y portrait)
+
+**Implementación:**
+```javascript
+// installation.html - Función updateVideoContainerSize()
+function updateVideoContainerSize() {
+  const { containerWidth, containerHeight } = getResponsiveDimensions()
+  const videoContainer = document.getElementById('video-container')
+
+  videoContainer.style.width = `${containerWidth}px`
+  videoContainer.style.height = `${containerHeight}px`
+  videoContainer.style.maxWidth = '100vw'
+  videoContainer.style.maxHeight = '100vh'
+  videoContainer.style.aspectRatio = '10 / 16'
+}
+```
+
+**Resize handling:**
+- Event listener `window.resize` llama `updateVideoContainerSize()`
+- Videos se redimensionan automáticamente en tiempo real
+- Inicialización al cargar la página
+
+**Cambios vs versión anterior:**
+- ❌ **Antes**: `width: 100%; height: 100%; object-fit: cover` (estiraba al viewport completo)
+- ✅ **Ahora**: Container responsive + `object-fit: contain` (respeta aspect ratio y dimensiones de pantallas)
+
+**Beneficios:**
+- ✅ Consistencia visual con sistema de pantallas
+- ✅ Respeta principio KISS (usa misma lógica que screens)
+- ✅ Sin duplicación de código (reutiliza `ScreenHelper.js`)
+- ✅ Compatible con temas (day/night video switching)
+
 #### Files
 
 **Core:**
 - `src/installation/ThemeManager.js` - Theme state, observer pattern, broadcasting
+- `src/installation/ScreenHelper.js` - Responsive dimensions (shared by screens AND videos)
 - `src/utils/ThemeConstants.js` - Color constants (single source of truth)
 - `src/utils/ThemeReceiver.js` - Shared utility for games
 - `src/utils/Logger.js` - Conditional debug logging
 - `src/installation/InputManager.js` - Key detection (getThemeFromKey)
 
 **UI:**
-- `installation.html` - CSS variables, theme connection, video switching
+- `installation.html` - CSS variables, theme connection, video switching, video responsive container
 - `public/games/game-wrapper.html` - Keyboard interceptor, theme application
 - All 9 screen files - Updated to use CSS variables
 - All 4 games - Theme support via ThemeReceiver
