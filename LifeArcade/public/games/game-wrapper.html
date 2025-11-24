@@ -117,7 +117,10 @@
   <!-- p5.js (Local - Offline) -->
   <script src="/lib/p5.min.js"></script>
   <script type="module">
-    // Import theme constants, logger, and game metadata (lightweight, no .txt imports)
+    // ===== IMPORTS =====
+    // IMPORTANT: Use GameRegistryMetadata.js (lightweight ~2KB), NOT GameRegistry.js (~500KB)
+    // GameRegistry.js imports .txt files which are unnecessary for game-wrapper.html
+    // We only need game title and paths, not full prompt/thinking texts.
     import { getBackgroundColor, getTextColor } from '/src/utils/ThemeConstants.js'
     import { debugLog } from '/src/utils/Logger.js'
     import { getGameMetadataById } from '/src/installation/GameRegistryMetadata.js'

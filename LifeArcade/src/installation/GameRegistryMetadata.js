@@ -1,8 +1,19 @@
 /**
- * GameRegistryMetadata - Game Metadata (Lightweight)
+ * GameRegistryMetadata - Game Metadata (LIGHTWEIGHT VERSION)
  *
  * Contains ONLY core game metadata without text content.
  * Used by game-wrapper.html to avoid loading .txt files.
+ *
+ * ARCHITECTURE PATTERN:
+ * - This file: Lightweight metadata only (~2KB) - for iframes
+ * - GameRegistry.js: Full data with prompt/thinking texts (~500KB+) - for screens
+ *
+ * USAGE:
+ * - game-wrapper.html: Use this file (only needs game title/paths)
+ * - Screens: Use GameRegistry.js instead (needs full prompt/thinking texts)
+ *
+ * CONSISTENCY:
+ * GameRegistry.js imports and extends this file, ensuring single source of truth.
  *
  * @module installation/GameRegistryMetadata
  * @author Game of Life Arcade

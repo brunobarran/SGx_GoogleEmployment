@@ -307,12 +307,13 @@ LifeArcade/
 │   │   ├── HitboxDebug.js       # Hitbox visualization (press H)
 │   │   └── README_HitboxDebug.md # Hitbox debug documentation
 │   ├── installation/     # Installation system managers
-│   │   ├── AppState.js         # State machine (8 screens)
-│   │   ├── GameRegistry.js     # Central game catalog (single source of truth)
-│   │   ├── StorageManager.js   # localStorage leaderboards
-│   │   ├── InputManager.js     # Keyboard + arcade controls
-│   │   ├── ThemeManager.js     # Theme state management
-│   │   └── IframeComm.js       # postMessage game communication
+│   │   ├── AppState.js                # State machine (8 screens)
+│   │   ├── GameRegistry.js            # Full game catalog (~500KB with texts)
+│   │   ├── GameRegistryMetadata.js    # Lightweight metadata only (~2KB)
+│   │   ├── StorageManager.js          # localStorage leaderboards
+│   │   ├── InputManager.js            # Keyboard + arcade controls
+│   │   ├── ThemeManager.js            # Theme state management
+│   │   └── IframeComm.js              # postMessage game communication
 │   └── screens/          # 8-screen installation flow
 │       ├── IdleScreen.js           # Screen 1: GoL attract
 │       ├── WelcomeScreen.js        # Screen 2: Title screen
@@ -360,10 +361,58 @@ LifeArcade/
 
 ### Game Registry (Central Game Catalog)
 
-**File:** `src/installation/GameRegistry.js`
+**Files:**
+- `src/installation/GameRegistry.js` (Full version ~500KB)
+- `src/installation/GameRegistryMetadata.js` (Lightweight ~2KB)
 **Tests:** `tests/installation/test_GameRegistry.js` (26/26 passing ✅)
 
 **Purpose:** Single Source of Truth for all available games in the installation.
+
+**Architecture Pattern (Dual Registry):**
+
+GameRegistry and GameRegistryMetadata follow a **lightweight/full pattern** to optimize bundle size:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    GameRegistryMetadata.js                  │
+│                     (Lightweight ~2KB)                      │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ GAMES_METADATA = [                                    │ │
+│  │   { id, name, path, key, promptPath, thinkingPath }  │ │
+│  │ ]                                                     │ │
+│  └───────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ imports & extends
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                      GameRegistry.js                        │
+│                   (Full version ~500KB)                     │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │ import { GAMES_METADATA } from './GameRegistryMetadata'│ │
+│  │ import promptTexts from '*.txt?raw'  // ~500KB        │ │
+│  │                                                        │ │
+│  │ GAMES = GAMES_METADATA.map(meta => ({                │ │
+│  │   ...meta,                                            │ │
+│  │   prompt: TEXT_CONTENT[meta.id].prompt,              │ │
+│  │   thinking: TEXT_CONTENT[meta.id].thinking           │ │
+│  │ }))                                                   │ │
+│  └───────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Usage Guidelines:**
+
+| Component | Uses | Reason |
+|-----------|------|--------|
+| **Screens** (Gallery, CodeAnimation, etc.) | `GameRegistry.js` | Needs full prompt/thinking texts |
+| **game-wrapper.html** | `GameRegistryMetadata.js` | Only needs game title/paths |
+| **Tests** | Both | Validate consistency |
+
+**Benefits:**
+- ✅ Avoids loading ~500KB of text in iframes unnecessarily
+- ✅ Single source of truth (GameRegistry extends GameRegistryMetadata)
+- ✅ Automatic consistency (metadata changes propagate to both)
 
 **Structure:**
 ```javascript
@@ -748,7 +797,120 @@ localStorage.setItem('scores_snake', JSON.stringify([
 
 ---
 
-## 8. Testing
+## 8. Unified Control System
+
+### Overview
+
+**Total Keys:** 19 (7 primary + 8 theme + 4 modifiers)
+**Design Philosophy:** Simple, consistent, arcade-friendly
+
+```
+MOVIMIENTO:    ↑↓←→ / WASD
+CONFIRMAR:     SPACE / N
+RESET SUAVE:   M (mantener 3s)
+RESET DURO:    M+N (mantener 10s)
+TEMA:          1-8 (día: 1-4, noche: 5-8)
+```
+
+### Control Functions
+
+#### 🎮 Advance/Confirm
+- **SPACE** → Advance screen / Confirm selection
+- **N** → Advance screen / Confirm selection (alternative)
+  - *Exception*: If M is pressed, N activates Hard Reset instead
+
+#### 🧭 Horizontal Navigation (Carousels/Menus)
+- **← / A** → Left
+- **→ / D** → Right
+
+#### ↕️ Vertical Navigation (Letters/Options)
+- **↑ / W** → Up / Increment
+- **↓ / S** → Down / Decrement
+
+#### 🎨 Theme System (Works on ALL screens)
+- **Keys 1-4** → Day mode
+- **Keys 5-8** → Night mode
+- Instant color switching (CSS variables + video background)
+- Works in games via game-wrapper.html capture phase
+
+#### 🔄 Reset System
+- **M (hold 3s)** → Soft Reset (clear session, keep scores)
+  - Blocked on IdleScreen
+  - Blocked in GameScreen (InputManager disabled)
+  - Works on all other screens
+- **M+N (hold 10s)** → Hard Reset (clear ALL localStorage + session)
+  - Blocked in GameScreen only
+  - Deletes all scores permanently
+
+### Control by Screen
+
+| Screen | Navigation | Confirm | Theme | Reset |
+|--------|-----------|---------|-------|-------|
+| **Idle** | N/A | SPACE/N | 1-8 | M+N (10s) |
+| **Welcome** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **Gallery** | ← → / A D | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **CodeAnim** | N/A | SPACE/N (skip) | 1-8 | M (3s), M+N (10s) |
+| **Game** | ↑↓←→/WASD | SPACE (game) | 1-8 | ❌ |
+| **Score 1-2** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **Score 3** | ↑↓←→/WASD | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **Leaderboard** | ← → / A D | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **QR** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
+
+### Key Priority
+
+When N is pressed:
+1. **If M is pressed** → Initiates/continues Hard Reset (10s)
+2. **If M is NOT pressed** → Advances screen
+
+This allows N to have dual function without conflict.
+
+### Removed Keys
+
+- ❌ **Escape** → No longer works on any screen
+- ❌ **Enter** → No longer used
+- ❌ **Keys 1-4 in Gallery** → No longer select games (only theme)
+
+### GameScreen Special Handling
+
+**InputManager is DISABLED during gameplay:**
+- `stopListening()` called when game starts (GameScreen.js:148)
+- `startListening()` called when game ends (GameScreen.js:229)
+- All game controls (WASD, arrows, space) go directly to iframe
+- Escape and theme keys (1-8) captured by game-wrapper.html via postMessage
+- Reset system (M/M+N) does NOT work in GameScreen
+
+**Communication Flow:**
+```
+User in game → presses Escape
+    ↓
+game-wrapper.html captures (capture phase)
+    ↓
+Sends postMessage { type: 'exitGame' }
+    ↓
+GameScreen receives → exitToIdle()
+```
+
+### Implementation Files
+
+**Modified Screens:**
+- `src/screens/IdleScreen.js` (SPACE/N only)
+- `src/screens/WelcomeScreen.js` (SPACE/N only)
+- `src/screens/GalleryScreen.js` (+A/D, +N, -selección 1-4, -Escape)
+- `src/screens/CodeAnimationScreen.js` (+N, -Escape)
+- `src/screens/ScoreEntryScreen.js` (+A/D, +N, -Escape)
+- `src/screens/LeaderboardScreen.js` (+A/D, +N, -Escape)
+- `src/screens/QRCodeScreen.js` (+N, -Escape)
+- `src/screens/GameScreen.js` (handler documented, disabled)
+
+**System Managers:**
+- `src/installation/InputManager.js` (keyboard event management)
+- `src/installation/ResetManager.js` (M/M+N reset logic)
+- `src/installation/ThemeManager.js` (keys 1-8 theme switching)
+- `public/games/game-wrapper.html` (iframe key capture)
+
+---
+
+## 9. Testing
 
 ### Test Structure (Mirror src/)
 ```

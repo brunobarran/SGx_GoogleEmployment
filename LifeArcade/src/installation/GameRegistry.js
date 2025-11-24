@@ -1,8 +1,16 @@
 /**
- * GameRegistry - Central Game Catalog
+ * GameRegistry - Central Game Catalog (FULL VERSION)
  *
  * Single Source of Truth for all available games in the installation.
  * Merges metadata from GameRegistryMetadata with text content (.txt files).
+ *
+ * ARCHITECTURE PATTERN:
+ * - GameRegistryMetadata.js: Lightweight metadata only (~2KB)
+ * - GameRegistry.js: Full data with prompt/thinking texts (~500KB+)
+ *
+ * USAGE:
+ * - Screens (Gallery, CodeAnimation, etc.): Use this file (needs full text)
+ * - game-wrapper.html: Use GameRegistryMetadata.js (only needs metadata)
  *
  * @module installation/GameRegistry
  * @author Game of Life Arcade
