@@ -2,27 +2,53 @@
  * GameRegistry - Central Game Catalog
  *
  * Single Source of Truth for all available games in the installation.
- * Each game includes its prompt (AI creation text) and thinking (code generation process).
+ * Merges metadata from GameRegistryMetadata with text content (.txt files).
  *
  * @module installation/GameRegistry
  * @author Game of Life Arcade
  * @license ISC
  */
 
-// Import prompts (used by GalleryScreen)
+// Import metadata (base structure - no .txt imports)
+import { GAMES_METADATA } from './GameRegistryMetadata.js'
+
+// Import text content (prompts)
 import spaceInvadersPrompt from '../../public/games/space-invaders-prompt.txt?raw'
 import dinoRunnerPrompt from '../../public/games/dino-runner-prompt.txt?raw'
 import breakoutPrompt from '../../public/games/breakout-prompt.txt?raw'
 import flappyBirdPrompt from '../../public/games/flappy-bird-prompt.txt?raw'
 
-// Import thinking texts (used by CodeAnimationScreen)
+// Import text content (thinking)
 import spaceInvadersThinking from '../../public/games/space-invaders-thinking.txt?raw'
 import dinoRunnerThinking from '../../public/games/dino-runner-thinking.txt?raw'
 import breakoutThinking from '../../public/games/breakout-thinking.txt?raw'
 import flappyBirdThinking from '../../public/games/flappy-bird-thinking.txt?raw'
 
 /**
- * All available games with their associated content
+ * Map of text content by game ID
+ * @private
+ */
+const TEXT_CONTENT = {
+  'space-invaders': {
+    prompt: spaceInvadersPrompt,
+    thinking: spaceInvadersThinking
+  },
+  'dino-runner': {
+    prompt: dinoRunnerPrompt,
+    thinking: dinoRunnerThinking
+  },
+  'breakout': {
+    prompt: breakoutPrompt,
+    thinking: breakoutThinking
+  },
+  'flappy-bird': {
+    prompt: flappyBirdPrompt,
+    thinking: flappyBirdThinking
+  }
+}
+
+/**
+ * All available games with full content (metadata + text)
  *
  * @typedef {Object} Game
  * @property {string} id - Unique game identifier (matches game file name)
@@ -31,48 +57,24 @@ import flappyBirdThinking from '../../public/games/flappy-bird-thinking.txt?raw'
  * @property {string} thinking - Thinking process text (shown in Code Animation)
  * @property {string} path - iframe path to load the game
  * @property {string} key - Keyboard shortcut (1-4)
+ * @property {string} promptPath - Path to prompt .txt file
+ * @property {string} thinkingPath - Path to thinking .txt file
  */
 
 /**
  * @type {Game[]}
  */
-export const GAMES = [
-  {
-    id: 'space-invaders',
-    name: 'Cellfront Command',
-    prompt: spaceInvadersPrompt,
-    thinking: spaceInvadersThinking,
-    path: 'games/game-wrapper.html?game=space-invaders',
-    key: '1'
-  },
-  {
-    id: 'dino-runner',
-    name: 'Automata Rush',
-    prompt: dinoRunnerPrompt,
-    thinking: dinoRunnerThinking,
-    path: 'games/game-wrapper.html?game=dino-runner',
-    key: '2'
-  },
-  {
-    id: 'breakout',
-    name: 'Cellular Shatter',
-    prompt: breakoutPrompt,
-    thinking: breakoutThinking,
-    path: 'games/game-wrapper.html?game=breakout',
-    key: '3'
-  },
-  {
-    id: 'flappy-bird',
-    name: 'Hoppy Glider',
-    prompt: flappyBirdPrompt,
-    thinking: flappyBirdThinking,
-    path: 'games/game-wrapper.html?game=flappy-bird',
-    key: '4'
-  }
-]
+export const GAMES = GAMES_METADATA.map(meta => ({
+  ...meta,
+  prompt: TEXT_CONTENT[meta.id].prompt,
+  thinking: TEXT_CONTENT[meta.id].thinking
+}))
+
+// Re-export metadata functions for convenience
+export { GAMES_METADATA, getGameMetadataById, validateGameMetadata } from './GameRegistryMetadata.js'
 
 /**
- * Get game by ID
+ * Get game by ID (with full content)
  *
  * @param {string} id - Game ID (e.g., 'space-invaders')
  * @returns {Game|null} Game object or null if not found
@@ -80,7 +82,7 @@ export const GAMES = [
  * @example
  * const game = getGameById('space-invaders')
  * if (game) {
- *   console.log(game.name) // 'CELLFRONT COMMAND'
+ *   console.log(game.name) // 'Cellfront Command'
  *   console.log(game.thinking) // Full thinking text
  * }
  */
@@ -89,9 +91,9 @@ export function getGameById(id) {
 }
 
 /**
- * Validate game object structure
+ * Validate game object structure (with content fields)
  *
- * Checks that a game object has all required fields with valid values.
+ * Checks that a game object has all required fields including text content.
  * Used by screens to verify game data before use.
  *
  * @param {*} game - Game object to validate
@@ -110,8 +112,8 @@ export function validateGame(game) {
     return false
   }
 
-  // Required fields for all games
-  const requiredFields = ['id', 'name', 'path', 'key']
+  // Required fields for games with content
+  const requiredFields = ['id', 'name', 'path', 'key', 'prompt', 'thinking']
 
   return requiredFields.every(field =>
     game.hasOwnProperty(field) &&

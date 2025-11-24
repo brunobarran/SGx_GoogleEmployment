@@ -169,14 +169,94 @@ describe('GameRegistry', () => {
     })).toBe(false)
   })
 
-  test('validateGame accepts game without prompt or thinking fields', () => {
-    // These fields are optional for validation (only used by specific screens)
-    const minimalGame = {
+  test('validateGame rejects game without prompt field', () => {
+    // prompt and thinking are now required for full games
+    const gameWithoutPrompt = {
       id: 'test',
       name: 'Test Game',
       path: 'games/test.html',
-      key: '5'
+      key: '5',
+      thinking: 'Some thinking text'
     }
-    expect(validateGame(minimalGame)).toBe(true)
+    expect(validateGame(gameWithoutPrompt)).toBe(false)
+  })
+
+  test('validateGame rejects game without thinking field', () => {
+    const gameWithoutThinking = {
+      id: 'test',
+      name: 'Test Game',
+      path: 'games/test.html',
+      key: '5',
+      prompt: 'Some prompt text'
+    }
+    expect(validateGame(gameWithoutThinking)).toBe(false)
+  })
+
+  // ======================
+  // NEW TESTS: Integration with GameRegistryMetadata
+  // ======================
+
+  test('GAMES array includes prompt and thinking content', () => {
+    GAMES.forEach(game => {
+      expect(game).toHaveProperty('prompt')
+      expect(game).toHaveProperty('thinking')
+      expect(typeof game.prompt).toBe('string')
+      expect(typeof game.thinking).toBe('string')
+      expect(game.prompt.length).toBeGreaterThan(50)  // Prompts are long
+      expect(game.thinking.length).toBeGreaterThan(50)  // Thinking texts are long
+    })
+  })
+
+  test('GAMES merges GAMES_METADATA with text content', () => {
+    GAMES.forEach(game => {
+      // Check metadata fields present
+      expect(game).toHaveProperty('id')
+      expect(game).toHaveProperty('name')
+      expect(game).toHaveProperty('path')
+      expect(game).toHaveProperty('key')
+
+      // Check content fields present
+      expect(game).toHaveProperty('prompt')
+      expect(game).toHaveProperty('thinking')
+
+      // Check path fields present (from metadata)
+      expect(game).toHaveProperty('promptPath')
+      expect(game).toHaveProperty('thinkingPath')
+    })
+  })
+
+  test('getGameById returns game with text content', () => {
+    const game = getGameById('space-invaders')
+    expect(game).toBeDefined()
+    expect(game.prompt).toBeDefined()
+    expect(game.thinking).toBeDefined()
+    expect(game.prompt).toContain('Cellfront Command')  // Prompt mentions game name
+  })
+
+  test('Re-exported metadata functions work', async () => {
+    // Test that re-exported functions are accessible
+    const { GAMES_METADATA, getGameMetadataById, validateGameMetadata } =
+      await import('../../src/installation/GameRegistry.js')
+
+    expect(GAMES_METADATA).toBeDefined()
+    expect(GAMES_METADATA).toHaveLength(4)
+
+    const metadata = getGameMetadataById('dino-runner')
+    expect(metadata).toBeDefined()
+    expect(metadata.name).toBe('Automata Rush')
+
+    expect(validateGameMetadata(metadata)).toBe(true)
+  })
+
+  test('validateGame requires prompt and thinking fields', () => {
+    const gameWithoutContent = {
+      id: 'test',
+      name: 'Test',
+      path: 'test',
+      key: '1'
+      // Missing prompt and thinking
+    }
+
+    expect(validateGame(gameWithoutContent)).toBe(false)
   })
 })

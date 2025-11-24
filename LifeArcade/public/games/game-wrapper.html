@@ -117,10 +117,10 @@
   <!-- p5.js (Local - Offline) -->
   <script src="/lib/p5.min.js"></script>
   <script type="module">
-    // Import theme constants, logger, and game registry
+    // Import theme constants, logger, and game metadata (lightweight, no .txt imports)
     import { getBackgroundColor, getTextColor } from '/src/utils/ThemeConstants.js'
     import { debugLog } from '/src/utils/Logger.js'
-    import { getGameById } from '/src/installation/GameRegistry.js'
+    import { getGameMetadataById } from '/src/installation/GameRegistryMetadata.js'
 
     // ===== INITIAL THEME FROM URL =====
     // Apply theme IMMEDIATELY to prevent white flash
@@ -168,14 +168,14 @@
       console.error('No game specified in URL parameter')
       document.body.innerHTML = '<h1 style="color: #EA4335;">Error: No game specified</h1>'
     } else {
-      // Get game data from GameRegistry (single source of truth)
-      const gameData = getGameById(gameName)
+      // Get game metadata (lightweight, no .txt content loaded)
+      const gameData = getGameMetadataById(gameName)
 
       if (!gameData) {
         console.error(`Game not found in registry: ${gameName}`)
         document.body.innerHTML = `<h1 style="color: #EA4335;">Error: Game "${gameName}" not found</h1>`
       } else {
-        // Set game title from GameRegistry
+        // Set game title from metadata
         document.getElementById('game-title').textContent = gameData.name
 
         // Note: Score is updated directly by the game script via DOM manipulation
