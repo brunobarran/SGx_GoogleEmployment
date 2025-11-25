@@ -11,6 +11,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { debugLog, debugError } from '../utils/Logger.js'
 
 export class QRCodeScreen {
   /**
@@ -43,18 +44,18 @@ export class QRCodeScreen {
    * Show screen - Display QR code and thank you message
    */
   show() {
-    console.log('QRCodeScreen: Show')
+    debugLog('QRCodeScreen: Show')
 
     // Get selected game and player name
     const state = this.appState.getState()
     const game = state.selectedGame
     const playerName = state.playerName || 'LFC'  // Fallback to 'LFC' if no name
 
-    console.log('QRCodeScreen DEBUG: playerName =', playerName)
-    console.log('QRCodeScreen DEBUG: full state =', state)
+    debugLog('QRCodeScreen DEBUG: playerName =', playerName)
+    debugLog('QRCodeScreen DEBUG: full state =', state)
 
     if (!game) {
-      console.error('No game selected')
+      debugError('No game selected')
       this.appState.reset()
       return
     }
@@ -257,14 +258,14 @@ export class QRCodeScreen {
     // Set inactivity timeout - return to Idle after 30s
     this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
 
-    console.log('QRCodeScreen: Active (30s inactivity timer)')
+    debugLog('QRCodeScreen: Active (30s inactivity timer)')
   }
 
   /**
    * Hide screen - Remove DOM and event listeners
    */
   hide() {
-    console.log('QRCodeScreen: Hide')
+    debugLog('QRCodeScreen: Hide')
 
     // Clear inactivity timeout
     this.appState.clearTimeout('qr-inactivity')
@@ -285,7 +286,7 @@ export class QRCodeScreen {
       this.appState.playerName = null
     }
 
-    console.log('QRCodeScreen: Cleaned up')
+    debugLog('QRCodeScreen: Cleaned up')
   }
 
   /**
@@ -299,7 +300,7 @@ export class QRCodeScreen {
 
     // Space or N returns to Idle (restart loop)
     if (key === ' ' || key === 'n' || key === 'N') {
-      console.log('QRCodeScreen: Key pressed - returning to Idle')
+      debugLog('QRCodeScreen: Key pressed - returning to Idle')
       this.appState.reset()
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)

@@ -10,6 +10,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { IdleLeaderboardShowcaseScreen } from './IdleLeaderboardShowcaseScreen.js'
+import { debugLog } from '../utils/Logger.js'
 
 export class IdleScreen {
   /**
@@ -42,7 +43,7 @@ export class IdleScreen {
    * Show screen - Create and display idle screen
    */
   show() {
-    console.log('IdleScreen: Show')
+    debugLog('IdleScreen: Show')
     this.isActive = true
 
     // Calculate responsive dimensions (using ScreenHelper)
@@ -136,7 +137,7 @@ export class IdleScreen {
     // Start showcase inactivity timer (2 minutes)
     this.startShowcaseTimer()
 
-    console.log('IdleScreen: Active (2min showcase timer)')
+    debugLog('IdleScreen: Active (2min showcase timer)')
   }
 
   /**
@@ -150,7 +151,7 @@ export class IdleScreen {
 
     // Set new timer
     this.showcaseTimerHandle = setTimeout(() => {
-      console.log('IdleScreen: Showcase timer triggered - showing leaderboard')
+      debugLog('IdleScreen: Showcase timer triggered - showing leaderboard')
       this.showShowcase()
     }, IdleScreen.SHOWCASE_INACTIVITY_TIMEOUT)
   }
@@ -193,14 +194,14 @@ export class IdleScreen {
     this.showcaseScreen = null
     // Restart 2-minute timer
     this.startShowcaseTimer()
-    console.log('IdleScreen: Showcase closed - timer restarted')
+    debugLog('IdleScreen: Showcase closed - timer restarted')
   }
 
   /**
    * Hide screen - Clean up and remove elements
    */
   hide() {
-    console.log('IdleScreen: Hide')
+    debugLog('IdleScreen: Hide')
     this.isActive = false
 
     // Clear showcase timer
@@ -228,7 +229,7 @@ export class IdleScreen {
     this.titleElement = null
     this.promptElement = null
 
-    console.log('IdleScreen: Cleaned up')
+    debugLog('IdleScreen: Cleaned up')
   }
 
   /**
@@ -246,7 +247,7 @@ export class IdleScreen {
 
     // SPACE or N advances to Welcome screen
     if (key === ' ' || key === 'n' || key === 'N') {
-      console.log(`IdleScreen: Key "${key}" pressed - advancing to Welcome`)
+      debugLog(`IdleScreen: Key "${key}" pressed - advancing to Welcome`)
       this.appState.transition('welcome')
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset M+N handled by ResetManager)

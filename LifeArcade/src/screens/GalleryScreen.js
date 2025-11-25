@@ -10,6 +10,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { GAMES } from '../installation/GameRegistry.js'
+import { debugLog } from '../utils/Logger.js'
 
 export class GalleryScreen {
   /**
@@ -37,7 +38,7 @@ export class GalleryScreen {
    * Show screen - Create 3D carousel
    */
   show() {
-    console.log('GalleryScreen: Show')
+    debugLog('GalleryScreen: Show')
 
     // Calculate responsive dimensions (using ScreenHelper)
     const { containerWidth, containerHeight } = getResponsiveDimensions()
@@ -143,7 +144,7 @@ export class GalleryScreen {
     // Set inactivity timeout - return to Idle after 30s
     this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
 
-    console.log('GalleryScreen: Active (30s inactivity timer)')
+    debugLog('GalleryScreen: Active (30s inactivity timer)')
   }
 
   /**
@@ -338,14 +339,14 @@ export class GalleryScreen {
       this.isAnimating = false
     }, 300)
 
-    console.log(`GalleryScreen: Navigated to game ${this.currentIndex + 1}`)
+    debugLog(`GalleryScreen: Navigated to game ${this.currentIndex + 1}`)
   }
 
   /**
    * Hide screen
    */
   hide() {
-    console.log('GalleryScreen: Hide')
+    debugLog('GalleryScreen: Hide')
 
     // Clear inactivity timeout
     this.appState.clearTimeout('gallery-inactivity')
@@ -360,7 +361,7 @@ export class GalleryScreen {
       this.cardsContainer = null
     }
 
-    console.log('GalleryScreen: Cleaned up')
+    debugLog('GalleryScreen: Cleaned up')
   }
 
   /**
@@ -391,7 +392,7 @@ export class GalleryScreen {
    */
   confirmSelection() {
     const selectedGame = GAMES[this.currentIndex]
-    console.log(`GalleryScreen: Confirmed selection - ${selectedGame.name}`)
+    debugLog(`GalleryScreen: Confirmed selection - ${selectedGame.name}`)
 
     // Store selected game in AppState
     this.appState.setGame(selectedGame)

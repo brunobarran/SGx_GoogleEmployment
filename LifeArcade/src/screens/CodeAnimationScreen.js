@@ -12,6 +12,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { getGameById } from '../installation/GameRegistry.js'
+import { debugLog, debugError } from '../utils/Logger.js'
 
 export class CodeAnimationScreen {
   constructor(appState, inputManager) {
@@ -36,12 +37,12 @@ export class CodeAnimationScreen {
    * Show screen - Create DOM and start typewriter animation
    */
   async show() {
-    console.log('CodeAnimationScreen: Show')
+    debugLog('CodeAnimationScreen: Show')
 
     // Get selected game
     const game = this.appState.getState().selectedGame
     if (!game) {
-      console.error('No game selected')
+      debugError('No game selected')
       this.appState.reset()
       return
     }
@@ -50,7 +51,7 @@ export class CodeAnimationScreen {
     const gameData = getGameById(game.id)
 
     if (!gameData || !gameData.thinking) {
-      console.error(`No thinking text found for game: ${game.id}`)
+      debugError(`No thinking text found for game: ${game.id}`)
       this.appState.reset()
       return
     }
@@ -171,14 +172,14 @@ export class CodeAnimationScreen {
     // Listen for keys (allow skip with Space)
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    console.log('CodeAnimationScreen: Active')
+    debugLog('CodeAnimationScreen: Active')
   }
 
   /**
    * Hide screen - Stop animation and clean up
    */
   hide() {
-    console.log('CodeAnimationScreen: Hide')
+    debugLog('CodeAnimationScreen: Hide')
 
     // Stop animation
     if (this.intervalHandle) {
@@ -205,7 +206,7 @@ export class CodeAnimationScreen {
     this.targetText = ''
     this.currentChar = 0
 
-    console.log('CodeAnimationScreen: Cleaned up')
+    debugLog('CodeAnimationScreen: Cleaned up')
   }
 
   /**
@@ -279,7 +280,7 @@ export class CodeAnimationScreen {
   handleKeyPress(key) {
     // Space or N skips animation
     if (key === ' ' || key === 'n' || key === 'N') {
-      console.log('CodeAnimationScreen: Key pressed - skipping animation')
+      debugLog('CodeAnimationScreen: Key pressed - skipping animation')
       this.advanceToGame()
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
@@ -289,7 +290,7 @@ export class CodeAnimationScreen {
    * Advance to Game screen
    */
   advanceToGame() {
-    console.log('CodeAnimationScreen: Advancing to Game')
+    debugLog('CodeAnimationScreen: Advancing to Game')
     this.appState.transition('game')
   }
 }

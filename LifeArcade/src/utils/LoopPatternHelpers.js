@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog } from './Logger.js'
+
 /**
  * Update loop pattern speed and handle periodic resets.
  *
@@ -51,7 +53,7 @@ export function updateLoopPattern(gol, loopUpdateRate, logChanges = true) {
   if (gol.updateRateFPS !== targetFPS) {
     gol.updateRateFPS = targetFPS
     if (logChanges) {
-      console.log(`[Loop] Speed updated: ${targetFPS.toFixed(1)}fps (loopUpdateRate=${loopUpdateRate} fps)`)
+      debugLog(`[Loop] Speed updated: ${targetFPS.toFixed(1)}fps (loopUpdateRate=${loopUpdateRate} fps)`)
     }
   }
 
@@ -71,7 +73,7 @@ export function updateLoopPattern(gol, loopUpdateRate, logChanges = true) {
       gol.setPattern(gol.loopPattern, centerX, centerY)
       gol.loopResetCounter = 0
       if (logChanges) {
-        console.log(`[Loop] Pattern reset after ${gol.loopPeriod} generations`)
+        debugLog(`[Loop] Pattern reset after ${gol.loopPeriod} generations`)
       }
     }
   }

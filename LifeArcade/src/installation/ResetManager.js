@@ -9,6 +9,8 @@
  * @license ISC
  */
 
+import { debugLog, debugError } from '../utils/Logger.js'
+
 export class ResetManager {
   /**
    * Reset configuration
@@ -49,7 +51,7 @@ export class ResetManager {
     this.handleKeyUp = this.handleKeyUp.bind(this)
     this.updateProgress = this.updateProgress.bind(this)
 
-    console.log('ResetManager: Initialized')
+    debugLog('ResetManager: Initialized')
   }
 
   /**
@@ -61,7 +63,7 @@ export class ResetManager {
     window.addEventListener('keydown', this.handleKeyDown)
     window.addEventListener('keyup', this.handleKeyUp)
 
-    console.log('ResetManager: Listening for M and M+N combinations')
+    debugLog('ResetManager: Listening for M and M+N combinations')
   }
 
   /**
@@ -76,7 +78,7 @@ export class ResetManager {
       this.cancel()
     }
 
-    console.log('ResetManager: Stopped listening')
+    debugLog('ResetManager: Stopped listening')
   }
 
   /**
@@ -120,7 +122,7 @@ export class ResetManager {
     if (this.isResetting) {
       if (this.resetType !== newResetType) {
         // Type changed (soft → hard), restart
-        console.log(`ResetManager: Transition ${this.resetType} → ${newResetType}`)
+        debugLog(`ResetManager: Transition ${this.resetType} → ${newResetType}`)
         this.cancel()
         this.startReset(newResetType)
       }
@@ -155,14 +157,14 @@ export class ResetManager {
 
     // Soft reset: requires M only
     if (this.resetType === 'soft' && !mPressed) {
-      console.log('ResetManager: Soft reset canceled (M released)')
+      debugLog('ResetManager: Soft reset canceled (M released)')
       this.cancel()
       return
     }
 
     // Hard reset: requires both M and N
     if (this.resetType === 'hard' && (!mPressed || !nPressed)) {
-      console.log('ResetManager: Hard reset canceled (M or N released)')
+      debugLog('ResetManager: Hard reset canceled (M or N released)')
       this.cancel()
       return
     }
@@ -186,7 +188,7 @@ export class ResetManager {
     // Start animation loop
     this.updateProgress()
 
-    console.log(`ResetManager: Started ${type} reset (${this.requiredDuration}ms)`)
+    debugLog(`ResetManager: Started ${type} reset (${this.requiredDuration}ms)`)
   }
 
   /**
@@ -203,13 +205,13 @@ export class ResetManager {
 
     // Cancel if required keys released
     if (this.resetType === 'soft' && !mPressed) {
-      console.log('ResetManager: Soft reset canceled (M released)')
+      debugLog('ResetManager: Soft reset canceled (M released)')
       this.cancel()
       return
     }
 
     if (this.resetType === 'hard' && (!mPressed || !nPressed)) {
-      console.log('ResetManager: Hard reset canceled (M or N released)')
+      debugLog('ResetManager: Hard reset canceled (M or N released)')
       this.cancel()
       return
     }
@@ -222,7 +224,7 @@ export class ResetManager {
 
     // Check if complete
     if (progress >= 1) {
-      console.log(`ResetManager: ${this.resetType} reset completed`)
+      debugLog(`ResetManager: ${this.resetType} reset completed`)
       this.executeReset()
       return
     }
@@ -252,38 +254,38 @@ export class ResetManager {
    * Soft Reset: Clear session, keep localStorage
    */
   softReset() {
-    console.log('ResetManager: Executing SOFT RESET')
-    console.log('- Clearing session data')
-    console.log('- Keeping localStorage')
-    console.log('- Transitioning to Idle screen')
+    debugLog('ResetManager: Executing SOFT RESET')
+    debugLog('- Clearing session data')
+    debugLog('- Keeping localStorage')
+    debugLog('- Transitioning to Idle screen')
 
     // Clear session via AppState
     this.appState.reset()
 
-    console.log('ResetManager: Soft reset complete')
+    debugLog('ResetManager: Soft reset complete')
   }
 
   /**
    * Hard Reset: Clear localStorage completely + session
    */
   hardReset() {
-    console.log('ResetManager: Executing HARD RESET')
-    console.log('- Clearing ALL localStorage')
-    console.log('- Clearing session data')
-    console.log('- Transitioning to Idle screen')
+    debugLog('ResetManager: Executing HARD RESET')
+    debugLog('- Clearing ALL localStorage')
+    debugLog('- Clearing session data')
+    debugLog('- Transitioning to Idle screen')
 
     // Clear localStorage
     try {
       localStorage.clear()
-      console.log('ResetManager: localStorage cleared')
+      debugLog('ResetManager: localStorage cleared')
     } catch (error) {
-      console.error('ResetManager: Failed to clear localStorage:', error)
+      debugError('ResetManager: Failed to clear localStorage:', error)
     }
 
     // Clear session via AppState
     this.appState.reset()
 
-    console.log('ResetManager: Hard reset complete')
+    debugLog('ResetManager: Hard reset complete')
   }
 
   /**
@@ -302,7 +304,7 @@ export class ResetManager {
     this.startTime = null
     this.requiredDuration = null
 
-    console.log('ResetManager: Reset canceled')
+    debugLog('ResetManager: Reset canceled')
   }
 
   /**
@@ -334,6 +336,6 @@ export class ResetManager {
   destroy() {
     this.stopListening()
     this.resetCircleUI.destroy()
-    console.log('ResetManager: Destroyed')
+    debugLog('ResetManager: Destroyed')
   }
 }

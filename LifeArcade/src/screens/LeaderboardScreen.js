@@ -11,6 +11,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { validateGame } from '../installation/GameRegistry.js'
+import { debugLog, debugError } from '../utils/Logger.js'
 
 export class LeaderboardScreen {
   /**
@@ -37,7 +38,7 @@ export class LeaderboardScreen {
    * Show screen - Display top 5 scores
    */
   show() {
-    console.log('LeaderboardScreen: Show')
+    debugLog('LeaderboardScreen: Show')
 
     // Get state
     const state = this.appState.getState()
@@ -47,7 +48,7 @@ export class LeaderboardScreen {
     const playerTimestamp = state.scoreTimestamp
 
     if (!validateGame(game)) {
-      console.error('LeaderboardScreen: Invalid or missing game')
+      debugError('LeaderboardScreen: Invalid or missing game')
       this.appState.reset()
       return
     }
@@ -55,10 +56,10 @@ export class LeaderboardScreen {
     // Load scores and prepare display list
     const allScores = this.storageManager.getScores(game.id)
 
-    console.log('LeaderboardScreen DEBUG:')
-    console.log('- Total scores:', allScores.length)
-    console.log('- Looking for player:', playerName, playerScore, playerTimestamp)
-    console.log('- All scores:', JSON.stringify(allScores.map(e => ({ name: e.name, score: e.score, date: e.date })), null, 2))
+    debugLog('LeaderboardScreen DEBUG:')
+    debugLog('- Total scores:', allScores.length)
+    debugLog('- Looking for player:', playerName, playerScore, playerTimestamp)
+    debugLog('- All scores:', JSON.stringify(allScores.map(e => ({ name: e.name, score: e.score, date: e.date })), null, 2))
 
     // Find player's rank (1-based) - match by name, score AND timestamp for exact identification
     const playerRank = allScores.findIndex(entry =>
@@ -67,24 +68,24 @@ export class LeaderboardScreen {
       entry.date === playerTimestamp
     ) + 1
 
-    console.log('- Player rank:', playerRank)
+    debugLog('- Player rank:', playerRank)
 
     // Build display list (max 5 entries)
     let scores = []
     if (playerRank === 0 || playerRank <= 5) {
       // Player not in leaderboard OR in top 5 → show top 5 normally
       scores = allScores.slice(0, 5)
-      console.log('- Showing top 5 normally')
+      debugLog('- Showing top 5 normally')
     } else {
       // Player rank > 5 → show top 4 + player (replacing rank 5)
       scores = [
         ...allScores.slice(0, 4),
         { ...allScores[playerRank - 1], displayRank: playerRank }  // Show with real rank
       ]
-      console.log('- Showing top 4 + player at rank', playerRank)
+      debugLog('- Showing top 4 + player at rank', playerRank)
     }
 
-    console.log('- Display scores:', JSON.stringify(scores.map(e => ({ name: e.name, score: e.score, rank: e.displayRank || '(index)' })), null, 2))
+    debugLog('- Display scores:', JSON.stringify(scores.map(e => ({ name: e.name, score: e.score, rank: e.displayRank || '(index)' })), null, 2))
 
     // Calculate responsive dimensions (using ScreenHelper)
     const { containerWidth, containerHeight } = getResponsiveDimensions()
@@ -286,7 +287,7 @@ export class LeaderboardScreen {
     // Set auto-advance timeout
     this.appState.setTimeout(LeaderboardScreen.AUTO_TIMEOUT, 'qr', 'leaderboard-timeout')
 
-    console.log('LeaderboardScreen: Active (30s auto-advance)')
+    debugLog('LeaderboardScreen: Active (30s auto-advance)')
   }
 
   /**
@@ -433,10 +434,10 @@ export class LeaderboardScreen {
    */
   confirmSelection() {
     if (this.selectedOption === 0) {
-      console.log('LeaderboardScreen: Create game selected - advancing to QR screen')
+      debugLog('LeaderboardScreen: Create game selected - advancing to QR screen')
       this.appState.transition('qr')
     } else {
-      console.log('LeaderboardScreen: Play again selected - going to gallery')
+      debugLog('LeaderboardScreen: Play again selected - going to gallery')
       this.appState.transition('gallery')
     }
   }
@@ -445,7 +446,7 @@ export class LeaderboardScreen {
    * Hide screen - Remove DOM and event listeners
    */
   hide() {
-    console.log('LeaderboardScreen: Hide')
+    debugLog('LeaderboardScreen: Hide')
 
     // Clear auto-advance timeout
     this.appState.clearTimeout('leaderboard-timeout')
@@ -464,7 +465,7 @@ export class LeaderboardScreen {
     this.createGameLink = null
     this.playAgainLink = null
 
-    console.log('LeaderboardScreen: Cleaned up')
+    debugLog('LeaderboardScreen: Cleaned up')
   }
 
   /**
@@ -472,21 +473,21 @@ export class LeaderboardScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    console.log('LeaderboardScreen: Key pressed:', key, 'Current selection:', this.selectedOption)
+    debugLog('LeaderboardScreen: Key pressed:', key, 'Current selection:', this.selectedOption)
 
     // Arrow keys or A/D navigate footer options
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      console.log('LeaderboardScreen: Left - selecting Create game')
+      debugLog('LeaderboardScreen: Left - selecting Create game')
       this.selectedOption = 0  // Create game
       this.updateFooterSelection()
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      console.log('LeaderboardScreen: Right - selecting Play again')
+      debugLog('LeaderboardScreen: Right - selecting Play again')
       this.selectedOption = 1  // Play again
       this.updateFooterSelection()
     }
     // Space or N confirms selected option
     else if (key === ' ' || key === 'n' || key === 'N') {
-      console.log('LeaderboardScreen: Key pressed - confirming selection', this.selectedOption)
+      debugLog('LeaderboardScreen: Key pressed - confirming selection', this.selectedOption)
       this.confirmSelection()
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)

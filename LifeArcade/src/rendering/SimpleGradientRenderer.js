@@ -10,6 +10,7 @@
 
 import { CELL_STATES } from '../utils/Config.js'
 import { GOOGLE_COLORS } from '../utils/GradientPresets.js'
+import { debugWarn, debugError } from '../utils/Logger.js'
 
 const { ALIVE } = CELL_STATES
 
@@ -84,7 +85,7 @@ class SimpleGradientRenderer {
 
     // Defensive check: if noise returns NaN, use simple fallback
     if (isNaN(noiseValue)) {
-      console.warn('[SimpleGradientRenderer] noise() returned NaN at', screenX, screenY, '- using first palette color')
+      debugWarn('[SimpleGradientRenderer] noise() returned NaN at', screenX, screenY, '- using first palette color')
       // Return first palette color as safe fallback
       if (this.palette && this.palette.length > 0 && this.palette[0]) {
         return this.palette[0]
@@ -110,7 +111,7 @@ class SimpleGradientRenderer {
     if (!c1 || !c2 || !Array.isArray(c1) || !Array.isArray(c2) ||
         c1.length < 3 || c2.length < 3 ||
         typeof c1[0] !== 'number' || typeof c2[0] !== 'number') {
-      console.error('[SimpleGradientRenderer] Invalid palette data:', {
+      debugError('[SimpleGradientRenderer] Invalid palette data:', {
         i1, i2,
         paletteLength: this.palette.length,
         c1, c2,

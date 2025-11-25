@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog, debugWarn, debugError } from '../utils/Logger.js'
+
 export class IframeComm {
   /**
    * Expected message format from games:
@@ -40,7 +42,7 @@ export class IframeComm {
    */
   startListening(timeout = IframeComm.DEFAULT_TIMEOUT) {
     if (this.listening) {
-      console.warn('IframeComm already listening')
+      debugWarn('IframeComm already listening')
       return
     }
 
@@ -50,12 +52,12 @@ export class IframeComm {
     // Set timeout
     if (timeout > 0) {
       this.timeoutHandle = setTimeout(() => {
-        console.warn('IframeComm: Timeout - no gameOver message received')
+        debugWarn('IframeComm: Timeout - no gameOver message received')
         this.triggerTimeout()
       }, timeout)
     }
 
-    console.log(`IframeComm: Listening for messages (timeout: ${timeout}ms)`)
+    debugLog(`IframeComm: Listening for messages (timeout: ${timeout}ms)`)
   }
 
   /**
@@ -75,7 +77,7 @@ export class IframeComm {
       this.timeoutHandle = null
     }
 
-    console.log('IframeComm: Stopped listening')
+    debugLog('IframeComm: Stopped listening')
   }
 
   /**
@@ -97,17 +99,17 @@ export class IframeComm {
 
     // Validate payload
     if (!payload || typeof payload !== 'object') {
-      console.error('Invalid gameOver payload:', payload)
+      debugError('Invalid gameOver payload:', payload)
       return
     }
 
     // Validate score
     if (typeof payload.score !== 'number' || payload.score < 0) {
-      console.error('Invalid score in gameOver payload:', payload.score)
+      debugError('Invalid score in gameOver payload:', payload.score)
       return
     }
 
-    console.log('IframeComm: Received gameOver message:', payload.score)
+    debugLog('IframeComm: Received gameOver message:', payload.score)
 
     // Clear timeout
     if (this.timeoutHandle) {
@@ -134,9 +136,9 @@ export class IframeComm {
       source.postMessage({
         type: 'acknowledged'
       }, '*')
-      console.log('IframeComm: Sent acknowledgment to game')
+      debugLog('IframeComm: Sent acknowledgment to game')
     } catch (error) {
-      console.error('Error sending acknowledgment:', error)
+      debugError('Error sending acknowledgment:', error)
     }
   }
 
@@ -146,11 +148,11 @@ export class IframeComm {
    */
   onGameOver(callback) {
     if (typeof callback !== 'function') {
-      console.error('Callback must be a function')
+      debugError('Callback must be a function')
       return
     }
     this.gameOverCallbacks.push(callback)
-    console.log('IframeComm: Game Over callback registered')
+    debugLog('IframeComm: Game Over callback registered')
   }
 
   /**
@@ -173,7 +175,7 @@ export class IframeComm {
       try {
         callback(score)
       } catch (error) {
-        console.error('Game Over callback error:', error)
+        debugError('Game Over callback error:', error)
       }
     })
   }
@@ -182,14 +184,14 @@ export class IframeComm {
    * Trigger timeout callbacks (no message received)
    */
   triggerTimeout() {
-    console.log('IframeComm: Timeout triggered')
+    debugLog('IframeComm: Timeout triggered')
 
     // Trigger callbacks with null score to indicate timeout
     this.gameOverCallbacks.forEach(callback => {
       try {
         callback(null)
       } catch (error) {
-        console.error('Game Over timeout callback error:', error)
+        debugError('Game Over timeout callback error:', error)
       }
     })
 
@@ -203,7 +205,7 @@ export class IframeComm {
   reset() {
     this.stopListening()
     this.gameOverCallbacks = []
-    console.log('IframeComm: Reset')
+    debugLog('IframeComm: Reset')
   }
 
   /**
@@ -212,6 +214,6 @@ export class IframeComm {
   destroy() {
     this.stopListening()
     this.gameOverCallbacks = []
-    console.log('IframeComm: Destroyed')
+    debugLog('IframeComm: Destroyed')
   }
 }

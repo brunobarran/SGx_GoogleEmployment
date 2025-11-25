@@ -23,6 +23,7 @@
 
 import { GoLEngine } from '../core/GoLEngine.js'
 import { Patterns } from './Patterns.js'
+import { debugLog, debugWarn } from './Logger.js'
 
 // ============================================
 // ENUMS AND CONSTANTS
@@ -331,7 +332,7 @@ function createStaticRenderer(patternName, phase, globalCellSize) {
     mode: RenderMode.STATIC
   }
 
-  console.log(`[PatternRenderer] Static: ${patternName} phase ${phase}/${period - 1}, ${dimensions.width}×${dimensions.height}px`)
+  debugLog(`[PatternRenderer] Static: ${patternName} phase ${phase}/${period - 1}, ${dimensions.width}×${dimensions.height}px`)
 
   return { gol, dimensions, metadata }
 }
@@ -360,7 +361,7 @@ function createLoopRenderer(patternName, globalCellSize, loopUpdateRate) {
 
   const period = PatternPeriod[patternName] || 1
   if (period === 1) {
-    console.warn(`[PatternRenderer] Pattern ${patternName} is a still life (period 1), loop mode will show no animation`)
+    debugWarn(`[PatternRenderer] Pattern ${patternName} is a still life (period 1), loop mode will show no animation`)
   }
 
   // 1. Get pattern dimensions
@@ -410,7 +411,7 @@ function createLoopRenderer(patternName, globalCellSize, loopUpdateRate) {
     mode: RenderMode.LOOP
   }
 
-  console.log(`[PatternRenderer] Loop: ${patternName} period ${period}, ${dimensions.width}×${dimensions.height}px, ${loopUpdateRate}fps`)
+  debugLog(`[PatternRenderer] Loop: ${patternName} period ${period}, ${dimensions.width}×${dimensions.height}px, ${loopUpdateRate}fps`)
 
   return { gol, dimensions, metadata }
 }

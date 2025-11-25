@@ -13,6 +13,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { GAMES } from '../installation/GameRegistry.js'
+import { debugLog } from '../utils/Logger.js'
 
 export class IdleLeaderboardShowcaseScreen {
   /**
@@ -64,18 +65,18 @@ export class IdleLeaderboardShowcaseScreen {
    * Show screen - Select random game and display top 5
    */
   show() {
-    console.log('IdleLeaderboardShowcaseScreen: Show')
+    debugLog('IdleLeaderboardShowcaseScreen: Show')
 
     // Select random game with scores
     this.selectedGame = this.selectRandomGame()
 
     if (!this.selectedGame) {
-      console.log('IdleLeaderboardShowcaseScreen: No games with scores - aborting')
+      debugLog('IdleLeaderboardShowcaseScreen: No games with scores - aborting')
       this.close()
       return
     }
 
-    console.log('IdleLeaderboardShowcaseScreen: Showing', this.selectedGame.name)
+    debugLog('IdleLeaderboardShowcaseScreen: Showing', this.selectedGame.name)
 
     this.isActive = true
 
@@ -87,11 +88,11 @@ export class IdleLeaderboardShowcaseScreen {
 
     // Set auto-close timer (20 seconds) - using native setTimeout
     this.autoCloseTimerHandle = setTimeout(() => {
-      console.log('IdleLeaderboardShowcaseScreen: Auto-close timeout reached')
+      debugLog('IdleLeaderboardShowcaseScreen: Auto-close timeout reached')
       this.close()
     }, IdleLeaderboardShowcaseScreen.AUTO_CLOSE_TIMEOUT)
 
-    console.log('IdleLeaderboardShowcaseScreen: Active (20s auto-close)')
+    debugLog('IdleLeaderboardShowcaseScreen: Active (20s auto-close)')
   }
 
   /**
@@ -337,7 +338,7 @@ export class IdleLeaderboardShowcaseScreen {
    * Handle key press - ANY key closes showcase
    */
   handleKeyPress(key) {
-    console.log('IdleLeaderboardShowcaseScreen: Key pressed - closing')
+    debugLog('IdleLeaderboardShowcaseScreen: Key pressed - closing')
     this.close()
   }
 
@@ -345,7 +346,7 @@ export class IdleLeaderboardShowcaseScreen {
    * Close showcase and return to IdleScreen
    */
   close() {
-    console.log('IdleLeaderboardShowcaseScreen: Closing')
+    debugLog('IdleLeaderboardShowcaseScreen: Closing')
     this.hide()
 
     // Notify parent (IdleScreen) that we closed
@@ -358,7 +359,7 @@ export class IdleLeaderboardShowcaseScreen {
    * Hide screen - Clean up
    */
   hide() {
-    console.log('IdleLeaderboardShowcaseScreen: Hide')
+    debugLog('IdleLeaderboardShowcaseScreen: Hide')
     this.isActive = false
 
     // Clear auto-close timer
@@ -376,6 +377,6 @@ export class IdleLeaderboardShowcaseScreen {
       this.element = null
     }
 
-    console.log('IdleLeaderboardShowcaseScreen: Cleaned up')
+    debugLog('IdleLeaderboardShowcaseScreen: Cleaned up')
   }
 }

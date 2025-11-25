@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog, debugError } from '../utils/Logger.js'
+
 export class AppState {
   // Valid screen states
   static SCREENS = {
@@ -58,14 +60,14 @@ export class AppState {
   transition(newScreen) {
     // Validate screen exists
     if (!Object.values(AppState.SCREENS).includes(newScreen)) {
-      console.error(`Invalid screen: ${newScreen}`)
+      debugError(`Invalid screen: ${newScreen}`)
       return false
     }
 
     // Validate transition is allowed
     const validTransitions = AppState.TRANSITIONS[this.currentScreen]
     if (!validTransitions.includes(newScreen)) {
-      console.error(`Invalid transition: ${this.currentScreen} → ${newScreen}`)
+      debugError(`Invalid transition: ${this.currentScreen} → ${newScreen}`)
       return false
     }
 
@@ -76,7 +78,7 @@ export class AppState {
     const previousScreen = this.currentScreen
     this.currentScreen = newScreen
 
-    console.log(`Screen transition: ${previousScreen} → ${newScreen}`)
+    debugLog(`Screen transition: ${previousScreen} → ${newScreen}`)
 
     // Notify observers
     this.notifyObservers(newScreen, previousScreen)
@@ -90,11 +92,11 @@ export class AppState {
    */
   setGame(game) {
     if (!game || !game.id || !game.name || !game.path) {
-      console.error('Invalid game object:', game)
+      debugError('Invalid game object:', game)
       return
     }
     this.selectedGame = game
-    console.log('Selected game:', game.name)
+    debugLog('Selected game:', game.name)
   }
 
   /**
@@ -103,11 +105,11 @@ export class AppState {
    */
   setScore(score) {
     if (typeof score !== 'number' || score < 0) {
-      console.error('Invalid score:', score)
+      debugError('Invalid score:', score)
       return
     }
     this.currentScore = score
-    console.log('Score set:', score)
+    debugLog('Score set:', score)
   }
 
   /**
@@ -116,11 +118,11 @@ export class AppState {
    */
   setPlayerName(name) {
     if (typeof name !== 'string' || name.length !== 3 || !/^[A-Z]{3}$/.test(name)) {
-      console.error('Invalid player name (must be 3 letters A-Z):', name)
+      debugError('Invalid player name (must be 3 letters A-Z):', name)
       return
     }
     this.playerName = name
-    console.log('Player name set:', name)
+    debugLog('Player name set:', name)
   }
 
   /**
@@ -129,18 +131,18 @@ export class AppState {
    */
   setScoreTimestamp(timestamp) {
     if (typeof timestamp !== 'string') {
-      console.error('Invalid score timestamp:', timestamp)
+      debugError('Invalid score timestamp:', timestamp)
       return
     }
     this.scoreTimestamp = timestamp
-    console.log('Score timestamp set:', timestamp)
+    debugLog('Score timestamp set:', timestamp)
   }
 
   /**
    * Reset all session data and return to idle
    */
   reset() {
-    console.log('Resetting AppState to idle')
+    debugLog('Resetting AppState to idle')
 
     // Clear session data
     this.selectedGame = null
@@ -165,11 +167,11 @@ export class AppState {
    */
   addObserver(callback) {
     if (typeof callback !== 'function') {
-      console.error('Observer must be a function')
+      debugError('Observer must be a function')
       return
     }
     this.observers.push(callback)
-    console.log('Observer registered, total:', this.observers.length)
+    debugLog('Observer registered, total:', this.observers.length)
   }
 
   /**
@@ -179,7 +181,7 @@ export class AppState {
    */
   subscribe(callback) {
     if (typeof callback !== 'function') {
-      console.error('Subscribe callback must be a function')
+      debugError('Subscribe callback must be a function')
       return () => {}
     }
 
@@ -189,14 +191,14 @@ export class AppState {
     }
 
     this.observers.push(wrappedCallback)
-    console.log('Subscriber registered, total:', this.observers.length)
+    debugLog('Subscriber registered, total:', this.observers.length)
 
     // Return unsubscribe function
     return () => {
       const index = this.observers.indexOf(wrappedCallback)
       if (index > -1) {
         this.observers.splice(index, 1)
-        console.log('Subscriber removed, total:', this.observers.length)
+        debugLog('Subscriber removed, total:', this.observers.length)
       }
     }
   }
@@ -211,7 +213,7 @@ export class AppState {
       try {
         callback(newScreen, previousScreen)
       } catch (error) {
-        console.error('Observer callback error:', error)
+        debugError('Observer callback error:', error)
       }
     })
   }
@@ -230,12 +232,12 @@ export class AppState {
 
     // Set new timeout
     this.timeoutHandles[timeoutId] = setTimeout(() => {
-      console.log(`Auto-advance timeout: ${this.currentScreen} → ${targetScreen}`)
+      debugLog(`Auto-advance timeout: ${this.currentScreen} → ${targetScreen}`)
       this.transition(targetScreen)
       delete this.timeoutHandles[timeoutId]
     }, delay)
 
-    console.log(`Timeout set: ${delay}ms → ${targetScreen} (ID: ${timeoutId})`)
+    debugLog(`Timeout set: ${delay}ms → ${targetScreen} (ID: ${timeoutId})`)
   }
 
   /**
@@ -246,7 +248,7 @@ export class AppState {
     if (this.timeoutHandles[timeoutId]) {
       clearTimeout(this.timeoutHandles[timeoutId])
       delete this.timeoutHandles[timeoutId]
-      console.log(`Cleared timeout: ${timeoutId}`)
+      debugLog(`Cleared timeout: ${timeoutId}`)
     }
   }
 
@@ -258,7 +260,7 @@ export class AppState {
       clearTimeout(this.timeoutHandles[id])
     })
     this.timeoutHandles = {}
-    console.log('All timeouts cleared')
+    debugLog('All timeouts cleared')
   }
 
   /**

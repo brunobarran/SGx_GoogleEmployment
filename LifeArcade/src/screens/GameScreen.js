@@ -11,6 +11,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { validateGame } from '../installation/GameRegistry.js'
+import { debugLog, debugWarn, debugError } from '../utils/Logger.js'
 
 export class GameScreen {
   /**
@@ -47,12 +48,12 @@ export class GameScreen {
    * Show screen - Create iframe and load game
    */
   show() {
-    console.log('GameScreen: Show')
+    debugLog('GameScreen: Show')
 
     // Get selected game
     const game = this.appState.getState().selectedGame
     if (!validateGame(game)) {
-      console.error('GameScreen: Invalid or missing game')
+      debugError('GameScreen: Invalid or missing game')
       this.appState.reset()
       return
     }
@@ -103,13 +104,13 @@ export class GameScreen {
         // Simulate a click on the iframe to ensure it gets focus
         this.iframe.click()
 
-        console.log('GameScreen: Iframe focused - keyboard events ready')
-        console.log('GameScreen: Active element:', document.activeElement)
+        debugLog('GameScreen: Iframe focused - keyboard events ready')
+        debugLog('GameScreen: Active element:', document.activeElement)
 
         // Note: Theme already applied via URL parameter (synchronous)
         // No need to send postMessage here - theme is set before first render
       } catch (error) {
-        console.warn('GameScreen: Could not auto-focus iframe:', error)
+        debugWarn('GameScreen: Could not auto-focus iframe:', error)
       }
     }
 
@@ -146,7 +147,7 @@ export class GameScreen {
     // IMPORTANT: Stop InputManager from intercepting keys while game is active
     // This allows iframe to receive all keyboard events directly
     this.inputManager.stopListening()
-    console.log('GameScreen: InputManager disabled - iframe has full keyboard control')
+    debugLog('GameScreen: InputManager disabled - iframe has full keyboard control')
 
     // Listen for postMessages from game-wrapper (exitGame, themeChangeFromGame)
     this.gameMessageHandler = (event) => {
@@ -157,7 +158,7 @@ export class GameScreen {
 
       // Handle exit game (Escape key from game-wrapper)
       if (event.data && event.data.type === 'exitGame') {
-        console.log('GameScreen: Received exitGame message from iframe')
+        debugLog('GameScreen: Received exitGame message from iframe')
         this.exitToIdle()
         return
       }
@@ -166,7 +167,7 @@ export class GameScreen {
       if (event.data && event.data.type === 'themeChangeFromGame') {
         const theme = event.data.payload?.theme
         if (theme === 'day' || theme === 'night') {
-          console.log(`GameScreen: Received themeChangeFromGame message - changing to ${theme}`)
+          debugLog(`GameScreen: Received themeChangeFromGame message - changing to ${theme}`)
           this.themeManager.setTheme(theme)
           // Note: ThemeManager will broadcast back to iframe, but that's OK (idempotent)
         }
@@ -177,14 +178,14 @@ export class GameScreen {
 
     // Set game timeout
     this.gameTimeoutHandle = setTimeout(() => {
-      console.warn('GameScreen: Game timeout reached (30 min)')
+      debugWarn('GameScreen: Game timeout reached (30 min)')
       this.exitToIdle()
     }, GameScreen.MAX_GAME_TIME)
 
     // Listen for theme changes and forward to game
     this.themeManager.addObserver(this.handleThemeChange)
 
-    console.log(`GameScreen: Loading ${game.name}`)
+    debugLog(`GameScreen: Loading ${game.name}`)
   }
 
   /**
@@ -192,7 +193,7 @@ export class GameScreen {
    * @param {string} theme - 'day' or 'night'
    */
   handleThemeChange(theme) {
-    console.log(`GameScreen: Theme changed to ${theme} - notifying game`)
+    debugLog(`GameScreen: Theme changed to ${theme} - notifying game`)
     this.sendThemeToGame(theme)
   }
 
@@ -206,7 +207,7 @@ export class GameScreen {
         type: 'themeChange',
         payload: { theme }
       }, '*')
-      console.log(`GameScreen: Sent theme "${theme}" to game`)
+      debugLog(`GameScreen: Sent theme "${theme}" to game`)
     }
   }
 
@@ -214,7 +215,7 @@ export class GameScreen {
    * Hide screen - Clean up iframe and listeners
    */
   hide() {
-    console.log('GameScreen: Hide')
+    debugLog('GameScreen: Hide')
 
     // Stop listening for postMessage
     this.iframeComm.stopListening()
@@ -227,7 +228,7 @@ export class GameScreen {
 
     // Re-enable InputManager for other screens
     this.inputManager.startListening()
-    console.log('GameScreen: InputManager re-enabled')
+    debugLog('GameScreen: InputManager re-enabled')
 
     // Remove game message listener (postMessage from iframe)
     if (this.gameMessageHandler) {
@@ -248,7 +249,7 @@ export class GameScreen {
       this.iframe = null
     }
 
-    console.log('GameScreen: Cleaned up')
+    debugLog('GameScreen: Cleaned up')
   }
 
   /**
@@ -256,18 +257,18 @@ export class GameScreen {
    * @param {number|null} score - Final score (null if timeout)
    */
   handleGameOver(score) {
-    console.log('GameScreen: Game Over received, score:', score)
+    debugLog('GameScreen: Game Over received, score:', score)
 
     // If score is null (timeout), exit to idle
     if (score === null) {
-      console.warn('GameScreen: No score received (timeout)')
+      debugWarn('GameScreen: No score received (timeout)')
       this.exitToIdle()
       return
     }
 
     // Validate score
     if (typeof score !== 'number' || score < 0) {
-      console.error('GameScreen: Invalid score:', score)
+      debugError('GameScreen: Invalid score:', score)
       this.exitToIdle()
       return
     }
@@ -290,14 +291,14 @@ export class GameScreen {
    */
   handleKeyPress(key) {
     // No keys handled here - all input managed by iframe or game-wrapper
-    console.warn('GameScreen.handleKeyPress should not be called (InputManager disabled)')
+    debugWarn('GameScreen.handleKeyPress should not be called (InputManager disabled)')
   }
 
   /**
    * Exit to Idle (no score saved)
    */
   exitToIdle() {
-    console.log('GameScreen: Exiting to Idle')
+    debugLog('GameScreen: Exiting to Idle')
     this.appState.reset()
   }
 }

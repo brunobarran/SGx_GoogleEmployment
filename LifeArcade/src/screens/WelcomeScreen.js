@@ -9,6 +9,7 @@
  */
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
+import { debugLog } from '../utils/Logger.js'
 
 export class WelcomeScreen {
   /**
@@ -31,7 +32,7 @@ export class WelcomeScreen {
    * Show screen - Create DOM and add event listeners
    */
   show() {
-    console.log('WelcomeScreen: Show')
+    debugLog('WelcomeScreen: Show')
 
     // Calculate responsive dimensions (using ScreenHelper)
     const { containerWidth, containerHeight } = getResponsiveDimensions()
@@ -158,14 +159,14 @@ export class WelcomeScreen {
     // Set inactivity timeout - return to Idle after 30s
     this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
 
-    console.log('WelcomeScreen: Active (30s inactivity timer)')
+    debugLog('WelcomeScreen: Active (30s inactivity timer)')
   }
 
   /**
    * Hide screen - Remove DOM and event listeners
    */
   hide() {
-    console.log('WelcomeScreen: Hide')
+    debugLog('WelcomeScreen: Hide')
 
     // Clear inactivity timeout
     this.appState.clearTimeout('welcome-inactivity')
@@ -179,7 +180,7 @@ export class WelcomeScreen {
       this.element = null
     }
 
-    console.log('WelcomeScreen: Cleaned up')
+    debugLog('WelcomeScreen: Cleaned up')
   }
 
   /**
@@ -193,7 +194,7 @@ export class WelcomeScreen {
 
     // SPACE or N advances to Gallery screen
     if (key === ' ' || key === 'n' || key === 'N') {
-      console.log('WelcomeScreen: Key pressed - advancing to Gallery')
+      debugLog('WelcomeScreen: Key pressed - advancing to Gallery')
       this.appState.transition('gallery')
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)

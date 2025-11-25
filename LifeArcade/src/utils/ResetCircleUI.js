@@ -9,6 +9,8 @@
  * @license ISC
  */
 
+import { debugLog, debugError } from './Logger.js'
+
 export class ResetCircleUI {
   /**
    * Color configuration
@@ -42,7 +44,7 @@ export class ResetCircleUI {
     this.svg = null
     this.circle = null
 
-    console.log('ResetCircleUI: Initialized')
+    debugLog('ResetCircleUI: Initialized')
   }
 
   /**
@@ -52,11 +54,11 @@ export class ResetCircleUI {
    */
   show(type, progress = 0) {
     if (!type || (type !== 'soft' && type !== 'hard')) {
-      console.error('ResetCircleUI: Invalid type:', type)
+      debugError('ResetCircleUI: Invalid type:', type)
       return
     }
 
-    console.log(`ResetCircleUI: Show (${type}, ${progress})`)
+    debugLog(`ResetCircleUI: Show (${type}, ${progress})`)
 
     this.isVisible = true
     this.currentType = type
@@ -89,7 +91,7 @@ export class ResetCircleUI {
       return
     }
 
-    console.log('ResetCircleUI: Hide')
+    debugLog('ResetCircleUI: Hide')
 
     this.isVisible = false
     this.currentType = null
@@ -174,7 +176,7 @@ export class ResetCircleUI {
     // Add container to body
     document.body.appendChild(this.container)
 
-    console.log('ResetCircleUI: DOM created')
+    debugLog('ResetCircleUI: DOM created')
   }
 
   /**
@@ -204,6 +206,6 @@ export class ResetCircleUI {
     this.currentType = null
     this.currentProgress = 0
 
-    console.log('ResetCircleUI: Destroyed')
+    debugLog('ResetCircleUI: Destroyed')
   }
 }

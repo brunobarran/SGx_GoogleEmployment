@@ -14,6 +14,7 @@
 
 import { getResponsiveDimensions } from '../installation/ScreenHelper.js'
 import { validateGame } from '../installation/GameRegistry.js'
+import { debugLog, debugError } from '../utils/Logger.js'
 
 export class ScoreEntryScreen {
   /**
@@ -46,7 +47,7 @@ export class ScoreEntryScreen {
    * Show screen - Create DOM and add event listeners
    */
   show() {
-    console.log('ScoreEntryScreen: Show')
+    debugLog('ScoreEntryScreen: Show')
 
     // Get score from AppState
     const state = this.appState.getState()
@@ -54,7 +55,7 @@ export class ScoreEntryScreen {
     const game = state.selectedGame
 
     if (score === null || !validateGame(game)) {
-      console.error('ScoreEntryScreen: Invalid score or game')
+      debugError('ScoreEntryScreen: Invalid score or game')
       this.appState.reset()
       return
     }
@@ -260,7 +261,7 @@ export class ScoreEntryScreen {
     // Listen for keys
     this.inputManager.onKeyPress(this.handleKeyPress)
 
-    console.log('ScoreEntryScreen: Active')
+    debugLog('ScoreEntryScreen: Active')
   }
 
   /**
@@ -348,7 +349,7 @@ export class ScoreEntryScreen {
    * Hide screen - Remove DOM and event listeners
    */
   hide() {
-    console.log('ScoreEntryScreen: Hide')
+    debugLog('ScoreEntryScreen: Hide')
 
     // Clear inactivity timeout
     this.appState.clearTimeout('score-entry-inactivity')
@@ -368,7 +369,7 @@ export class ScoreEntryScreen {
       this.element = null
     }
 
-    console.log('ScoreEntryScreen: Cleaned up')
+    debugLog('ScoreEntryScreen: Cleaned up')
   }
 
   /**
@@ -488,7 +489,7 @@ export class ScoreEntryScreen {
    */
   confirmName() {
     const name = this.letters.join('')
-    console.log(`ScoreEntryScreen: Confirmed name - ${name}`)
+    debugLog(`ScoreEntryScreen: Confirmed name - ${name}`)
 
     // Store in AppState
     this.appState.setPlayerName(name)
@@ -504,15 +505,15 @@ export class ScoreEntryScreen {
     )
 
     if (success) {
-      console.log('Score saved successfully')
+      debugLog('Score saved successfully')
 
       // Get scores AFTER saving
       const scoresAfter = this.storageManager.getScores(state.selectedGame.id)
 
-      console.log('ScoreEntryScreen DEBUG:')
-      console.log('- Looking for:', name, state.currentScore)
-      console.log('- Timestamp before save:', timestampBeforeSave)
-      console.log('- All scores:', scoresAfter.map(s => ({ name: s.name, score: s.score, date: s.date })))
+      debugLog('ScoreEntryScreen DEBUG:')
+      debugLog('- Looking for:', name, state.currentScore)
+      debugLog('- Timestamp before save:', timestampBeforeSave)
+      debugLog('- All scores:', scoresAfter.map(s => ({ name: s.name, score: s.score, date: s.date })))
 
       // Find entries matching name + score
       const matchingEntries = scoresAfter.filter(entry =>
@@ -520,7 +521,7 @@ export class ScoreEntryScreen {
         entry.score === state.currentScore
       )
 
-      console.log('- Matching entries:', matchingEntries)
+      debugLog('- Matching entries:', matchingEntries)
 
       if (matchingEntries.length > 0) {
         // Take the MOST RECENT one (closest to timestampBeforeSave)
@@ -533,15 +534,15 @@ export class ScoreEntryScreen {
 
         // Save the exact timestamp from localStorage to AppState
         this.appState.setScoreTimestamp(newEntry.date)
-        console.log('✓ Score timestamp captured:', newEntry.date)
+        debugLog('✓ Score timestamp captured:', newEntry.date)
       } else {
-        console.error('✗ Could not find matching score entry')
-        console.log('- This means the score was saved but immediately discarded (not in top 10)')
+        debugError('✗ Could not find matching score entry')
+        debugLog('- This means the score was saved but immediately discarded (not in top 10)')
         // Still set a timestamp so we can show "you didn't make top 10" message
         this.appState.setScoreTimestamp(timestampBeforeSave)
       }
     } else {
-      console.error('Failed to save score')
+      debugError('Failed to save score')
     }
 
     // Advance to Leaderboard

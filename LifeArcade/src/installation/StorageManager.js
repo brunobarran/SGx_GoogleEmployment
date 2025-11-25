@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog, debugWarn, debugError } from '../utils/Logger.js'
+
 export class StorageManager {
   /**
    * Storage key format: scores_{gameName}
@@ -24,7 +26,7 @@ export class StorageManager {
     this.isAvailable = this.testLocalStorage()
 
     if (!this.isAvailable) {
-      console.warn('localStorage not available - scores will not persist')
+      debugWarn('localStorage not available - scores will not persist')
     }
   }
 
@@ -53,23 +55,23 @@ export class StorageManager {
    */
   saveScore(gameName, playerName, score) {
     if (!this.isAvailable) {
-      console.warn('Cannot save score - localStorage not available')
+      debugWarn('Cannot save score - localStorage not available')
       return false
     }
 
     // Validate inputs
     if (!gameName || typeof gameName !== 'string') {
-      console.error('Invalid gameName:', gameName)
+      debugError('Invalid gameName:', gameName)
       return false
     }
 
     if (!playerName || typeof playerName !== 'string' || playerName.length !== 3) {
-      console.error('Invalid playerName (must be 3 letters):', playerName)
+      debugError('Invalid playerName (must be 3 letters):', playerName)
       return false
     }
 
     if (typeof score !== 'number' || score < 0) {
-      console.error('Invalid score:', score)
+      debugError('Invalid score:', score)
       return false
     }
 
@@ -94,13 +96,13 @@ export class StorageManager {
       const key = StorageManager.KEY_PREFIX + gameName
       localStorage.setItem(key, JSON.stringify(top50))
 
-      console.log(`Score saved: ${gameName} - ${playerName}: ${score}`)
+      debugLog(`Score saved: ${gameName} - ${playerName}: ${score}`)
       return true
 
     } catch (error) {
       // Handle quota exceeded error
       if (error.name === 'QuotaExceededError') {
-        console.warn('localStorage quota exceeded, clearing old scores')
+        debugWarn('localStorage quota exceeded, clearing old scores')
         this.handleQuotaExceeded(gameName)
 
         // Retry save
@@ -115,14 +117,14 @@ export class StorageManager {
           const top50 = scores.slice(0, StorageManager.MAX_SCORES)
           const key = StorageManager.KEY_PREFIX + gameName
           localStorage.setItem(key, JSON.stringify(top50))
-          console.log('Score saved after quota cleanup')
+          debugLog('Score saved after quota cleanup')
           return true
         } catch (retryError) {
-          console.error('Failed to save score after retry:', retryError)
+          debugError('Failed to save score after retry:', retryError)
           return false
         }
       } else {
-        console.error('Error saving score:', error)
+        debugError('Error saving score:', error)
         return false
       }
     }
@@ -139,7 +141,7 @@ export class StorageManager {
     }
 
     if (!gameName || typeof gameName !== 'string') {
-      console.error('Invalid gameName:', gameName)
+      debugError('Invalid gameName:', gameName)
       return []
     }
 
@@ -155,7 +157,7 @@ export class StorageManager {
 
       // Validate data structure
       if (!Array.isArray(scores)) {
-        console.error('Invalid scores data structure for', gameName)
+        debugError('Invalid scores data structure for', gameName)
         return []
       }
 
@@ -173,7 +175,7 @@ export class StorageManager {
       return validScores.slice(0, StorageManager.MAX_SCORES)
 
     } catch (error) {
-      console.error('Error loading scores:', error)
+      debugError('Error loading scores:', error)
       return []
     }
   }
@@ -212,17 +214,17 @@ export class StorageManager {
     }
 
     if (!gameName || typeof gameName !== 'string') {
-      console.error('Invalid gameName:', gameName)
+      debugError('Invalid gameName:', gameName)
       return false
     }
 
     try {
       const key = StorageManager.KEY_PREFIX + gameName
       localStorage.removeItem(key)
-      console.log(`Cleared scores for: ${gameName}`)
+      debugLog(`Cleared scores for: ${gameName}`)
       return true
     } catch (error) {
-      console.error('Error clearing scores:', error)
+      debugError('Error clearing scores:', error)
       return false
     }
   }
@@ -232,7 +234,7 @@ export class StorageManager {
    * @param {string} currentGame - Game to preserve
    */
   handleQuotaExceeded(currentGame) {
-    console.log('Handling localStorage quota exceeded')
+    debugLog('Handling localStorage quota exceeded')
 
     try {
       // Get all score keys
@@ -248,12 +250,12 @@ export class StorageManager {
       keys.forEach(key => {
         if (key !== StorageManager.KEY_PREFIX + currentGame) {
           localStorage.removeItem(key)
-          console.log('Removed old scores:', key)
+          debugLog('Removed old scores:', key)
         }
       })
 
     } catch (error) {
-      console.error('Error handling quota:', error)
+      debugError('Error handling quota:', error)
     }
   }
 
@@ -277,7 +279,7 @@ export class StorageManager {
       }
       return games
     } catch (error) {
-      console.error('Error getting games:', error)
+      debugError('Error getting games:', error)
       return []
     }
   }

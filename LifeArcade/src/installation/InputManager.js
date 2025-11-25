@@ -8,6 +8,8 @@
  * @license ISC
  */
 
+import { debugLog, debugError } from '../utils/Logger.js'
+
 export class InputManager {
   /**
    * Key codes for arcade controls
@@ -60,7 +62,7 @@ export class InputManager {
   startListening() {
     window.addEventListener('keydown', this.handleKeyDown)
     window.addEventListener('keyup', this.handleKeyUp)
-    console.log('InputManager: Listening for keyboard events')
+    debugLog('InputManager: Listening for keyboard events')
   }
 
   /**
@@ -69,7 +71,7 @@ export class InputManager {
   stopListening() {
     window.removeEventListener('keydown', this.handleKeyDown)
     window.removeEventListener('keyup', this.handleKeyUp)
-    console.log('InputManager: Stopped listening')
+    debugLog('InputManager: Stopped listening')
   }
 
   /**
@@ -133,7 +135,7 @@ export class InputManager {
    */
   onKeyPress(callback) {
     if (typeof callback !== 'function') {
-      console.error('Callback must be a function')
+      debugError('Callback must be a function')
       return
     }
     this.keyPressCallbacks.push(callback)
@@ -160,7 +162,7 @@ export class InputManager {
       try {
         callback(key, event)
       } catch (error) {
-        console.error('Key press callback error:', error)
+        debugError('Key press callback error:', error)
       }
     })
   }
@@ -230,7 +232,7 @@ export class InputManager {
       }
     })
 
-    console.log('InputManager: Browser defaults prevented (Space handled in handleKeyDown)')
+    debugLog('InputManager: Browser defaults prevented (Space handled in handleKeyDown)')
   }
 
   /**
@@ -256,6 +258,6 @@ export class InputManager {
     this.stopListening()
     this.keyPressCallbacks = []
     this.clear()
-    console.log('InputManager: Destroyed')
+    debugLog('InputManager: Destroyed')
   }
 }

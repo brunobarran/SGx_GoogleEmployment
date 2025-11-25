@@ -16,6 +16,7 @@
 import { GoLEngine } from '../core/GoLEngine.js'
 import { SimpleGradientRenderer } from './SimpleGradientRenderer.js'
 import { VISUAL_CONFIG, PERFORMANCE_CONFIG, DENSITY_CONFIG } from '../utils/Config.js'
+import { debugLog } from '../utils/Logger.js'
 
 /**
  * Pure GoL background with animated gradient rendering
@@ -119,7 +120,7 @@ export class GoLBackground {
     // Optional: Log performance
     if (PERFORMANCE_CONFIG.ENABLE_PERFORMANCE_LOGGING) {
       if (this.stats.updateCount % PERFORMANCE_CONFIG.PERFORMANCE_LOG_INTERVAL === 0) {
-        console.log(`[GoLBackground] Update time: ${this.stats.lastUpdateTime.toFixed(3)}ms`)
+        debugLog(`[GoLBackground] Update time: ${this.stats.lastUpdateTime.toFixed(3)}ms`)
       }
     }
   }
@@ -154,7 +155,7 @@ export class GoLBackground {
     // Optional: Log performance
     if (PERFORMANCE_CONFIG.ENABLE_PERFORMANCE_LOGGING) {
       if (this.p5.frameCount % PERFORMANCE_CONFIG.PERFORMANCE_LOG_INTERVAL === 0) {
-        console.log(`[GoLBackground] Render time: ${this.stats.lastRenderTime.toFixed(3)}ms`)
+        debugLog(`[GoLBackground] Render time: ${this.stats.lastRenderTime.toFixed(3)}ms`)
       }
     }
 

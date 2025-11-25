@@ -9,6 +9,8 @@
  * @license ISC
  */
 
+import { debugLog } from '../utils/Logger.js'
+
 /**
  * Global state for hitbox debugging
  */
@@ -29,12 +31,12 @@ export function initHitboxDebug() {
     document.addEventListener('keydown', (e) => {
       if (e.key.toLowerCase() === 'h') {
         hitboxDebugEnabled = !hitboxDebugEnabled
-        console.log(`[HitboxDebug] ${hitboxDebugEnabled ? 'Enabled' : 'Disabled'}`)
+        debugLog(`[HitboxDebug] ${hitboxDebugEnabled ? 'Enabled' : 'Disabled'}`)
         e.preventDefault()
       }
     })
     window.__hitboxDebugInitialized = true
-    console.log('[HitboxDebug] Initialized (press H to toggle)')
+    debugLog('[HitboxDebug] Initialized (press H to toggle)')
   }
 }
 
