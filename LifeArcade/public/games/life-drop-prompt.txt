@@ -1,0 +1,1 @@
+Create a pure Game of Life experience where players place R-pentomino patterns on a grid and watch them evolve. The score is the peak population reached during the simulation. Use joystick to move the pattern cursor and button to drop. Simple, meditative, educational gameplay that showcases the emergent beauty of Conway's Game of Life.

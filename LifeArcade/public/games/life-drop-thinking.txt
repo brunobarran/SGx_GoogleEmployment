@@ -1,0 +1,63 @@
+// Life Drop - Pure GoL Experience
+// Thinking through the implementation...
+
+// The R-pentomino is special - from just 5 cells
+// it evolves into 116 cells over 1103 generations
+// This is the "Methuselah" pattern - small seeds, big chaos
+
+function analyzeGameDesign() {
+  // Core insight: GoL IS the game
+  // No enemies, no physics, just cellular automata
+
+  const philosophy = {
+    input: "Position patterns strategically",
+    output: "Watch emergence unfold",
+    score: "Peak population achieved"
+  }
+
+  // The strategy emerges naturally:
+  // - Patterns too close destroy each other
+  // - Patterns too far never interact
+  // - Sweet spot creates maximum chaos
+
+  return philosophy
+}
+
+// Phase 1: PLACEMENT
+// Player moves cursor with joystick
+// Drops R-pentomino with button
+// 5 drops total - position matters!
+
+const PATTERN = [
+  [0, 1, 1],
+  [1, 1, 0],
+  [0, 1, 0]
+]  // R-pentomino: 5 cells -> 116 peak
+
+// Phase 2: SIMULATION
+// B3/S23 rules run automatically
+// Population counted each generation
+// Peak tracked - this becomes score
+
+function countPopulation(grid) {
+  let count = 0
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      if (grid[x][y] === 1) count++
+    }
+  }
+  return count
+}
+
+// Game ends when:
+// - Population hits 0 (extinction)
+// - Pattern stabilizes (oscillators/still lifes)
+// - Max generations reached
+
+// The beauty: same 5 patterns placed differently
+// can yield wildly different scores
+// Emergence is the teacher here
+
+// Final score = peak population
+// High scores require understanding GoL dynamics
+// Educational through play
