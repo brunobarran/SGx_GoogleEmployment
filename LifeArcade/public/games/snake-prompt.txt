@@ -1,0 +1,23 @@
+Create a Snake game called "Trail of Life" where the snake is made entirely of Game of Life patterns.
+
+Core mechanics:
+- Each snake segment is an authentic GoL pattern (BLOCK, BEEHIVE, BLINKER, etc.)
+- Food items are also GoL patterns - some oscillate (BLINKER, BEACON), some are still lifes
+- When the snake eats food, that exact pattern becomes the new tail segment
+- This creates a unique visual "trail of life patterns" as the snake grows
+
+Visual requirements:
+- Use VideoGradientRenderer for colorful masked gradients
+- Portrait orientation 1200×1920 for arcade installation
+- 20×32 logical grid (60px cells)
+- Google brand colors throughout
+- Support day/night theme switching
+
+Gameplay:
+- Grid-based discrete movement (classic Snake feel)
+- Speed increases with each food eaten
+- Growth rate increases every 5 foods (1 → 2 → 3 segments per food)
+- Wall collision and self-collision cause game over
+- Explosions use Pure GoL patterns for visual effect
+
+The result should feel like Conway's Game of Life came alive as a playable snake.

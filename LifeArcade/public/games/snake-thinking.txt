@@ -1,0 +1,55 @@
+// Trail of Life - Snake meets Conway's Game of Life
+// Each segment is a living cellular automaton pattern
+
+// First, let me set up the grid system...
+// 20 columns × 32 rows = 640 cells
+// Each cell is 60×60 pixels on the 1200×1920 canvas
+
+const CONFIG = {
+  grid: { cols: 20, rows: 32, cellSize: 60 },
+  snake: { baseSpeed: 8, maxSpeed: 18 }
+}
+
+// The snake is an array of segments
+// Each segment stores its GoL pattern and gradient
+let snake = []
+
+// The unique mechanic: eaten patterns join the tail
+// When snake eats BLINKER, BLINKER becomes the new tail
+// This creates a visual history of everything eaten
+
+function onFoodEaten() {
+  // The magic happens here:
+  // 1. Spawn explosion particles
+  spawnExplosion(food.gridX, food.gridY)
+
+  // 2. New tail segment inherits food's pattern
+  tail.patternName = food.patternName
+  tail.gradient = food.gradient
+
+  // 3. Queue growth based on current difficulty
+  state.pendingGrowth += state.currentGrowth
+}
+
+// Movement is discrete, grid-based
+// Input is buffered to prevent accidental 180° turns
+function moveSnake() {
+  if (state.nextDirection) {
+    state.direction = state.nextDirection
+  }
+
+  // New head at front, remove tail (unless growing)
+  snake.unshift(newHead)
+  if (!growing) snake.pop()
+}
+
+// Difficulty progression:
+// Speed: 8 → 10.5 → 13 → 15.5 → 18 moves/second
+// Growth: 1 → 2 → 3 segments per food
+
+// Rendering: Each segment is centered in its grid cell
+// Oscillators (BLINKER, BEACON) animate via updateLoopPattern
+// Still lifes (BLOCK, BEEHIVE, TUB) remain frozen
+
+// The result: A snake that tells the story of its meal history
+// through authentic Game of Life patterns

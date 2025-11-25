@@ -25,12 +25,16 @@ import spaceInvadersPrompt from '../../public/games/space-invaders-prompt.txt?ra
 import dinoRunnerPrompt from '../../public/games/dino-runner-prompt.txt?raw'
 import breakoutPrompt from '../../public/games/breakout-prompt.txt?raw'
 import flappyBirdPrompt from '../../public/games/flappy-bird-prompt.txt?raw'
+import galagaPrompt from '../../public/games/galaga-prompt.txt?raw'
+import snakePrompt from '../../public/games/snake-prompt.txt?raw'
 
 // Import text content (thinking)
 import spaceInvadersThinking from '../../public/games/space-invaders-thinking.txt?raw'
 import dinoRunnerThinking from '../../public/games/dino-runner-thinking.txt?raw'
 import breakoutThinking from '../../public/games/breakout-thinking.txt?raw'
 import flappyBirdThinking from '../../public/games/flappy-bird-thinking.txt?raw'
+import galagaThinking from '../../public/games/galaga-thinking.txt?raw'
+import snakeThinking from '../../public/games/snake-thinking.txt?raw'
 
 /**
  * Map of text content by game ID
@@ -52,6 +56,14 @@ const TEXT_CONTENT = {
   'flappy-bird': {
     prompt: flappyBirdPrompt,
     thinking: flappyBirdThinking
+  },
+  'galaga': {
+    prompt: galagaPrompt,
+    thinking: galagaThinking
+  },
+  'snake': {
+    prompt: snakePrompt,
+    thinking: snakeThinking
   }
 }
 

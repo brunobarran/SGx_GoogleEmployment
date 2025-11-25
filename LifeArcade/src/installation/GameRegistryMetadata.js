@@ -67,6 +67,22 @@ export const GAMES_METADATA = [
     key: '4',
     promptPath: '/games/flappy-bird-prompt.txt',
     thinkingPath: '/games/flappy-bird-thinking.txt'
+  },
+  {
+    id: 'galaga',
+    name: 'Cellship Strike',
+    path: 'games/game-wrapper.html?game=galaga',
+    key: '5',
+    promptPath: '/games/galaga-prompt.txt',
+    thinkingPath: '/games/galaga-thinking.txt'
+  },
+  {
+    id: 'snake',
+    name: 'Trail of Life',
+    path: 'games/game-wrapper.html?game=snake',
+    key: '6',
+    promptPath: '/games/snake-prompt.txt',
+    thinkingPath: '/games/snake-thinking.txt'
   }
 ]
 
