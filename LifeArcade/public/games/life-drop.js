@@ -116,6 +116,19 @@ async function setup() {
     CONFIG.ui.score.color = getTextColor(theme)
   })
 
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.PLAYER,
+    GRADIENT_PRESETS.BULLET
+  ])
+
   // Initialize GoL engine
   golEngine = new GoLEngine(CONFIG.grid.cols, CONFIG.grid.rows)
 
