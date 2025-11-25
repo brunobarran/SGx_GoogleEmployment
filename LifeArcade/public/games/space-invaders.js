@@ -126,6 +126,9 @@ let currentTheme = 'day'
 // Simple gradient renderer
 let maskedRenderer = null
 
+// Setup completion flag (prevents draw() from running before async setup completes)
+let setupComplete = false
+
 // ============================================
 // RESPONSIVE CANVAS HELPERS
 // ============================================
@@ -212,6 +215,9 @@ async function setup() {
   ])
 
   initGame()
+
+  // Mark setup as complete (allows draw() to proceed)
+  setupComplete = true
 }
 
 function initGame() {
@@ -339,6 +345,17 @@ function setupInvaders() {
 // UPDATE LOOP
 // ============================================
 function draw() {
+  // Wait for async setup to complete before running game logic
+  if (!setupComplete) {
+    // Show loading screen while setup is in progress
+    background(0)
+    fill(255)
+    textAlign(CENTER, CENTER)
+    textSize(32 * scaleFactor)
+    text('Loading...', canvasWidth / 2, canvasHeight / 2)
+    return
+  }
+
   state.frameCount++
 
   background(CONFIG.ui.backgroundColor)
