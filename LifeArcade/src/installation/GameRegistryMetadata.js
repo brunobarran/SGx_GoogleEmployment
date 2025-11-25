@@ -86,7 +86,7 @@ export const GAMES_METADATA = [
   },
   {
     id: 'asteroids',
-    name: 'Void Drift',
+    name: 'Debris Automata',
     path: 'games/game-wrapper.html?game=asteroids',
     key: '7',
     promptPath: '/games/asteroids-prompt.txt',
@@ -94,7 +94,7 @@ export const GAMES_METADATA = [
   },
   {
     id: 'life-drop',
-    name: 'Life Drop',
+    name: "Conway's GoL",
     path: 'games/game-wrapper.html?game=life-drop',
     key: '8',
     promptPath: '/games/life-drop-prompt.txt',
