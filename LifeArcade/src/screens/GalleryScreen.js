@@ -168,13 +168,15 @@ export class GalleryScreen {
       margin-bottom: clamp(30px, 3.44cqh, 66px);
     `
 
-    // Prompt container with gradient overlay
+    // Prompt container with mask fade effect
     const promptContainer = document.createElement('div')
     promptContainer.className = 'gallery-card-prompt-container'
     promptContainer.style.cssText = `
       position: relative;
       max-height: clamp(450px, 54cqh, 1036px);
       overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
     `
 
     const promptText = document.createElement('div')
@@ -191,21 +193,7 @@ export class GalleryScreen {
       word-wrap: break-word;
     `
 
-    // Extended gradient overlay for smoother fade effect
-    // Uses CSS variable --bg-card for theme support
-    const gradientOverlay = document.createElement('div')
-    gradientOverlay.className = 'gallery-card-gradient'
-    gradientOverlay.style.cssText = `
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: clamp(150px, 20cqh, 384px);
-      pointer-events: none;
-    `
-
     promptContainer.appendChild(promptText)
-    promptContainer.appendChild(gradientOverlay)
 
     card.appendChild(cardTitle)
     card.appendChild(promptContainer)
@@ -216,8 +204,6 @@ export class GalleryScreen {
       min-width: 350px;
       max-width: 840px;
       padding: clamp(30px, 3.28cqh, 63px) clamp(30px, 3.65cqh, 70px) clamp(40px, 4.53cqh, 87px) clamp(30px, 3.65cqh, 70px);
-      background: var(--bg-card);
-      border-radius: clamp(18px, 1.82cqh, 35px);
       transition: all 0.3s ease;
       transform-style: preserve-3d;
     `
@@ -269,17 +255,6 @@ export class GalleryScreen {
 
       #gallery-screen {
         animation: fadeIn 0.3s ease-in;
-      }
-
-      /* Gradient overlay that adapts to theme */
-      .gallery-card-gradient {
-        background: linear-gradient(
-          to bottom,
-          color-mix(in srgb, var(--bg-card) 0%, transparent) 0%,
-          color-mix(in srgb, var(--bg-card) 30%, transparent) 25%,
-          color-mix(in srgb, var(--bg-card) 70%, transparent) 50%,
-          var(--bg-card) 100%
-        );
       }
     `
     document.head.appendChild(style)

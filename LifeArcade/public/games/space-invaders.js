@@ -120,6 +120,9 @@ let bullets = []
 let enemyBullets = []  // Enemy bullets (black cells)
 let particles = []
 
+// Theme state (for enemy bullet color)
+let currentTheme = 'day'
+
 // Simple gradient renderer
 let maskedRenderer = null
 
@@ -187,6 +190,7 @@ function setup() {
 
   // Initialize theme receiver
   initThemeReceiver((theme) => {
+    currentTheme = theme  // Track theme for enemy bullet color
     CONFIG.ui.backgroundColor = getBackgroundColor(theme)
     CONFIG.ui.score.color = getTextColor(theme)
     console.log(`Space Invaders: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
@@ -739,8 +743,8 @@ function renderGame() {
     )
   })
 
-  // Render enemy bullets (simple black cells - KISS approach)
-  fill(0)  // Pure black
+  // Render enemy bullets (theme-aware: black in day, white in night)
+  fill(currentTheme === 'night' ? 255 : 0)
   noStroke()
   enemyBullets.forEach(bullet => {
     rect(bullet.x, bullet.y, bullet.width, bullet.height)

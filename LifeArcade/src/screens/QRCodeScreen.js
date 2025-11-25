@@ -99,7 +99,7 @@ export class QRCodeScreen {
         <!-- Center section with QR -->
         <div class="qr-center">
           <!-- Scan prompt above QR -->
-          <div class="qr-scan-prompt">Scan to create your game</div>
+          <div class="qr-scan-prompt">Scan to play online</div>
 
           <!-- QR Code with blur circle -->
           <div class="qr-code-wrapper">

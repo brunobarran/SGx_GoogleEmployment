@@ -231,7 +231,7 @@ export class LeaderboardScreen {
 
     this.createGameLink = document.createElement('div')
     this.createGameLink.className = 'footer-option'
-    this.createGameLink.textContent = 'Create game'
+    this.createGameLink.textContent = 'Play online'
     this.createGameLink.style.cssText = `
       color: #7D7D7D;
       font-size: clamp(18px, 2.08cqh, 40px);
