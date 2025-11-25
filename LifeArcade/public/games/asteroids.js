@@ -314,13 +314,11 @@ function destroyAsteroid(asteroid) {
   state.score += asteroid.scoreValue
   spawnExplosion(asteroid.x, asteroid.y, asteroid.gradient)
 
-  // Division logic
+  // Division logic: LARGE splits once into MEDIUM, then no more splits
   if (asteroid.size === 'LARGE') {
     spawnChildAsteroids(asteroid, 'MEDIUM', 2)
-  } else if (asteroid.size === 'MEDIUM') {
-    spawnChildAsteroids(asteroid, 'SMALL', 2)
   }
-  // SMALL asteroids don't spawn children
+  // MEDIUM and SMALL don't spawn children (simplified difficulty)
 }
 
 function spawnChildAsteroids(parent, childSize, count) {
