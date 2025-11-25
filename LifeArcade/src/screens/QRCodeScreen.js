@@ -92,7 +92,7 @@ export class QRCodeScreen {
         <!-- Title at top -->
         <div class="qr-title-wrapper">
           <div class="qr-title">
-            <span class="qr-title-text">Thank you </span><span class="qr-title-highlight">${playerName}</span><span class="qr-title-text"> for playing<br/>Conway's Arcade!</span>
+            <span class="qr-title-text">Thank you </span><span class="qr-title-highlight">${playerName}</span><span class="qr-title-text"> for playing!</span>
           </div>
         </div>
 
@@ -106,6 +106,9 @@ export class QRCodeScreen {
             <div class="qr-blur-circle"></div>
             <img src="./img/qr.png" alt="QR Code" class="qr-code-image" />
           </div>
+
+          <!-- Work at google prompt below QR -->
+          <div class="qr-scan-prompt">Work at Google <div class="qr-scan-prompt-link">g.co/jobs/AI</div></div>
         </div>
       </div>
     `
@@ -136,7 +139,7 @@ export class QRCodeScreen {
         }
 
         .qr-title {
-          font-size: clamp(36px, 4.43cqh, 84px);
+          font-size: clamp(36px, 4.43cqh, 80px);
           font-weight: 500;
           line-height: 1.1;
           text-align: left;
@@ -170,6 +173,11 @@ export class QRCodeScreen {
           padding: 0;
           background: transparent;
           z-index: 2;
+        }
+
+        .qr-scan-prompt-link {
+          color: var(--text-primary);
+          display: inline;
         }
 
         .qr-code-wrapper {
