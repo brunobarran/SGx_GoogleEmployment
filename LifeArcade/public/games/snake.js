@@ -180,6 +180,23 @@ async function setup() {
     console.log(`Trail of Life: Theme changed to ${theme}`)
   })
 
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.PLAYER,
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW,
+    GRADIENT_PRESETS.BULLET,
+    GRADIENT_PRESETS.EXPLOSION
+  ])
+
   initGame()
 
   // Mark setup as complete (allows draw() to proceed)

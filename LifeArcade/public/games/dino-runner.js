@@ -26,16 +26,40 @@ import {
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
 import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
+import { debugLog } from '/src/utils/Logger.js'
+
+// ============================================
+// PLAYER DIMENSION CONSTANTS (eliminates magic numbers)
+// ============================================
+const PLAYER_DIMENSIONS = {
+  // Visual dimensions (sprite size)
+  RUN: { width: 200, height: 200 },
+  DUCK: { width: 265, height: 121 },
+  DUCK_OFFSET_X: -32.5,  // (265-200)/2 = 32.5px centering offset
+
+  // Hitbox dimensions (50% width for legs-only collision)
+  HITBOX: {
+    RUN: { width: 100, height: 200, offsetX: 50 },   // Centered: (200-100)/2 = 50
+    DUCK: { width: 130, height: 121, offsetX: 67.5 } // Centered: (265-130)/2 = 67.5
+  }
+}
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
 // ============================================
 
 const CONFIG = createGameConfig({
-  gravity: 5.5,   // 0.93 × 3 = 2.8 (Higher gravity = faster fall, shorter jump)
+  // Variable gravity system (Opción B: snappy jump with slight hang time)
+  gravity: {
+    rising: 3.5,       // Gravedad durante ascenso (vy < 0) - rápido pero con leve hang
+    falling: 5.0,      // Gravedad durante descenso (vy >= 0) - caída rápida
+    fastFall: 8.0      // Gravedad cuando presiona ↓ en el aire - bajada instantánea
+  },
+  terminalVelocity: 28,  // Límite de velocidad de caída
+  jumpForce: -42,        // Salto más fuerte para compensar gravedad aumentada
+
   groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
   horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
-  jumpForce: -70, // -14 × 3 = -42 (Lower force = shorter jump)
 
   obstacle: {
     spawnInterval: 100,      // Base spawn interval (frames)
@@ -193,6 +217,9 @@ let groundLines = []  // Ground decoration lines (Chrome Dino style)
 // Gradient renderer
 let maskedRenderer = null
 
+// Cloud graphics buffer (reused each frame to avoid memory churn)
+let cloudGraphics = null
+
 // PNG sprites for player (Phase 3.4)
 let dinoSprites = {
   run: [],   // run_0.png, run_1.png
@@ -226,10 +253,13 @@ function preload() {
   dinoSprites.idle[0] = loadImage('/img/dino-sprites/idle.png')
 }
 
+// Setup completion flag (prevents draw() from running before async setup completes)
+let setupComplete = false
+
 // ============================================
 // p5.js SETUP
 // ============================================
-function setup() {
+async function setup() {
   // Calculate responsive canvas size
   const size = calculateResponsiveSize()
   canvasWidth = size.width
@@ -251,10 +281,31 @@ function setup() {
   initThemeReceiver((theme) => {
     CONFIG.ui.backgroundColor = getBackgroundColor(theme)
     CONFIG.ui.score.color = getTextColor(theme)
-    console.log(`Dino Runner: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+    debugLog(`Dino Runner: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
   })
 
+  // Create reusable graphics buffer for clouds (avoids memory churn)
+  cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
+
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW,
+    GRADIENT_PRESETS.EXPLOSION
+  ])
+
   initGame()
+
+  // Mark setup as complete (allows draw() to proceed)
+  setupComplete = true
 }
 
 function initGame() {
@@ -284,11 +335,11 @@ function setupPlayer() {
 
   player = {
     x: 200,
-    y: CONFIG.groundY - 200,  // groundY - height (sprite sits on physics ground)
+    y: CONFIG.groundY - PLAYER_DIMENSIONS.RUN.height,  // groundY - height (sprite sits on physics ground)
 
-    // DIMENSIONS: Change based on ducking state
-    width: 200,               // Run: 200px, Duck: 265px
-    height: 200,              // Run: 200px, Duck: 121px
+    // DIMENSIONS: Change based on ducking state (uses PLAYER_DIMENSIONS constants)
+    width: PLAYER_DIMENSIONS.RUN.width,
+    height: PLAYER_DIMENSIONS.RUN.height,
 
     // Physics
     vx: 0,
@@ -405,12 +456,10 @@ function updateClouds() {
 /**
  * Render parallax clouds with opacity.
  * Must be called BEFORE rendering other entities (background layer).
+ * Uses pre-created buffer to avoid memory allocation each frame.
  */
 function renderClouds() {
-  push()
-
-  // Create a graphics buffer for clouds with opacity
-  const cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
+  // Clear reusable buffer (much faster than create/destroy)
   cloudGraphics.clear()
 
   clouds.forEach(cloud => {
@@ -443,9 +492,6 @@ function renderClouds() {
 
   // Draw the buffer to main canvas
   image(cloudGraphics, 0, 0)
-  cloudGraphics.remove()  // Clean up
-
-  pop()
 }
 
 // ============================================
@@ -569,6 +615,16 @@ function calculateTightHitbox(golEngine) {
 // UPDATE LOOP
 // ============================================
 function draw() {
+  // Wait for async setup to complete before running game logic
+  if (!setupComplete) {
+    background(0)
+    fill(255)
+    textAlign(CENTER, CENTER)
+    textSize(32 * scaleFactor)
+    text('Loading...', canvasWidth / 2, canvasHeight / 2)
+    return
+  }
+
   state.frameCount++
 
   background(CONFIG.ui.backgroundColor)
@@ -684,19 +740,7 @@ function updateGame() {
 }
 
 function updatePlayer() {
-  // Apply gravity FIRST
-  player.vy += CONFIG.gravity
-  player.y += player.vy
-
-  // Ground collision (MUST happen BEFORE duck state update to avoid oscillation)
-  if (player.y >= CONFIG.groundY - 200) {  // Use standing height for ground check
-    player.vy = 0
-    player.onGround = true
-  } else {
-    player.onGround = false
-  }
-
-  // Read input states
+  // Read input states FIRST (before physics)
   const isDuckPressed = keyIsDown(DOWN_ARROW)
   const isJumpPressed = keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87)  // SPACE, UP, or W
 
@@ -707,6 +751,38 @@ function updatePlayer() {
     player.isDucking = false  // Cancel duck on jump
   }
 
+  // Apply VARIABLE GRAVITY based on state
+  let currentGravity
+  if (!player.onGround && isDuckPressed) {
+    // Fast fall: pressing DOWN while in air accelerates descent
+    currentGravity = CONFIG.gravity.fastFall
+  } else if (player.vy < 0) {
+    // Rising: gentler gravity for more "hang time" at peak
+    currentGravity = CONFIG.gravity.rising
+  } else {
+    // Falling: stronger gravity for satisfying descent
+    currentGravity = CONFIG.gravity.falling
+  }
+
+  player.vy += currentGravity
+
+  // Apply terminal velocity (cap falling speed)
+  if (player.vy > CONFIG.terminalVelocity) {
+    player.vy = CONFIG.terminalVelocity
+  }
+
+  // Move player
+  player.y += player.vy
+
+  // Ground collision (clamp position and reset velocity)
+  if (player.y >= CONFIG.groundY - PLAYER_DIMENSIONS.RUN.height) {
+    player.y = CONFIG.groundY - PLAYER_DIMENSIONS.RUN.height  // Clamp to ground
+    player.vy = 0
+    player.onGround = true
+  } else {
+    player.onGround = false
+  }
+
   // Duck input (only on ground when not jumping)
   if (isDuckPressed && player.onGround && !isJumpPressed) {
     player.isDucking = true
@@ -714,21 +790,18 @@ function updatePlayer() {
     player.isDucking = false
   }
 
-  // Update dimensions based on ducking state
+  // Update dimensions based on ducking state (using PLAYER_DIMENSIONS constants)
   if (player.isDucking) {
-    player.width = 265
-    player.height = 121
+    player.width = PLAYER_DIMENSIONS.DUCK.width
+    player.height = PLAYER_DIMENSIONS.DUCK.height
     // Adjust Y ONLY if on ground (don't interfere with jumping/falling)
     if (player.onGround) {
-      player.y = CONFIG.groundY - 121
+      player.y = CONFIG.groundY - PLAYER_DIMENSIONS.DUCK.height
     }
   } else {
-    player.width = 200
-    player.height = 200
-    // Adjust Y ONLY if on ground (don't interfere with jumping/falling)
-    if (player.onGround) {
-      player.y = CONFIG.groundY - 200
-    }
+    player.width = PLAYER_DIMENSIONS.RUN.width
+    player.height = PLAYER_DIMENSIONS.RUN.height
+    // Y already clamped in ground collision above
   }
 
   // Update animation frame
@@ -758,10 +831,10 @@ function spawnObstacle() {
   // Position based on obstacle type
   let obstacleY
   if (spawnFlying) {
-    // Flying obstacles: Extremely low to force ducking
-    // Duck height: 121px, almost touching - absolutely requires ducking
-    // Bottom of pterodactyl at 120px above ground (just above duck height)
-    const minHeightAboveGround = 120  // Extremely tight - must duck
+    // Flying obstacles: Very low to force ducking
+    // Duck height: 121px - pterodactyl must be low enough to hit standing player
+    // Bottom of pterodactyl at 80px above ground (forces duck, can't jump over)
+    const minHeightAboveGround = 80  // Tighter - must duck
     obstacleY = CONFIG.groundY - dims.height - minHeightAboveGround
   } else {
     // Ground obstacles: centered on horizon line
@@ -809,11 +882,16 @@ function checkCollisions() {
     const obsHitboxWidth = obs.hitboxWidth || obs.width
     const obsHitboxHeight = obs.hitboxHeight || obs.height
 
-    // Apply same offset as visual rendering for accurate collision
-    const playerHitboxOffsetX = player.isDucking ? -32.5 : 0
+    // Get player hitbox (50% width, centered on legs)
+    const playerHitbox = player.isDucking ? PLAYER_DIMENSIONS.HITBOX.DUCK : PLAYER_DIMENSIONS.HITBOX.RUN
+    const playerVisualOffsetX = player.isDucking ? PLAYER_DIMENSIONS.DUCK_OFFSET_X : 0
+    const playerHitboxX = player.x + playerVisualOffsetX + playerHitbox.offsetX
+    const playerHitboxY = player.y
+    const playerHitboxW = playerHitbox.width
+    const playerHitboxH = playerHitbox.height
 
     if (Collision.rectRect(
-      player.x + playerHitboxOffsetX, player.y, player.width, player.height,
+      playerHitboxX, playerHitboxY, playerHitboxW, playerHitboxH,
       obsHitboxX, obsHitboxY, obsHitboxWidth, obsHitboxHeight
     )) {
       // Game over
@@ -897,7 +975,7 @@ function renderGame() {
         // When ducking, center the wider sprite horizontally
         // Duck sprite: 265px wide (65px wider than run 200px)
         // Offset by half the difference to keep dino centered
-        const offsetX = player.isDucking ? -32.5 : 0  // (265-200)/2 = 32.5px
+        const offsetX = player.isDucking ? PLAYER_DIMENSIONS.DUCK_OFFSET_X : 0
 
         push()
         imageMode(CORNER)
@@ -931,9 +1009,11 @@ function renderGame() {
   renderParticles(particles, maskedRenderer, 30)
 
   // Debug: Draw hitboxes (press H to toggle)
-  // Apply same offset as visual rendering for accurate hitbox display
-  const playerHitboxOffsetX = player.isDucking ? -32.5 : 0
-  drawHitboxRect(player.x + playerHitboxOffsetX, player.y, player.width, player.height, 'player', '#00FF00')
+  // Show actual collision hitbox (50% width, centered on legs)
+  const playerHitbox = player.isDucking ? PLAYER_DIMENSIONS.HITBOX.DUCK : PLAYER_DIMENSIONS.HITBOX.RUN
+  const playerVisualOffsetX = player.isDucking ? PLAYER_DIMENSIONS.DUCK_OFFSET_X : 0
+  const playerHitboxX = player.x + playerVisualOffsetX + playerHitbox.offsetX
+  drawHitboxRect(playerHitboxX, player.y, playerHitbox.width, playerHitbox.height, 'player', '#00FF00')
 
   // Draw obstacle hitboxes (using custom hitbox dimensions for pterodactyls)
   obstacles.forEach((obs, index) => {

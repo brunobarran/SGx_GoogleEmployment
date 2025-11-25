@@ -15,9 +15,10 @@ import { VideoGradientRenderer } from '/src/rendering/VideoGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
 import { Collision } from '/src/utils/Collision.js'
 import { Patterns } from '/src/utils/Patterns.js'
-import { seedRadialDensity, applyLifeForce, maintainDensity } from '/src/utils/GoLHelpers.js'
+import { seedRadialDensity, maintainDensity } from '/src/utils/GoLHelpers.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
 import { renderGameOver } from '/src/utils/UIHelpers.js'
+import { initHitboxDebug, drawHitboxRect } from '/src/debug/HitboxDebug.js'
 import { createPatternRenderer, RenderMode, PatternName } from '/src/utils/PatternRenderer.js'
 import {
   GAME_DIMENSIONS,
@@ -37,7 +38,10 @@ const CONFIG = createGameConfig({
 
   player: {
     speed: 12,
-    shootCooldown: 20       // Slower shooting (was 10) - more challenging
+    shootCooldown: 20,      // Slower shooting (was 10) - more challenging
+    // Fixed hitbox (Solución C): COPPERHEAD usa grid padded 1.4x
+    // offsetX/offsetY: 0 = centrado automático, valor > 0 = offset manual
+    fixedHitbox: { width: 200, height: 300, offsetX: 70, offsetY: 30 }
   },
 
   bullet: {
@@ -90,13 +94,20 @@ const CONFIG = createGameConfig({
       pattern: PatternName.PULSAR,
       hp: 2,                    // 2 hits to kill
       scoreValue: 100,          // 100 points reward
-      gradient: GRADIENT_PRESETS.ENEMY_RAINBOW
+      gradient: GRADIENT_PRESETS.ENEMY_RAINBOW,
+      // Fixed hitbox (Solución C): separar visual de lógica
+      // PULSAR oscila ~13x13 celdas = ~390px, hitbox 80%
+      // offsetX/offsetY: 0 = centrado automático, o valor manual
+      fixedHitbox: { width: 320, height: 320, offsetX: 0, offsetY: 0 }
     },
     dragon: {
       pattern: PatternName.DRAGON_VERTICAL,
       hp: 4,                    // 4 hits to kill (tougher)
       scoreValue: 200,          // 200 points reward
-      gradient: GRADIENT_PRESETS.ENEMY_HOT
+      gradient: GRADIENT_PRESETS.ENEMY_HOT,
+      // Fixed hitbox: DRAGON es vertical, patrón asimétrico
+      // Offsets manuales para centrar en el sprite visual
+      fixedHitbox: { width: 500, height: 450, offsetX: 250, offsetY: 250 }
     },
     // Shared boss settings
     speed: 3,                   // Slow horizontal movement
@@ -149,6 +160,9 @@ let bossBullets = []         // Boss projectiles
 let currentTheme = 'day'
 
 let maskedRenderer = null
+
+// Setup completion flag (prevents draw() from running before async setup completes)
+let setupComplete = false
 
 // ============================================
 // HELPERS
@@ -241,7 +255,7 @@ function renderStars() {
 // SETUP
 // ============================================
 
-function setup() {
+async function setup() {
   const size = calculateResponsiveSize()
   canvasWidth = size.width
   canvasHeight = size.height
@@ -258,7 +272,30 @@ function setup() {
     CONFIG.ui.score.color = getTextColor(theme)
   })
 
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.PLAYER,
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW,
+    GRADIENT_PRESETS.BULLET,
+    GRADIENT_PRESETS.EXPLOSION
+  ])
+
   initGame()
+
+  // Initialize hitbox debug system (press H to toggle)
+  initHitboxDebug()
+
+  // Mark setup as complete (allows draw() to proceed)
+  setupComplete = true
 }
 
 function initGame() {
@@ -319,7 +356,16 @@ function setupPlayer() {
     phases.push(tempGol.getPattern())
   }
 
-  const hitbox = calculateClampedHitbox(renderer.dimensions.width, renderer.dimensions.height, 'player')
+  // Solución C: Usar fixedHitbox si está definido (separar visual de lógica)
+  // offsetX/offsetY: 0 = centrado automático, valor > 0 = offset manual
+  const hitbox = CONFIG.player.fixedHitbox
+    ? {
+      width: CONFIG.player.fixedHitbox.width,
+      height: CONFIG.player.fixedHitbox.height,
+      offsetX: CONFIG.player.fixedHitbox.offsetX || (renderer.dimensions.width - CONFIG.player.fixedHitbox.width) / 2,
+      offsetY: CONFIG.player.fixedHitbox.offsetY || (renderer.dimensions.height - CONFIG.player.fixedHitbox.height) / 2
+    }
+    : calculateClampedHitbox(renderer.dimensions.width, renderer.dimensions.height, 'player')
 
   player = {
     x: CONFIG.width / 2 - renderer.dimensions.width / 2,
@@ -395,6 +441,16 @@ function spawnEnemy() {
 // ============================================
 
 function draw() {
+  // Wait for async setup to complete before running game logic
+  if (!setupComplete) {
+    background(0)
+    fill(255)
+    textAlign(CENTER, CENTER)
+    textSize(32 * scaleFactor)
+    text('Loading...', canvasWidth / 2, canvasHeight / 2)
+    return
+  }
+
   state.frameCount++
 
   background(CONFIG.ui.backgroundColor)
@@ -589,8 +645,17 @@ function spawnBoss(bossType) {
 
   const dims = renderer.dimensions
 
-  // Use 'boss' limits for boss hitbox (larger patterns)
-  const hitbox = calculateClampedHitbox(dims.width, dims.height, 'boss')
+  // Solución C: Usar fixedHitbox si está definido (separar visual de lógica)
+  // Esto evita el bug de offset negativo cuando sprite < hitbox.min
+  // offsetX/offsetY: 0 = centrado automático, valor > 0 = offset manual
+  const hitbox = bossConfig.fixedHitbox
+    ? {
+      width: bossConfig.fixedHitbox.width,
+      height: bossConfig.fixedHitbox.height,
+      offsetX: bossConfig.fixedHitbox.offsetX || (dims.width - bossConfig.fixedHitbox.width) / 2,
+      offsetY: bossConfig.fixedHitbox.offsetY || (dims.height - bossConfig.fixedHitbox.height) / 2
+    }
+    : calculateClampedHitbox(dims.width, dims.height, 'boss')
 
   boss = {
     x: CONFIG.width / 2 - dims.width / 2,
@@ -621,9 +686,9 @@ function updateBoss() {
   // Update GoL animation
   boss.gol.updateThrottled(state.frameCount)
 
-  // Entry animation
+  // Entry animation (Solución A: velocidad aumentada de 4 a 12)
   if (boss.entering) {
-    boss.y += 4  // Move down slowly
+    boss.y += 12  // Move down faster (was 4, now 3x faster)
     if (boss.y >= boss.targetY) {
       boss.y = boss.targetY
       boss.entering = false
@@ -649,8 +714,9 @@ function updateBoss() {
 function shootBossBullets() {
   if (!boss) return
 
-  const centerX = boss.x + boss.width / 2
-  const centerY = boss.y + boss.height
+  // Solución A: Calcular desde el hitbox (patrón visual real, no sprite con padding)
+  const centerX = boss.x + boss.hitbox.offsetX + boss.hitbox.width / 2
+  const centerY = boss.y + boss.hitbox.offsetY + boss.hitbox.height
 
   // Fan of 3 bullets: left, center, right
   const angles = [-CONFIG.boss.bulletSpread, 0, CONFIG.boss.bulletSpread]
@@ -700,8 +766,8 @@ function damageBoss() {
 
 function spawnBossExplosion() {
   // Big explosion for boss (more particles)
-  const centerX = boss.x + boss.width / 2
-  const centerY = boss.y + boss.height / 2
+  const centerX = boss.x + boss.hitbox.offsetX + boss.hitbox.width / 2
+  const centerY = boss.y + boss.hitbox.offsetY + boss.hitbox.height / 2
 
   for (let i = 0; i < 12; i++) {
     const particle = {
@@ -818,6 +884,32 @@ function checkCollisions() {
     }
   })
 
+  // Player bullets vs Boss bullets (deflection - based on space-invaders.js)
+  if (bullets.length > 0 && bossBullets.length > 0) {
+    bullets.forEach(playerBullet => {
+      if (playerBullet.dead) return  // Early exit (performance)
+
+      bossBullets.forEach(bossBullet => {
+        if (!bossBullet.dead && !playerBullet.dead) {
+          if (Collision.rectRect(
+            playerBullet.x, playerBullet.y, playerBullet.width, playerBullet.height,
+            bossBullet.x, bossBullet.y, bossBullet.width, bossBullet.height
+          )) {
+            playerBullet.dead = true
+            bossBullet.dead = true
+
+            // Spawn mini-explosion at midpoint between bullets
+            const midX = (playerBullet.x + bossBullet.x) / 2
+            const midY = (playerBullet.y + bossBullet.y) / 2
+            spawnMiniExplosion(midX, midY)
+
+            state.score += 5  // Small bonus for bullet deflection
+          }
+        }
+      })
+    })
+  }
+
   // Boss vs Player (touch)
   if (boss && !boss.entering && state.phase === 'PLAYING') {
     if (Collision.rectRect(
@@ -903,6 +995,34 @@ function spawnExplosion(entity) {
 
     particles.push(particle)
   }
+}
+
+/**
+ * Spawn mini-explosion when bullets collide.
+ * Creates a single 2×2 particle that fades quickly.
+ * Based on space-invaders.js implementation.
+ *
+ * @param {number} x - X coordinate of collision
+ * @param {number} y - Y coordinate of collision
+ */
+function spawnMiniExplosion(x, y) {
+  const particle = {
+    x: x - CONFIG.globalCellSize,  // Center (offset for 2×2 grid)
+    y: y - CONFIG.globalCellSize,
+    vx: 0,  // No movement (static flash)
+    vy: 0,
+    alpha: 255,
+    width: CONFIG.globalCellSize * 2,   // 60px (2 cells)
+    height: CONFIG.globalCellSize * 2,  // 60px
+    dead: false,
+    gol: new GoLEngine(2, 2, CONFIG.loopUpdateRate),
+    gradient: GRADIENT_PRESETS.EXPLOSION
+  }
+
+  // Seed with high density for visible flash
+  seedRadialDensity(particle.gol, 0.75, 0.0)
+
+  particles.push(particle)
 }
 
 function destroyPlayer() {
@@ -1006,6 +1126,60 @@ function renderGame() {
 
   // Render particles
   renderParticles(particles, maskedRenderer, CONFIG.globalCellSize)
+
+  // ============================================
+  // HITBOX DEBUG (Press H to toggle)
+  // ============================================
+
+  // Player hitbox (green)
+  if (player && state.phase === 'PLAYING') {
+    drawHitboxRect(
+      player.x + player.hitbox.offsetX,
+      player.y + player.hitbox.offsetY,
+      player.hitbox.width,
+      player.hitbox.height,
+      'player',
+      '#00FF00'
+    )
+  }
+
+  // Boss hitbox (magenta) - Solución C debug
+  if (boss) {
+    drawHitboxRect(
+      boss.x + boss.hitbox.offsetX,
+      boss.y + boss.hitbox.offsetY,
+      boss.hitbox.width,
+      boss.hitbox.height,
+      'boss',
+      '#FF00FF'
+    )
+  }
+
+  // Enemy hitboxes (red)
+  enemies.forEach(enemy => {
+    if (!enemy.dead) {
+      drawHitboxRect(
+        enemy.x + enemy.hitbox.offsetX,
+        enemy.y + enemy.hitbox.offsetY,
+        enemy.hitbox.width,
+        enemy.hitbox.height,
+        'enemy',
+        '#FF0000'
+      )
+    }
+  })
+
+  // Player bullet hitboxes (cyan)
+  bullets.forEach(bullet => {
+    drawHitboxRect(
+      bullet.x,
+      bullet.y,
+      bullet.width,
+      bullet.height,
+      'bullet',
+      '#00FFFF'
+    )
+  })
 
   pop()
 }

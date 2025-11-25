@@ -30,6 +30,7 @@ import {
   createGameConfig
 } from '/src/utils/GameBaseConfig.js'
 import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/ThemeReceiver.js'
+import { debugLog } from '/src/utils/Logger.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
@@ -51,7 +52,7 @@ const CONFIG = createGameConfig({
   ceilingY: 200,       // Lowered to avoid UI overlap (was 70)
 
   pipe: {
-    width: 360,            // 120 × 3 = 360
+    width: 180,            // Reduced 50% for easier gameplay (was 360)
     gapStart: 600,         // Initial gap size (easier)
     gapMin: 400,           // Minimum gap size (harder at high levels)
     gapDecrement: 20,      // Gap reduction per level
@@ -101,6 +102,12 @@ let clouds = []  // Parallax background clouds
 
 // Gradient renderer (DO NOT MODIFY)
 let maskedRenderer = null
+
+// Cloud graphics buffer (reused each frame to avoid memory churn)
+let cloudGraphics = null
+
+// Setup completion flag (prevents draw() from running before async setup completes)
+let setupComplete = false
 
 // ============================================
 // RESPONSIVE CANVAS HELPERS
@@ -210,12 +217,10 @@ function updateClouds() {
 /**
  * Render parallax clouds with opacity.
  * Must be called BEFORE rendering other entities (background layer).
+ * Uses pre-created buffer to avoid memory allocation each frame.
  */
 function renderClouds() {
-  push()
-
-  // Create a graphics buffer for clouds with opacity
-  const cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
+  // Clear reusable buffer (much faster than create/destroy)
   cloudGraphics.clear()
 
   clouds.forEach(cloud => {
@@ -248,15 +253,12 @@ function renderClouds() {
 
   // Draw the buffer to main canvas
   image(cloudGraphics, 0, 0)
-  cloudGraphics.remove()  // Clean up
-
-  pop()
 }
 
 // ============================================
 // p5.js SETUP
 // ============================================
-function setup() {
+async function setup() {
   // Calculate responsive canvas size
   const size = calculateResponsiveSize()
   canvasWidth = size.width
@@ -274,10 +276,32 @@ function setup() {
   initThemeReceiver((theme) => {
     CONFIG.ui.backgroundColor = getBackgroundColor(theme)
     CONFIG.ui.score.color = getTextColor(theme)
-    console.log(`Flappy Bird: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
+    debugLog(`Flappy Bird: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
   })
 
+  // Create reusable graphics buffer for clouds (avoids memory churn)
+  cloudGraphics = createGraphics(GAME_DIMENSIONS.BASE_WIDTH, GAME_DIMENSIONS.BASE_HEIGHT)
+
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.PLAYER,
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.ENEMY_COLD,
+    GRADIENT_PRESETS.ENEMY_RAINBOW,
+    GRADIENT_PRESETS.EXPLOSION
+  ])
+
   initGame()
+
+  // Mark setup as complete (allows draw() to proceed)
+  setupComplete = true
 }
 
 function initGame() {
@@ -321,6 +345,16 @@ function setupPlayer() {
 // UPDATE LOOP
 // ============================================
 function draw() {
+  // Wait for async setup to complete before running game logic
+  if (!setupComplete) {
+    background(0)
+    fill(255)
+    textAlign(CENTER, CENTER)
+    textSize(32 * scaleFactor)
+    text('Loading...', canvasWidth / 2, canvasHeight / 2)
+    return
+  }
+
   state.frameCount++
   background(CONFIG.ui.backgroundColor)
 
