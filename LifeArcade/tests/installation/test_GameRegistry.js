@@ -13,8 +13,8 @@ describe('GameRegistry', () => {
   // GAMES Array Structure
   // ======================
 
-  test('GAMES array has 4 entries', () => {
-    expect(GAMES).toHaveLength(4)
+  test('GAMES array has 8 entries', () => {
+    expect(GAMES).toHaveLength(8)
   })
 
   test('all games have required fields', () => {
@@ -239,7 +239,7 @@ describe('GameRegistry', () => {
       await import('../../src/installation/GameRegistry.js')
 
     expect(GAMES_METADATA).toBeDefined()
-    expect(GAMES_METADATA).toHaveLength(4)
+    expect(GAMES_METADATA).toHaveLength(8)
 
     const metadata = getGameMetadataById('dino-runner')
     expect(metadata).toBeDefined()

@@ -221,7 +221,71 @@ export const Patterns = {
     [0, 0, 0, 0, 0, 0, 1, 0],
     [1, 1, 0, 0, 0, 0, 0, 0],
     [0, 1, 0, 0, 0, 1, 1, 1]
-  ]
+  ],
+
+  /**
+   * DRAGON - c/6 orthogonal spaceship (ORIGINAL horizontal orientation)
+   * Source: https://conwaylife.com/wiki/Dragon
+   * Speed: c/6 (1 cell per 6 generations)
+   * Period: 6
+   * Size: 29×18 (~82 cells)
+   * Discovered by Paul Tooke in April 2000 - first c/6 spaceship
+   * NOTE: Use rotatePattern90() to orient vertically for vertical shooters
+   */
+  DRAGON: [
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,0,0,0,1,0,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,0],
+    [1,1,0,0,0,1,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,0,0,1,1,1,0,0,1],
+    [1,1,0,0,0,1,0,1,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0,0],
+    [1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,1,0],
+    [0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0],
+    [0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+    [1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,1,0],
+    [1,1,0,0,0,1,0,1,1,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,0,0],
+    [1,1,0,0,0,1,0,0,1,0,0,0,0,0,0,1,0,1,0,0,0,0,0,1,1,1,0,0,1],
+    [0,0,0,0,0,1,0,0,0,1,0,0,0,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ],
+
+  /**
+   * COPPERHEAD - c/10 orthogonal spaceship
+   * Source: https://conwaylife.com/wiki/Copperhead
+   * Speed: c/10 (1 cell per 10 generations)
+   * Direction: Vertical (moves down in this orientation)
+   * Period: 10
+   * Size: 8×12 (28 cells)
+   * Discovered by 'zdr' in 2016 - first c/10 spaceship found
+   */
+  COPPERHEAD: [
+    [0, 1, 1, 0, 0, 1, 1, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0],
+    [1, 0, 1, 0, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 1, 1, 0, 0, 1, 1, 0],
+    [0, 0, 1, 1, 1, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0],
+    [0, 0, 0, 1, 1, 0, 0, 0]
+  ],
+
+  /**
+   * DRAGON_VERTICAL - c/6 orthogonal spaceship (rotated 90° CW to face downward)
+   * Source: https://conwaylife.com/wiki/Dragon
+   * Speed: c/6 (1 cell per 6 generations)
+   * Period: 6
+   * Size: 18×29 (rotated from 29×18)
+   * Use this version for vertical shooters where boss moves down
+   */
+  DRAGON_VERTICAL: null  // Will be computed after Patterns definition
 }
 
 /**
@@ -286,3 +350,13 @@ export function flipPatternHorizontal(pattern) {
 export function flipPatternVertical(pattern) {
   return [...pattern].reverse()
 }
+
+// ============================================
+// COMPUTED PATTERN VARIANTS
+// ============================================
+
+/**
+ * Initialize DRAGON_VERTICAL as the 90° CW rotation of DRAGON.
+ * This makes the dragon face downward for vertical shooters.
+ */
+Patterns.DRAGON_VERTICAL = rotatePattern90(Patterns.DRAGON)

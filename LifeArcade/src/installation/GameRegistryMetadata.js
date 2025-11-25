@@ -83,6 +83,22 @@ export const GAMES_METADATA = [
     key: '6',
     promptPath: '/games/snake-prompt.txt',
     thinkingPath: '/games/snake-thinking.txt'
+  },
+  {
+    id: 'asteroids',
+    name: 'Void Drift',
+    path: 'games/game-wrapper.html?game=asteroids',
+    key: '7',
+    promptPath: '/games/asteroids-prompt.txt',
+    thinkingPath: '/games/asteroids-thinking.txt'
+  },
+  {
+    id: 'life-drop',
+    name: 'Life Drop',
+    path: 'games/game-wrapper.html?game=life-drop',
+    key: '8',
+    promptPath: '/games/life-drop-prompt.txt',
+    thinkingPath: '/games/life-drop-thinking.txt'
   }
 ]
 

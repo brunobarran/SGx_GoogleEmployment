@@ -48,8 +48,9 @@ class VideoGradientRenderer {
         // NOTE: This creates a DOM element. We hide it and use it as a pattern source.
         this.video = this.p5.createVideo(['/videos/gradient.mp4'])
         this.video.hide()
+        this.video.volume(0) // Mute audio
+        this.video.elt.muted = true // CRITICAL: Required for Chrome autoplay policy
         this.video.loop()
-        this.video.volume(0) // Mute just in case
 
         // PERFORMANCE OPTIMIZATION 1: Texture Lookup Cache
         // Pre-sample video to lower-resolution ImageData for ultra-fast pixel access

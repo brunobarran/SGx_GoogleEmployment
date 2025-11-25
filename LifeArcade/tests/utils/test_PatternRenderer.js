@@ -650,7 +650,7 @@ describe('PatternRenderer - getAllPatterns', () => {
     const patterns = getAllPatterns()
 
     expect(patterns).toBeInstanceOf(Array)
-    expect(patterns.length).toBe(13)  // 7 still lifes + 4 oscillators + 2 spaceships
+    expect(patterns.length).toBe(16)  // 7 still lifes + 4 oscillators + 5 spaceships
 
     expect(patterns).toContain('BLOCK')
     expect(patterns).toContain('BLINKER')
@@ -703,7 +703,7 @@ describe('PatternRenderer - Enums and Constants', () => {
   })
 
   test('PatternName should have all canonical patterns', () => {
-    expect(Object.keys(PatternName).length).toBe(13)
+    expect(Object.keys(PatternName).length).toBe(16)  // 7 still lifes + 4 oscillators + 5 spaceships
   })
 
   test('PatternPeriod should match pattern names', () => {

@@ -60,7 +60,10 @@ export const PatternName = {
 
   // Spaceships
   GLIDER: 'GLIDER',
-  LIGHTWEIGHT_SPACESHIP: 'LIGHTWEIGHT_SPACESHIP'
+  LIGHTWEIGHT_SPACESHIP: 'LIGHTWEIGHT_SPACESHIP',
+  COPPERHEAD: 'COPPERHEAD',
+  DRAGON: 'DRAGON',
+  DRAGON_VERTICAL: 'DRAGON_VERTICAL'
 }
 
 /**
@@ -86,7 +89,10 @@ export const PatternPeriod = {
 
   // Spaceships
   GLIDER: 4,
-  LIGHTWEIGHT_SPACESHIP: 4
+  LIGHTWEIGHT_SPACESHIP: 4,
+  COPPERHEAD: 10,
+  DRAGON: 6,
+  DRAGON_VERTICAL: 6
 }
 
 /**
@@ -117,7 +123,10 @@ export const PatternMetadata = {
   PULSAR: { category: PatternCategory.OSCILLATOR, size: 'large' },
 
   GLIDER: { category: PatternCategory.SPACESHIP, size: 'small' },
-  LIGHTWEIGHT_SPACESHIP: { category: PatternCategory.SPACESHIP, size: 'medium' }
+  LIGHTWEIGHT_SPACESHIP: { category: PatternCategory.SPACESHIP, size: 'medium' },
+  COPPERHEAD: { category: PatternCategory.SPACESHIP, size: 'medium' },
+  DRAGON: { category: PatternCategory.SPACESHIP, size: 'large' },
+  DRAGON_VERTICAL: { category: PatternCategory.SPACESHIP, size: 'large' }
 }
 
 // ============================================

@@ -7,8 +7,8 @@ import {
 
 describe('GameRegistryMetadata', () => {
   // Test 1: GAMES_METADATA structure
-  test('GAMES_METADATA has 4 games', () => {
-    expect(GAMES_METADATA).toHaveLength(4)
+  test('GAMES_METADATA has 8 games', () => {
+    expect(GAMES_METADATA).toHaveLength(8)
   })
 
   // Test 2: All games have required metadata fields
@@ -110,7 +110,11 @@ describe('GameRegistryMetadata', () => {
       'space-invaders': 'Cellfront Command',
       'dino-runner': 'Automata Rush',
       'breakout': 'Cellular Shatter',
-      'flappy-bird': 'Hoppy Glider'
+      'flappy-bird': 'Hoppy Glider',
+      'galaga': 'Cellship Strike',
+      'snake': 'Trail of Life',
+      'asteroids': 'Void Drift',
+      'life-drop': 'Life Drop'
     }
 
     GAMES_METADATA.forEach(game => {
@@ -118,9 +122,9 @@ describe('GameRegistryMetadata', () => {
     })
   })
 
-  // Test 15: Keys are sequential 1-4
-  test('Keys are sequential 1-4', () => {
+  // Test 15: Keys are sequential 1-8
+  test('Keys are sequential 1-8', () => {
     const keys = GAMES_METADATA.map(g => g.key).sort()
-    expect(keys).toEqual(['1', '2', '3', '4'])
+    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
   })
 })
