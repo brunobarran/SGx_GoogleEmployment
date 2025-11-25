@@ -147,6 +147,186 @@ describe('VideoGradientRenderer - Animation Control', () => {
     })
 })
 
+describe('VideoGradientRenderer - Shader Warmup', () => {
+    let p5Mock, renderer, videoMock
+
+    beforeEach(() => {
+        videoMock = {
+            hide: vi.fn(),
+            loop: vi.fn(),
+            volume: vi.fn(),
+            elt: {
+                readyState: HTMLMediaElement.HAVE_CURRENT_DATA,
+                addEventListener: vi.fn()
+            }
+        }
+        p5Mock = {
+            createVideo: vi.fn(() => videoMock),
+            drawingContext: {}
+        }
+        renderer = new VideoGradientRenderer(p5Mock)
+    })
+
+    test('waitForVideoReady resolves immediately if video ready', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        const promise = renderer.waitForVideoReady()
+        await expect(promise).resolves.toBeUndefined()
+    })
+
+    test('waitForVideoReady waits for loadeddata event if not ready', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_NOTHING
+
+        const promise = renderer.waitForVideoReady()
+
+        // Verify event listener was added
+        expect(videoMock.elt.addEventListener).toHaveBeenCalledWith(
+            'loadeddata',
+            expect.any(Function),
+            { once: true }
+        )
+
+        // Simulate loadeddata event
+        const callback = videoMock.elt.addEventListener.mock.calls[0][1]
+        callback()
+
+        await expect(promise).resolves.toBeUndefined()
+    })
+
+    test('warmupShaders waits for video ready', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        const waitSpy = vi.spyOn(renderer, 'waitForVideoReady')
+        await renderer.warmupShaders([])
+
+        expect(waitSpy).toHaveBeenCalled()
+    })
+
+    test('warmupShaders creates temporary canvas', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        // Mock document.createElement
+        const mockCanvas = {
+            width: 0,
+            height: 0,
+            getContext: vi.fn(() => ({
+                createPattern: vi.fn(() => 'mock-pattern'),
+                fillStyle: null,
+                fillRect: vi.fn(),
+                getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) }))
+            }))
+        }
+        const originalCreateElement = document.createElement
+        document.createElement = vi.fn(() => mockCanvas)
+
+        await renderer.warmupShaders([{ name: 'test' }])
+
+        expect(document.createElement).toHaveBeenCalledWith('canvas')
+        expect(mockCanvas.width).toBe(32)
+        expect(mockCanvas.height).toBe(32)
+        expect(mockCanvas.getContext).toHaveBeenCalledWith('2d', { willReadFrequently: false })
+
+        // Restore
+        document.createElement = originalCreateElement
+    })
+
+    test('warmupShaders processes each gradient config', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        const mockContext = {
+            createPattern: vi.fn(() => 'mock-pattern'),
+            fillStyle: null,
+            fillRect: vi.fn(),
+            getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) }))
+        }
+        const mockCanvas = {
+            width: 32,
+            height: 32,
+            getContext: vi.fn(() => mockContext)
+        }
+        const originalCreateElement = document.createElement
+        document.createElement = vi.fn(() => mockCanvas)
+
+        const gradientConfigs = [
+            { name: 'gradient1' },
+            { name: 'gradient2' },
+            { name: 'gradient3' }
+        ]
+
+        await renderer.warmupShaders(gradientConfigs)
+
+        // Should create pattern for each gradient
+        expect(mockContext.createPattern).toHaveBeenCalledTimes(3)
+        expect(mockContext.getImageData).toHaveBeenCalledTimes(3)
+
+        // Restore
+        document.createElement = originalCreateElement
+    })
+
+    test('warmupShaders draws test pattern cells', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        const mockContext = {
+            createPattern: vi.fn(() => 'mock-pattern'),
+            fillStyle: null,
+            fillRect: vi.fn(),
+            getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) }))
+        }
+        const mockCanvas = {
+            width: 32,
+            height: 32,
+            getContext: vi.fn(() => mockContext)
+        }
+        const originalCreateElement = document.createElement
+        document.createElement = vi.fn(() => mockCanvas)
+
+        await renderer.warmupShaders([{ name: 'test' }])
+
+        // Should draw 2×2 block pattern (4 cells alive in 4×4 grid)
+        // Cells at (1,1), (2,1), (1,2), (2,2)
+        expect(mockContext.fillRect).toHaveBeenCalledTimes(4)
+        expect(mockContext.fillRect).toHaveBeenCalledWith(8, 8, 8, 8)   // (1,1)
+        expect(mockContext.fillRect).toHaveBeenCalledWith(16, 8, 8, 8)  // (2,1)
+        expect(mockContext.fillRect).toHaveBeenCalledWith(8, 16, 8, 8)  // (1,2)
+        expect(mockContext.fillRect).toHaveBeenCalledWith(16, 16, 8, 8) // (2,2)
+
+        // Restore
+        document.createElement = originalCreateElement
+    })
+
+    test('warmupShaders handles empty gradient array', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        await expect(renderer.warmupShaders([])).resolves.toBeUndefined()
+    })
+
+    test('warmupShaders forces GPU flush with getImageData', async () => {
+        videoMock.elt.readyState = HTMLMediaElement.HAVE_CURRENT_DATA
+
+        const mockContext = {
+            createPattern: vi.fn(() => 'mock-pattern'),
+            fillStyle: null,
+            fillRect: vi.fn(),
+            getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) }))
+        }
+        const mockCanvas = {
+            width: 32,
+            height: 32,
+            getContext: vi.fn(() => mockContext)
+        }
+        const originalCreateElement = document.createElement
+        document.createElement = vi.fn(() => mockCanvas)
+
+        await renderer.warmupShaders([{ name: 'test' }])
+
+        // Should call getImageData to flush GPU commands
+        expect(mockContext.getImageData).toHaveBeenCalledWith(0, 0, 1, 1)
+
+        // Restore
+        document.createElement = originalCreateElement
+    })
+})
+
 describe('VideoGradientRenderer - getGradientColor', () => {
     let p5Mock, renderer, videoMock
 

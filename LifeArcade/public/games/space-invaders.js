@@ -173,7 +173,7 @@ function calculateEntityDimensions(entity) {
 // ============================================
 // p5.js SETUP
 // ============================================
-function setup() {
+async function setup() {
   // Calculate responsive canvas size
   const size = calculateResponsiveSize()
   canvasWidth = size.width
@@ -195,6 +195,21 @@ function setup() {
     CONFIG.ui.score.color = getTextColor(theme)
     console.log(`Space Invaders: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
   })
+
+  // Show loading screen during shader warmup
+  background(0)
+  fill(255)
+  textAlign(CENTER, CENTER)
+  textSize(32 * scaleFactor)
+  text('Loading...', canvasWidth / 2, canvasHeight / 2)
+
+  // Pre-compile GPU shaders (eliminates first-run lag)
+  await maskedRenderer.warmupShaders([
+    GRADIENT_PRESETS.PLAYER,
+    GRADIENT_PRESETS.ENEMY_HOT,
+    GRADIENT_PRESETS.BULLET,
+    GRADIENT_PRESETS.EXPLOSION
+  ])
 
   initGame()
 }
