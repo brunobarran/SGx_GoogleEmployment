@@ -6,10 +6,11 @@ Simple step-by-step guide for **macOS** and **Windows**.
 
 ## What You'll Install
 
-1. **Docker Desktop** - Runs the app in a container
-2. **LifeArcade** - The game installation
+1. **Git** - Version control to download the code
+2. **Docker Desktop** - Runs the app in a container
+3. **LifeArcade** - The game installation
 
-**Total time:** ~15 minutes
+**Total time:** ~20 minutes
 
 ---
 
@@ -54,7 +55,46 @@ You should see something like: `Docker version 24.0.x`
 
 ---
 
-## Step 2: Get LifeArcade
+## Step 2: Install Git
+
+Git is required to download the LifeArcade code from GitHub.
+
+### macOS
+
+Git comes pre-installed on macOS. To verify:
+
+```bash
+git --version
+```
+
+If not installed, macOS will prompt you to install **Xcode Command Line Tools**. Click **Install** and wait.
+
+### Windows
+
+1. Go to: https://git-scm.com/download/win
+2. Click **"Click here to download"** (64-bit version)
+3. Run the installer `Git-X.XX.X-64-bit.exe`
+4. Use default settings (click **Next** on each screen)
+5. Click **Install**, then **Finish**
+
+### Verify Git Works
+
+**macOS:** Open **Terminal**
+**Windows:** Open **PowerShell**
+
+Run:
+
+```bash
+git --version
+```
+
+You should see something like: `git version 2.43.x`
+
+✅ Git is installed!
+
+---
+
+## Step 3: Get LifeArcade
 
 ### Clone the Repository
 
@@ -93,7 +133,7 @@ You should see files like:
 
 ---
 
-## Step 3: Run LifeArcade
+## Step 4: Run LifeArcade
 
 ### Start the Application
 
@@ -141,7 +181,7 @@ For testing the portrait display (1200×1920):
 
 ---
 
-## Step 4: Stop the Application
+## Step 5: Stop the Application
 
 When you're done:
 
