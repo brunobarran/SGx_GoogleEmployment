@@ -106,6 +106,11 @@ async function setup() {
   createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
+  // CSS fade-in: Start invisible, fade in after warmup
+  const canvas = document.querySelector('canvas')
+  canvas.style.opacity = '0'
+  canvas.style.transition = 'opacity 300ms ease-in'
+
   // Create gradient renderer
   maskedRenderer = new VideoGradientRenderer(this)
 
@@ -115,13 +120,6 @@ async function setup() {
     CONFIG.ui.backgroundColor = getBackgroundColor(theme)
     CONFIG.ui.score.color = getTextColor(theme)
   })
-
-  // Show loading screen during shader warmup
-  background(0)
-  fill(255)
-  textAlign(CENTER, CENTER)
-  textSize(32 * scaleFactor)
-  text('Loading...', canvasWidth / 2, canvasHeight / 2)
 
   // Pre-compile GPU shaders (eliminates first-run lag)
   await maskedRenderer.warmupShaders([
@@ -135,7 +133,9 @@ async function setup() {
   // Initialize game
   initGame()
 
+  // Mark setup as complete and trigger fade-in
   setupComplete = true
+  document.querySelector('canvas').style.opacity = '1'
 }
 
 function initGame() {
@@ -162,14 +162,7 @@ function initGame() {
 // ============================================
 
 function draw() {
-  if (!setupComplete) {
-    background(0)
-    fill(255)
-    textAlign(CENTER, CENTER)
-    textSize(32 * scaleFactor)
-    text('Loading...', canvasWidth / 2, canvasHeight / 2)
-    return
-  }
+  if (!setupComplete) return
 
   state.frameCount++
   background(CONFIG.ui.backgroundColor)

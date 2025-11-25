@@ -117,6 +117,11 @@ async function setup() {
   createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
+  // CSS fade-in: Start invisible, fade in after warmup
+  const canvas = document.querySelector('canvas')
+  canvas.style.opacity = '0'
+  canvas.style.transition = 'opacity 300ms ease-in'
+
   // Create gradient renderer
   maskedRenderer = new VideoGradientRenderer(this)
 
@@ -126,13 +131,6 @@ async function setup() {
     CONFIG.ui.score.color = getTextColor(theme)
     console.log(`Breakout: Theme changed to ${theme}, background: ${CONFIG.ui.backgroundColor}`)
   })
-
-  // Show loading screen during shader warmup
-  background(0)
-  fill(255)
-  textAlign(CENTER, CENTER)
-  textSize(32 * scaleFactor)
-  text('Loading...', canvasWidth / 2, canvasHeight / 2)
 
   // Pre-compile GPU shaders (eliminates first-run lag)
   await maskedRenderer.warmupShaders([
@@ -146,8 +144,9 @@ async function setup() {
 
   initGame()
 
-  // Mark setup as complete (allows draw() to proceed)
+  // Mark setup as complete and trigger fade-in
   setupComplete = true
+  document.querySelector('canvas').style.opacity = '1'
 }
 
 function initGame() {
@@ -260,16 +259,7 @@ function setupBricks() {
 // UPDATE LOOP
 // ============================================
 function draw() {
-  // Wait for async setup to complete before running game logic
-  if (!setupComplete) {
-    // Show loading screen while setup is in progress
-    background(0)
-    fill(255)
-    textAlign(CENTER, CENTER)
-    textSize(32 * scaleFactor)
-    text('Loading...', canvasWidth / 2, canvasHeight / 2)
-    return
-  }
+  if (!setupComplete) return
 
   state.frameCount++
 

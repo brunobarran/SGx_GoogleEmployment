@@ -141,6 +141,11 @@ async function setup() {
   createCanvas(canvasWidth, canvasHeight)
   frameRate(60)
 
+  // CSS fade-in: Start invisible, fade in after warmup
+  const canvas = document.querySelector('canvas')
+  canvas.style.opacity = '0'
+  canvas.style.transition = 'opacity 300ms ease-in'
+
   maskedRenderer = new VideoGradientRenderer(this)
 
   initThemeReceiver((theme) => {
@@ -148,13 +153,6 @@ async function setup() {
     CONFIG.ui.score.color = getTextColor(theme)
     console.log(`Void Drift: Theme changed to ${theme}`)
   })
-
-  // Loading screen
-  background(0)
-  fill(255)
-  textAlign(CENTER, CENTER)
-  textSize(32 * scaleFactor)
-  text('Loading...', canvasWidth / 2, canvasHeight / 2)
 
   // Warmup shaders
   await maskedRenderer.warmupShaders([
@@ -165,7 +163,10 @@ async function setup() {
   ])
 
   initGame()
+
+  // Mark setup as complete and trigger fade-in
   setupComplete = true
+  document.querySelector('canvas').style.opacity = '1'
 }
 
 function initGame() {
@@ -403,14 +404,7 @@ function wrapPosition(entity) {
 // ============================================
 
 function draw() {
-  if (!setupComplete) {
-    background(0)
-    fill(255)
-    textAlign(CENTER, CENTER)
-    textSize(32 * scaleFactor)
-    text('Loading...', canvasWidth / 2, canvasHeight / 2)
-    return
-  }
+  if (!setupComplete) return
 
   state.frameCount++
 
