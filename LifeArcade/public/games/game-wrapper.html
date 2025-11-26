@@ -134,27 +134,24 @@
     let currentTheme = null
 
     // Apply theme to body and header BEFORE game loads
-    applyTheme(initialTheme, true)
+    applyTheme(initialTheme)
 
     /**
      * Apply theme colors to wrapper elements
      * @param {string} theme - 'day' or 'night'
-     * @param {boolean} updateBodyBg - Whether to update body background (true on initial load only)
      */
-    function applyTheme(theme, updateBodyBg = false) {
-      // Guard: Skip if already applied (unless updating body)
-      if (theme === currentTheme && !updateBodyBg) {
+    function applyTheme(theme) {
+      // Guard: Skip if already applied
+      if (theme === currentTheme) {
         return
       }
       currentTheme = theme
 
       const textColor = getTextColor(theme)
+      const bgColor = getBackgroundColor(theme)
 
-      // Apply to body background (only on initial load)
-      if (updateBodyBg) {
-        const bgColor = getBackgroundColor(theme)
-        document.body.style.backgroundColor = bgColor
-      }
+      // Apply to body background (ALWAYS - fixes white/black line bug on theme change)
+      document.body.style.backgroundColor = bgColor
 
       // Apply to header elements
       document.getElementById('game-title').style.color = textColor

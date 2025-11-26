@@ -232,7 +232,7 @@ export class GalleryScreen {
     `
 
     arrow.addEventListener('mouseenter', () => {
-      // Google Blue #4285F4
+      // Google Blue #428EF4
       arrow.style.filter = 'brightness(0) saturate(100%) invert(42%) sepia(98%) saturate(1721%) hue-rotate(203deg) brightness(100%) contrast(95%)'
     })
     arrow.addEventListener('mouseleave', () => {
