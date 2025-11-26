@@ -441,6 +441,68 @@ function updatePlayer() {
 }
 
 // ============================================
+// PIPE FILL ALGORITHM
+// ============================================
+
+/**
+ * Still lifes available for pipe filling.
+ * All patterns from LifeWiki - 100% canonical GoL.
+ */
+const PIPE_STILL_LIFES = [
+  Patterns.BLOCK,    // 2×2
+  Patterns.BEEHIVE,  // 4×3
+  Patterns.LOAF,     // 4×4
+  Patterns.BOAT,     // 3×3
+  Patterns.TUB,      // 3×3
+  Patterns.SHIP,     // 3×3
+  Patterns.POND      // 4×4
+]
+
+/**
+ * Fill a pipe's GoL grid with random still lifes and solid perimeter.
+ * Solution C: Random still lifes (1.A) + Perimeter fill (2.A)
+ *
+ * @param {GoLEngine} gol - The GoL engine to fill
+ * @param {number} cols - Number of columns
+ * @param {number} rows - Number of rows
+ * @param {string} openSide - Which side to leave open: 'top' or 'bottom'
+ */
+function fillPipeWithStillLifes(gol, cols, rows, openSide) {
+  // Step 1.A: Place random still lifes uniformly
+  const numPatterns = Math.floor((cols * rows) / 8)  // ~1 pattern per 8 cells
+
+  for (let i = 0; i < numPatterns; i++) {
+    const pattern = random(PIPE_STILL_LIFES)
+
+    // Random position (allow partial overflow)
+    const x = Math.floor(random(0, cols))
+    const y = Math.floor(random(0, rows))
+
+    // Place pattern (setPattern handles bounds)
+    gol.setPattern(pattern, x, y)
+  }
+
+  // Step 2.A: Fill perimeter (1 cell border) with open side
+  // Top row (only if not open)
+  if (openSide !== 'top') {
+    for (let x = 0; x < cols; x++) {
+      gol.current[x][0] = 1
+    }
+  }
+  // Bottom row (only if not open)
+  if (openSide !== 'bottom') {
+    for (let x = 0; x < cols; x++) {
+      gol.current[x][rows - 1] = 1
+    }
+  }
+  // Left and right columns (always closed)
+  for (let y = 0; y < rows; y++) {
+    gol.current[0][y] = 1           // Left column
+    gol.current[cols - 1][y] = 1    // Right column
+  }
+}
+
+// ============================================
 // PIPE SPAWNING
 // ============================================
 function spawnPipes() {
@@ -500,30 +562,9 @@ function spawnPipes() {
       dead: false
     }
 
-    // Brick Wall Pattern: BEEHIVE still lifes in alternating rows
-    // This creates a solid visual that matches the hitbox (fair gameplay)
-    // Performance: 0fps evolution (still lifes are static)
-    // Strategy: Prefer overflow over gaps (better to extend past hitbox than miss coverage)
-
-    // Top pipe - populate with brick wall pattern
-    for (let y = -1; y <= topPipeRows; y += 2) {
-      const offsetX = (Math.floor(y / 2) % 2 === 0) ? 0 : 2
-      for (let x = offsetX; x <= topPipeCols - 3; x += 3) {
-        if (x >= -1 && x + 4 <= topPipeCols + 1 && y + 3 <= topPipeRows + 1) {
-          topPipe.gol.setPattern(Patterns.BEEHIVE, Math.max(0, x), Math.max(0, y))
-        }
-      }
-    }
-
-    // Bottom pipe - populate with brick wall pattern
-    for (let y = -1; y <= bottomPipeRows; y += 2) {
-      const offsetX = (Math.floor(y / 2) % 2 === 0) ? 0 : 2
-      for (let x = offsetX; x <= bottomPipeCols - 3; x += 3) {
-        if (x >= -1 && x + 4 <= bottomPipeCols + 1 && y + 3 <= bottomPipeRows + 1) {
-          bottomPipe.gol.setPattern(Patterns.BEEHIVE, Math.max(0, x), Math.max(0, y))
-        }
-      }
-    }
+    // Fill pipes with random still lifes + solid perimeter (open at screen edge)
+    fillPipeWithStillLifes(topPipe.gol, topPipeCols, topPipeRows, 'top')
+    fillPipeWithStillLifes(bottomPipe.gol, bottomPipeCols, bottomPipeRows, 'bottom')
 
     pipes.push(topPipe, bottomPipe)
   }

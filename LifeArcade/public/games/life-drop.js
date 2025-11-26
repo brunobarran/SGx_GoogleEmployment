@@ -68,8 +68,12 @@ const state = createGameState({
   stabilityCounter: 0,
   lastPopulation: 0,
   simulationTimer: 0,
-  gameOverTimer: 0
+  gameOverTimer: 0,
+  placementTimer: 0              // Timer for placement phase (resets on each drop)
 })
+
+// Placement timeout in frames (30 seconds at 60fps)
+const PLACEMENT_TIMEOUT = 30 * 60
 
 // ============================================
 // GLOBALS
@@ -83,10 +87,35 @@ let setupComplete = false
 // Canvas dimensions
 let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
-// Pattern data for preview
-const PATTERN = Patterns.R_PENTOMINO
-const PATTERN_WIDTH = PATTERN[0].length
-const PATTERN_HEIGHT = PATTERN.length
+// R-pentomino variants (8 orientations: 4 rotations × 2 reflections)
+// All 3×3, all authentic, all ~1103 generations to stabilize
+// Original R-pentomino:
+//   .##
+//   ##.
+//   .#.
+const R_PENTOMINO_VARIANTS = [
+  // Original
+  [[0,1,1], [1,1,0], [0,1,0]],
+  // 90° CW
+  [[1,0,0], [1,1,0], [0,1,1]],
+  // 180°
+  [[0,1,0], [0,1,1], [1,1,0]],
+  // 270° CW
+  [[1,1,0], [0,1,1], [0,0,1]],
+  // Horizontal flip
+  [[1,1,0], [0,1,1], [0,1,0]],
+  // Horizontal flip + 90° CW
+  [[0,0,1], [0,1,1], [1,1,0]],
+  // Horizontal flip + 180°
+  [[0,1,0], [1,1,0], [0,1,1]],
+  // Horizontal flip + 270° CW
+  [[0,1,1], [1,1,0], [1,0,0]]
+]
+
+// Current pattern (changes on each drop)
+let currentPattern = R_PENTOMINO_VARIANTS[0]
+let currentPatternWidth = 3  // All variants are 3×3
+let currentPatternHeight = 3
 
 // Input state (to prevent key repeat)
 let keysPressed = {}
@@ -151,10 +180,24 @@ function initGame() {
   state.lastPopulation = 0
   state.simulationTimer = 0
   state.gameOverTimer = 0
+  state.placementTimer = 0
   state.frameCount = 0
 
   // Clear grid
   golEngine = new GoLEngine(CONFIG.grid.cols, CONFIG.grid.rows)
+
+  // Select random initial pattern
+  selectRandomPattern()
+}
+
+/**
+ * Select a random R-pentomino variant from the 8 orientations.
+ * All variants are 3×3 so dimensions stay constant.
+ */
+function selectRandomPattern() {
+  const randomIndex = Math.floor(Math.random() * R_PENTOMINO_VARIANTS.length)
+  currentPattern = R_PENTOMINO_VARIANTS[randomIndex]
+  // Dimensions are always 3×3, no need to update
 }
 
 // ============================================
@@ -191,6 +234,25 @@ function draw() {
 // ============================================
 
 function updatePlacement() {
+  // Increment placement timer
+  state.placementTimer++
+
+  // Check for timeout (30s without dropping a pattern)
+  if (state.placementTimer >= PLACEMENT_TIMEOUT) {
+    // Timeout: go to simulation with whatever patterns were placed
+    if (state.population > 0) {
+      // At least one pattern was placed, run simulation
+      state.phase = 'SIMULATION'
+      state.lastPopulation = state.population
+    } else {
+      // No patterns placed, go directly to game over with score 0
+      state.phase = 'GAMEOVER'
+      state.score = 0
+      state.gameOverTimer = 0
+    }
+    return
+  }
+
   // Handle cursor movement (continuous while held)
   handleCursorMovement()
 }
@@ -202,23 +264,23 @@ function handleCursorMovement() {
     state.cursor.x = Math.max(0, state.cursor.x - speed)
   }
   if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) { // D
-    state.cursor.x = Math.min(CONFIG.grid.cols - PATTERN_WIDTH, state.cursor.x + speed)
+    state.cursor.x = Math.min(CONFIG.grid.cols - currentPatternWidth, state.cursor.x + speed)
   }
   if (keyIsDown(UP_ARROW) || keyIsDown(87)) { // W
     state.cursor.y = Math.max(0, state.cursor.y - speed)
   }
   if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) { // S
-    state.cursor.y = Math.min(CONFIG.grid.rows - PATTERN_HEIGHT, state.cursor.y + speed)
+    state.cursor.y = Math.min(CONFIG.grid.rows - currentPatternHeight, state.cursor.y + speed)
   }
 }
 
 function dropPattern() {
   if (state.phase !== 'PLACEMENT' || state.dropsRemaining <= 0) return
 
-  // Stamp pattern onto grid
+  // Stamp current pattern onto grid
   stampPattern(
     golEngine.current,
-    PATTERN,
+    currentPattern,
     state.cursor.x,
     state.cursor.y,
     CONFIG.grid.cols,
@@ -235,6 +297,11 @@ function dropPattern() {
   if (state.dropsRemaining <= 0) {
     state.phase = 'SIMULATION'
     state.lastPopulation = state.population
+  } else {
+    // Reset placement timer (30s for next drop)
+    state.placementTimer = 0
+    // Select next random pattern for the next drop
+    selectRandomPattern()
   }
 }
 
@@ -382,13 +449,12 @@ function renderCursor() {
   push()
   noStroke()
 
-  // Semi-transparent preview
-  const previewColor = GRADIENT_PRESETS.BULLET.color1 || [66, 133, 244]
-  fill(previewColor[0], previewColor[1], previewColor[2], CONFIG.cursor.previewAlpha)
+  // Semi-transparent preview (black)
+  fill(0, 0, 0, CONFIG.cursor.previewAlpha)
 
-  for (let py = 0; py < PATTERN_HEIGHT; py++) {
-    for (let px = 0; px < PATTERN_WIDTH; px++) {
-      if (PATTERN[py][px] === 1) {
+  for (let py = 0; py < currentPatternHeight; py++) {
+    for (let px = 0; px < currentPatternWidth; px++) {
+      if (currentPattern[py][px] === 1) {
         rect(
           cursorX + px * cellSize,
           cursorY + py * cellSize,
@@ -399,16 +465,18 @@ function renderCursor() {
     }
   }
 
-  // Draw cursor border
+  // Draw cursor border (black, dashed)
   noFill()
-  stroke(66, 133, 244)
+  stroke(0, 0, 0)
   strokeWeight(2)
+  drawingContext.setLineDash([8, 4])  // 8px dash, 4px gap
   rect(
     cursorX - 2,
     cursorY - 2,
-    PATTERN_WIDTH * cellSize + 4,
-    PATTERN_HEIGHT * cellSize + 4
+    currentPatternWidth * cellSize + 4,
+    currentPatternHeight * cellSize + 4
   )
+  drawingContext.setLineDash([])  // Reset to solid for other drawing
 
   pop()
 }
@@ -416,7 +484,7 @@ function renderCursor() {
 function renderDropsIndicator() {
   const total = CONFIG.game.maxDrops
   const remaining = state.dropsRemaining
-  const dotSize = 16
+  const squareSize = 16
   const spacing = 24
   const startX = (GAME_DIMENSIONS.BASE_WIDTH - (total * spacing)) / 2
   const y = GAME_DIMENSIONS.BASE_HEIGHT - 60
@@ -426,30 +494,20 @@ function renderDropsIndicator() {
 
   for (let i = 0; i < total; i++) {
     if (i < remaining) {
-      // Filled dot (remaining)
-      fill(66, 133, 244) // Google Blue
+      // Filled square (remaining) - black
+      fill(0, 0, 0)
     } else {
-      // Empty dot (used)
+      // Empty square (used) - gray
       fill(200)
     }
-    ellipse(startX + i * spacing + dotSize / 2, y, dotSize, dotSize)
+    rect(startX + i * spacing, y - squareSize / 2, squareSize, squareSize)
   }
 
   pop()
 }
 
 function renderSimulationInfo() {
-  push()
-
-  fill(CONFIG.ui.score.color)
-  textAlign(CENTER, CENTER)
-  textSize(48)
-  textFont('Arial')
-
-  // Generation and Population on same line
-  text(`Gen: ${state.generation}   Pop: ${state.population}`, GAME_DIMENSIONS.BASE_WIDTH / 2, GAME_DIMENSIONS.BASE_HEIGHT - 60)
-
-  pop()
+  // Removed Gen/Pop text display per client request
 }
 
 // ============================================

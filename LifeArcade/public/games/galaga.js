@@ -247,7 +247,7 @@ function renderStars() {
     } else {
       fill(255 - star.brightness)  // 0-155 (dark)
     }
-    ellipse(star.x, star.y, star.size, star.size)
+    square(star.x, star.y, star.size)
   })
 }
 

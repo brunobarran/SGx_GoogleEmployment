@@ -111,6 +111,9 @@ let particles = []
 // Gradient renderer
 let maskedRenderer = null
 
+// Theme state (for bullet color)
+let currentTheme = 'day'
+
 // Setup completion flag
 let setupComplete = false
 
@@ -149,16 +152,16 @@ async function setup() {
   maskedRenderer = new VideoGradientRenderer(this)
 
   initThemeReceiver((theme) => {
+    currentTheme = theme  // Track theme for bullet color
     CONFIG.ui.backgroundColor = getBackgroundColor(theme)
     CONFIG.ui.score.color = getTextColor(theme)
     console.log(`Void Drift: Theme changed to ${theme}`)
   })
 
-  // Warmup shaders
+  // Warmup shaders (bullets no longer use gradients - simple rect)
   await maskedRenderer.warmupShaders([
     GRADIENT_PRESETS.PLAYER,
     GRADIENT_PRESETS.ENEMY_COLD,
-    GRADIENT_PRESETS.BULLET,
     GRADIENT_PRESETS.EXPLOSION
   ])
 
@@ -282,26 +285,29 @@ function spawnAsteroidsForLevel() {
     CONFIG.asteroid.maxCount
   )
 
+  // Calculate spawn offset based on LARGE asteroid size (spawns completely off-screen)
+  const largeSize = CONFIG.asteroid.sizes.LARGE.gridSize * CONFIG.globalCellSize
+
   for (let i = 0; i < count; i++) {
-    // Spawn at edges, away from player
+    // Spawn outside edges (asteroid center is off-screen by its radius)
     let x, y
     const edge = Math.floor(random(4))
 
     switch (edge) {
-      case 0: // Top
+      case 0: // Top - spawn above screen
         x = random(CONFIG.width)
-        y = 0
+        y = -largeSize / 2
         break
-      case 1: // Right
-        x = CONFIG.width
+      case 1: // Right - spawn right of screen
+        x = CONFIG.width + largeSize / 2
         y = random(CONFIG.height)
         break
-      case 2: // Bottom
+      case 2: // Bottom - spawn below screen
         x = random(CONFIG.width)
-        y = CONFIG.height
+        y = CONFIG.height + largeSize / 2
         break
-      case 3: // Left
-        x = 0
+      case 3: // Left - spawn left of screen
+        x = -largeSize / 2
         y = random(CONFIG.height)
         break
     }
@@ -350,8 +356,8 @@ function spawnChildAsteroids(parent, childSize, count) {
 function shootBullet() {
   if (state.playerShootCooldown > 0) return
 
-  // Use 2x2 grid for visible bullets
-  const bulletGridSize = 2
+  // Use 1x1 grid size for bullet dimensions (single BLOCK cell)
+  const bulletGridSize = 1
   const bulletSize = bulletGridSize * CONFIG.globalCellSize
 
   // Bullet spawns at nose of ship
@@ -367,13 +373,8 @@ function shootBullet() {
     width: bulletSize,
     height: bulletSize,
     lifetime: CONFIG.bullet.lifetime,
-    gol: new GoLEngine(bulletGridSize, bulletGridSize, CONFIG.loopUpdateRate),
-    gradient: GRADIENT_PRESETS.BULLET,
     dead: false
   }
-
-  // Fill all cells for solid bullet (BLOCK pattern)
-  bullet.gol.setPattern(Patterns.BLOCK, 0, 0)
 
   bullets.push(bullet)
   state.playerShootCooldown = CONFIG.player.shootCooldown
@@ -384,18 +385,25 @@ function shootBullet() {
 // ============================================
 
 function wrapPosition(entity) {
-  // Horizontal wrap
-  if (entity.x < 0) {
-    entity.x = CONFIG.width
-  } else if (entity.x > CONFIG.width) {
-    entity.x = 0
+  // Use entity radius or calculate from width (entity must fully exit before reappearing)
+  const radius = entity.radius || (entity.width / 2) || 0
+
+  // Horizontal wrap (entity must fully disappear before reappearing on opposite side)
+  if (entity.x + radius < 0) {
+    // Fully exited left → reappear fully outside right
+    entity.x = CONFIG.width + radius
+  } else if (entity.x - radius > CONFIG.width) {
+    // Fully exited right → reappear fully outside left
+    entity.x = -radius
   }
 
   // Vertical wrap
-  if (entity.y < 0) {
-    entity.y = CONFIG.height
-  } else if (entity.y > CONFIG.height) {
-    entity.y = 0
+  if (entity.y + radius < 0) {
+    // Fully exited top → reappear fully outside bottom
+    entity.y = CONFIG.height + radius
+  } else if (entity.y - radius > CONFIG.height) {
+    // Fully exited bottom → reappear fully outside top
+    entity.y = -radius
   }
 }
 
@@ -680,15 +688,11 @@ function renderGame() {
     )
   })
 
-  // Render bullets
+  // Render bullets (theme-aware: black in day, white in night)
+  fill(currentTheme === 'night' ? 255 : 0)
+  noStroke()
   bullets.forEach(bullet => {
-    maskedRenderer.renderMaskedGrid(
-      bullet.gol,
-      bullet.x - bullet.width / 2,
-      bullet.y - bullet.height / 2,
-      CONFIG.globalCellSize,
-      bullet.gradient
-    )
+    rect(bullet.x - bullet.width / 2, bullet.y - bullet.height / 2, bullet.width, bullet.height)
   })
 
   // Render particles

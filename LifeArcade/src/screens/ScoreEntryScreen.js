@@ -315,7 +315,7 @@ export class ScoreEntryScreen {
       const playAgainLink = this.element.querySelector('.score-entry-play-again')
       if (playAgainLink) {
         playAgainLink.addEventListener('click', () => {
-          this.goToGallery()
+          this.playAgain()
         })
       }
       // Auto-advance after 5 seconds
@@ -378,11 +378,11 @@ export class ScoreEntryScreen {
   }
 
   /**
-   * Go directly to gallery (Play again)
+   * Play again - restart the same game
    */
-  goToGallery() {
-    debugLog('ScoreEntryScreen: Play again selected - going to gallery')
-    this.appState.transition('gallery')
+  playAgain() {
+    debugLog('ScoreEntryScreen: Play again selected - restarting game')
+    this.appState.transition('game')
   }
 
   /**
@@ -431,7 +431,7 @@ export class ScoreEntryScreen {
           clearTimeout(this.autoAdvanceTimeout)
           this.autoAdvanceTimeout = null
         }
-        this.goToGallery()
+        this.playAgain()
       } else if (this.currentScreen === 2) {
         // On screen 2 (Score), skip to next screen
         if (this.autoAdvanceTimeout) {

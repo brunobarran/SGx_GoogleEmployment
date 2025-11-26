@@ -34,10 +34,10 @@ import { initThemeReceiver, getBackgroundColor, getTextColor } from '/src/utils/
 
 const CONFIG = createGameConfig({
   grid: {
-    cols: 20,           // Logical grid horizontal (1200 / 20 = 60px per cell)
-    rows: 32,           // Logical grid vertical (1920 / 32 = 60px per cell)
-    cellSize: 60,       // Visual size of each grid cell
-    offsetY: 60         // Offset from top for header
+    cols: 40,           // Logical grid horizontal (1200 / 40 = 30px per cell)
+    rows: 64,           // Logical grid vertical (1920 / 64 = 30px per cell)
+    cellSize: 30,       // Visual size of each grid cell
+    offsetY: 30         // Offset from top for header
   },
 
   snake: {
@@ -58,7 +58,7 @@ const CONFIG = createGameConfig({
   loopUpdateRate: 10,  // 10 fps
 
   // GoL cell size for rendering patterns inside grid cells
-  golCellSize: 15      // 4 GoL cells fit in 60px grid cell
+  golCellSize: 8       // ~4 GoL cells fit in 30px grid cell
 })
 
 // Store scale factor for rendering
@@ -117,7 +117,7 @@ const state = createGameState({
   moveTimer: 0,              // Movement timer (frames)
   direction: { x: 1, y: 0 }, // Current direction (right initially)
   nextDirection: null,       // Next direction (input buffer)
-  pendingSegments: [],       // Queue of {pattern, gradient} for new segments
+  pendingGrowth: 0,          // Segments to add (simple counter)
   dyingTimer: 0
 })
 
@@ -214,7 +214,7 @@ function initGame() {
   state.moveTimer = 0
   state.direction = { x: 1, y: 0 }
   state.nextDirection = null
-  state.pendingSegments = []
+  state.pendingGrowth = 0
   state.dyingTimer = 0
 
   snake = []
@@ -432,57 +432,32 @@ function moveSnake() {
   // Check food collision
   const ateFood = (newX === food.gridX && newY === food.gridY)
 
-  // Store food pattern BEFORE eating (for new segments)
-  let eatenPattern = null
-  let eatenGradient = null
   if (ateFood) {
-    eatenPattern = food.patternName
-    eatenGradient = food.gradient
     onFoodEaten()
   }
 
-  // Create new head segment
-  // If eating: head gets the EATEN pattern (flows through body as snake moves)
-  // If not eating: head gets BLOCK
+  // Create new head segment (always BLOCK with PLAYER gradient)
   const newHead = createSegment(
     newX,
     newY,
-    ateFood ? eatenPattern : PatternName.BLOCK,
-    ateFood ? eatenGradient : GRADIENT_PRESETS.PLAYER
+    PatternName.BLOCK,
+    GRADIENT_PRESETS.PLAYER
   )
 
   // Add new head at front
   snake.unshift(newHead)
 
-  // Update old head to body gradient (inherit from its pattern)
+  // Update old head to body gradient
   if (snake.length > 1) {
-    const oldHead = snake[1]
-    // Keep its pattern but change gradient to indicate it's now body
-    oldHead.gradient = getBodyGradient(oldHead.patternName)
+    snake[1].gradient = GRADIENT_PRESETS.ENEMY_COLD
   }
 
-  // Growth logic:
-  // - If pendingSegments has items: DON'T remove tail (snake grows +1)
-  // - If no pending: remove tail (normal movement)
-  //
-  // Pattern is already on the HEAD (assigned above when eating).
-  // It will "flow" through the body as the snake moves.
-  if (state.pendingSegments.length > 0) {
-    state.pendingSegments.shift()  // Consume one growth
-    // DON'T pop = snake grows by 1
-    console.log(`Growth: length=${snake.length}`)
+  // Growth logic: if pending growth, don't remove tail
+  if (state.pendingGrowth > 0) {
+    state.pendingGrowth--
   } else {
-    // Normal movement - remove tail
     snake.pop()
   }
-}
-
-/**
- * Get appropriate body gradient based on pattern
- */
-function getBodyGradient(patternName) {
-  const patternInfo = FOOD_PATTERNS.find(p => p.name === patternName)
-  return patternInfo ? patternInfo.gradient : GRADIENT_PRESETS.ENEMY_COLD
 }
 
 function checkWallCollision(x, y) {
@@ -502,18 +477,8 @@ function onFoodEaten() {
   state.score += food.scoreValue * state.level
   state.foodEaten++
 
-  // Spawn explosion at food position
-  spawnExplosion(food.gridX, food.gridY, food.gradient)
-
-  // Queue new segments with the eaten food's pattern
-  // Each segment will inherit this pattern when it's created
-  for (let i = 0; i < state.currentGrowth; i++) {
-    state.pendingSegments.push({
-      patternName: food.patternName,
-      gradient: food.gradient,
-      isOscillator: food.isOscillator
-    })
-  }
+  // Queue growth (simple counter)
+  state.pendingGrowth += state.currentGrowth
 
   // Update difficulty
   updateDifficulty()

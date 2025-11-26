@@ -30,7 +30,7 @@ export class AppState {
     gallery: ['code', 'idle'],
     code: ['game', 'idle'],
     game: ['score', 'idle'],
-    score: ['leaderboard', 'gallery', 'idle'],
+    score: ['leaderboard', 'game', 'idle'],
     leaderboard: ['qr', 'gallery', 'idle'],
     qr: ['idle']
   }
@@ -182,7 +182,7 @@ export class AppState {
   subscribe(callback) {
     if (typeof callback !== 'function') {
       debugError('Subscribe callback must be a function')
-      return () => {}
+      return () => { }
     }
 
     // Wrap callback to provide state object

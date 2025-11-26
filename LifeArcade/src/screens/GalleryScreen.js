@@ -25,6 +25,8 @@ export class GalleryScreen {
     // DOM elements
     this.element = null
     this.cardsContainer = null
+    this.leftArrow = null
+    this.rightArrow = null
 
     // Carousel state
     this.currentIndex = 0
@@ -116,15 +118,15 @@ export class GalleryScreen {
       pointer-events: none;
     `
 
-    const leftArrow = this.createArrow('left')
-    const rightArrow = this.createArrow('right')
+    this.leftArrow = this.createArrow('left')
+    this.rightArrow = this.createArrow('right')
 
     // Add click handlers
-    leftArrow.addEventListener('click', () => this.navigate('left'))
-    rightArrow.addEventListener('click', () => this.navigate('right'))
+    this.leftArrow.addEventListener('click', () => this.navigate('left'))
+    this.rightArrow.addEventListener('click', () => this.navigate('right'))
 
-    navContainer.appendChild(leftArrow)
-    navContainer.appendChild(rightArrow)
+    navContainer.appendChild(this.leftArrow)
+    navContainer.appendChild(this.rightArrow)
 
     // Append all elements
     this.element.appendChild(title)
@@ -135,8 +137,9 @@ export class GalleryScreen {
     // Add styles
     this.addStyles()
 
-    // Update carousel position
+    // Update carousel position and arrow visibility
     this.updateCarousel(false)
+    this.updateArrowVisibility()
 
     // Listen for keys
     this.inputManager.onKeyPress(this.handleKeyPress)
@@ -320,6 +323,19 @@ export class GalleryScreen {
   }
 
   /**
+   * Update arrow visibility based on current position
+   * Left arrow hidden at first element, right arrow hidden at last element
+   */
+  updateArrowVisibility() {
+    if (this.leftArrow) {
+      this.leftArrow.style.visibility = this.currentIndex === 0 ? 'hidden' : 'visible'
+    }
+    if (this.rightArrow) {
+      this.rightArrow.style.visibility = this.currentIndex === GAMES.length - 1 ? 'hidden' : 'visible'
+    }
+  }
+
+  /**
    * Navigate carousel
    */
   navigate(direction) {
@@ -334,6 +350,7 @@ export class GalleryScreen {
     }
 
     this.updateCarousel()
+    this.updateArrowVisibility()
 
     setTimeout(() => {
       this.isAnimating = false
@@ -359,6 +376,8 @@ export class GalleryScreen {
       this.element.remove()
       this.element = null
       this.cardsContainer = null
+      this.leftArrow = null
+      this.rightArrow = null
     }
 
     debugLog('GalleryScreen: Cleaned up')

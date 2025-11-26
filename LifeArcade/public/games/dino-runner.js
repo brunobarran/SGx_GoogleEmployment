@@ -56,7 +56,7 @@ const CONFIG = createGameConfig({
     fastFall: 8.0      // Gravedad cuando presiona ↓ en el aire - bajada instantánea
   },
   terminalVelocity: 28,  // Límite de velocidad de caída
-  jumpForce: -42,        // Salto más fuerte para compensar gravedad aumentada
+  jumpForce: -50,        // Salto más fuerte para compensar gravedad aumentada
 
   groundY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6,  // 40% from bottom = 60% from top (1920 * 0.6 = 1152)
   horizonY: GAME_DIMENSIONS.BASE_HEIGHT * 0.6 - 15, // Visual horizon line (15px above ground)
