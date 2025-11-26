@@ -409,7 +409,7 @@ function updateGame() {
 
 function updatePlayer() {
   // Jump input
-  if (keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87)) {  // SPACE, UP, or W
+  if (keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87) || keyIsDown(78)) {  // SPACE, UP, W, or N
     player.vy = CONFIG.jumpForce
   }
 
@@ -642,7 +642,7 @@ function renderGame() {
 // INPUT
 // ============================================
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     initGame()
   }
 }

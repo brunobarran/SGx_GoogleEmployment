@@ -361,8 +361,8 @@ function updateBall() {
     ball.x = paddle.x + paddle.width / 2
     ball.y = paddle.y - ball.radius
 
-    // Release on space
-    if (keyIsDown(32)) {  // SPACE
+    // Release on space or N
+    if (keyIsDown(32) || keyIsDown(78)) {  // SPACE or N
       ball.stuck = false
       ball.vy = -CONFIG.ball.speed
       ball.vx = CONFIG.ball.speed * (Math.random() > 0.5 ? 1 : -1)
@@ -637,7 +637,7 @@ function renderGame() {
 // INPUT
 // ============================================
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     initGame()
   }
 }

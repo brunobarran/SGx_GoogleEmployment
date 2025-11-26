@@ -733,7 +733,7 @@ function updateGame() {
 function updatePlayer() {
   // Read input states FIRST (before physics)
   const isDuckPressed = keyIsDown(DOWN_ARROW)
-  const isJumpPressed = keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87)  // SPACE, UP, or W
+  const isJumpPressed = keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87) || keyIsDown(78)  // SPACE, UP, W, or N
 
   // Jump input (jump has priority over duck)
   if (isJumpPressed && player.onGround && !isDuckPressed) {
@@ -1024,7 +1024,7 @@ function renderGame() {
 // INPUT
 // ============================================
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     // Only allow restart in standalone mode
     if (window.parent === window) {
       initGame()

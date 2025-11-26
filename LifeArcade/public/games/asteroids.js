@@ -492,7 +492,7 @@ function updatePlayer() {
   wrapPosition(player)
 
   // Shooting
-  if (keyIsDown(32) || keyIsDown(90)) {  // SPACE or Z
+  if (keyIsDown(32) || keyIsDown(90) || keyIsDown(78)) {  // SPACE, Z, or N
     shootBullet()
   }
 
@@ -723,7 +723,7 @@ function renderThrustEffect() {
 // ============================================
 
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     if (window.parent === window) {
       initGame()
     }

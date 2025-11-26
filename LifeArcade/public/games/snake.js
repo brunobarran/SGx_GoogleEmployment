@@ -680,7 +680,7 @@ function renderGridLines() {
 // INPUT HANDLING
 // ============================================
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     if (window.parent === window) {
       initGame()
       state.phase = 'PLAYING'

@@ -431,7 +431,7 @@ function updatePlayer() {
   player.x = Collision.clamp(player.x, 0, CONFIG.width - player.width)
 
   // Shoot
-  if ((keyIsDown(32) || keyIsDown(90)) && state.playerShootCooldown === 0) {
+  if ((keyIsDown(32) || keyIsDown(90) || keyIsDown(78)) && state.playerShootCooldown === 0) {  // SPACE, Z, or N
     shootBullet()
     state.playerShootCooldown = CONFIG.player.shootCooldown
   }
@@ -935,7 +935,7 @@ function spawnMiniExplosion(x, y) {
 // INPUT HANDLING
 // ============================================
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     // Only allow restart in standalone mode
     if (window.parent === window) {
       initGame()

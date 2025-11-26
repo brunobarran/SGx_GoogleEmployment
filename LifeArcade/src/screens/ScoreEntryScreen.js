@@ -247,6 +247,28 @@ export class ScoreEntryScreen {
           opacity: 1;
         }
 
+        .score-entry-footer {
+          position: absolute;
+          bottom: clamp(80px, 10cqh, 192px);
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          white-space: nowrap;
+        }
+
+        .score-entry-play-again {
+          color: #7D7D7D;
+          font-size: clamp(18px, 2.08cqh, 40px);
+          font-family: 'Google Sans Flex', sans-serif;
+          font-weight: 500;
+          text-decoration: underline;
+          line-height: 1;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -285,11 +307,21 @@ export class ScoreEntryScreen {
         <div class="score-entry-container">
           <h1 class="score-entry-gameover">Game over</h1>
         </div>
+        <div class="score-entry-footer">
+          <div class="score-entry-play-again">Play again</div>
+        </div>
       `
-      // Auto-advance after 3 seconds
+      // Add click handler for Play again
+      const playAgainLink = this.element.querySelector('.score-entry-play-again')
+      if (playAgainLink) {
+        playAgainLink.addEventListener('click', () => {
+          this.goToGallery()
+        })
+      }
+      // Auto-advance after 5 seconds
       this.autoAdvanceTimeout = setTimeout(() => {
         this.advanceScreen()
-      }, 3000)
+      }, 5000)
     }
     else if (this.currentScreen === 2) {
       // SCREEN 2: Score
@@ -346,6 +378,14 @@ export class ScoreEntryScreen {
   }
 
   /**
+   * Go directly to gallery (Play again)
+   */
+  goToGallery() {
+    debugLog('ScoreEntryScreen: Play again selected - going to gallery')
+    this.appState.transition('gallery')
+  }
+
+  /**
    * Hide screen - Remove DOM and event listeners
    */
   hide() {
@@ -383,10 +423,17 @@ export class ScoreEntryScreen {
       this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
     }
 
-    // Space or N - Advance screen or confirm name
+    // Space or N - Different behavior per screen
     if (key === ' ' || key === 'n' || key === 'N') {
-      if (this.currentScreen < 3) {
-        // Skip auto-advance and go to next screen immediately
+      if (this.currentScreen === 1) {
+        // On screen 1 (Game Over), go to gallery (Play again)
+        if (this.autoAdvanceTimeout) {
+          clearTimeout(this.autoAdvanceTimeout)
+          this.autoAdvanceTimeout = null
+        }
+        this.goToGallery()
+      } else if (this.currentScreen === 2) {
+        // On screen 2 (Score), skip to next screen
         if (this.autoAdvanceTimeout) {
           clearTimeout(this.autoAdvanceTimeout)
           this.autoAdvanceTimeout = null

@@ -536,7 +536,7 @@ function updatePlayer() {
   player.y = Collision.clamp(player.y, 100, CONFIG.height - player.height)  // 100 = top margin for UI
 
   // Shooting
-  if ((keyIsDown(32) || keyIsDown(90)) && state.playerShootCooldown === 0) {
+  if ((keyIsDown(32) || keyIsDown(90) || keyIsDown(78)) && state.playerShootCooldown === 0) {  // SPACE, Z, or N
     shootBullet()
     state.playerShootCooldown = CONFIG.player.shootCooldown
   }
@@ -1180,7 +1180,7 @@ function renderGame() {
 // ============================================
 
 function keyPressed() {
-  if (key === ' ' && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     if (window.parent === window) {
       initGame()
     }
