@@ -298,11 +298,11 @@ export class QRCodeScreen {
     this.appState.clearTimeout('qr-inactivity')
     this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
 
-    // Space or N returns to Idle (restart loop)
-    if (key === ' ' || key === 'n' || key === 'N') {
+    // Space, M, or N returns to Idle (restart loop)
+    if (key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') {
       debugLog('QRCodeScreen: Key pressed - returning to Idle')
       this.appState.reset()
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
   }
 }

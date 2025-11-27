@@ -485,11 +485,11 @@ export class LeaderboardScreen {
       this.selectedOption = 1  // Play again
       this.updateFooterSelection()
     }
-    // Space or N confirms selected option
-    else if (key === ' ' || key === 'n' || key === 'N') {
+    // Space or M confirms selected option
+    else if (key === ' ' || key === 'm' || key === 'M') {
       debugLog('LeaderboardScreen: Key pressed - confirming selection', this.selectedOption)
       this.confirmSelection()
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
   }
 }

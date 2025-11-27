@@ -400,11 +400,11 @@ export class GalleryScreen {
     else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       this.navigate('right')
     }
-    // Space or N confirms selection
-    else if (key === ' ' || key === 'n' || key === 'N') {
+    // Space or M confirms selection
+    else if (key === ' ' || key === 'm' || key === 'M') {
       this.confirmSelection()
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
   }
 
   /**

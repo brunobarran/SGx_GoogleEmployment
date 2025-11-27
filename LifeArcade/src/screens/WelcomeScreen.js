@@ -192,11 +192,11 @@ export class WelcomeScreen {
     this.appState.clearTimeout('welcome-inactivity')
     this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
 
-    // SPACE or N advances to Gallery screen
-    if (key === ' ' || key === 'n' || key === 'N') {
+    // SPACE, M, or N advances to Gallery screen
+    if (key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') {
       debugLog('WelcomeScreen: Key pressed - advancing to Gallery')
       this.appState.transition('gallery')
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
   }
 }

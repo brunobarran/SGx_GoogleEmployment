@@ -806,9 +806,9 @@ localStorage.setItem('scores_snake', JSON.stringify([
 
 ```
 MOVIMIENTO:    ↑↓←→ / WASD
-CONFIRMAR:     SPACE / N
-RESET SUAVE:   M (mantener 3s)
-RESET DURO:    M+N (mantener 10s)
+CONFIRMAR:     SPACE / M
+RESET SUAVE:   N (mantener 3s)
+RESET DURO:    N+M (mantener 10s)
 TEMA:          1-8 (día: 1-4, noche: 5-8)
 ```
 
@@ -816,8 +816,10 @@ TEMA:          1-8 (día: 1-4, noche: 5-8)
 
 #### 🎮 Advance/Confirm
 - **SPACE** → Advance screen / Confirm selection
-- **N** → Advance screen / Confirm selection (alternative)
-  - *Exception*: If M is pressed, N activates Hard Reset instead
+- **M** → Advance screen / Confirm selection (alternative)
+
+#### 🎮 Game Actions (in-game only)
+- **SPACE / M / N** → Action (shoot, jump, release ball, etc.)
 
 #### 🧭 Horizontal Navigation (Carousels/Menus)
 - **← / A** → Left
@@ -834,11 +836,11 @@ TEMA:          1-8 (día: 1-4, noche: 5-8)
 - Works in games via game-wrapper.html capture phase
 
 #### 🔄 Reset System
-- **M (hold 3s)** → Soft Reset (clear session, keep scores)
+- **N (hold 3s)** → Soft Reset (clear session, keep scores)
   - Blocked on IdleScreen
   - Blocked in GameScreen (InputManager disabled)
   - Works on all other screens
-- **M+N (hold 10s)** → Hard Reset (clear ALL localStorage + session)
+- **N+M (hold 10s)** → Hard Reset (clear ALL localStorage + session)
   - Blocked in GameScreen only
   - Deletes all scores permanently
 
@@ -846,38 +848,40 @@ TEMA:          1-8 (día: 1-4, noche: 5-8)
 
 | Screen | Navigation | Confirm | Theme | Reset |
 |--------|-----------|---------|-------|-------|
-| **Idle** | N/A | SPACE/N | 1-8 | M+N (10s) |
-| **Welcome** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
-| **Gallery** | ← → / A D | SPACE/N | 1-8 | M (3s), M+N (10s) |
-| **CodeAnim** | N/A | SPACE/N (skip) | 1-8 | M (3s), M+N (10s) |
-| **Game** | ↑↓←→/WASD | SPACE (game) | 1-8 | ❌ |
-| **Score 1-2** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
-| **Score 3** | ↑↓←→/WASD | SPACE/N | 1-8 | M (3s), M+N (10s) |
-| **Leaderboard** | ← → / A D | SPACE/N | 1-8 | M (3s), M+N (10s) |
-| **QR** | N/A | SPACE/N | 1-8 | M (3s), M+N (10s) |
+| **Idle** | N/A | SPACE/M | 1-8 | N+M (10s) |
+| **Welcome** | N/A | SPACE/M | 1-8 | N (3s), N+M (10s) |
+| **Gallery** | ← → / A D | SPACE/M | 1-8 | N (3s), N+M (10s) |
+| **CodeAnim** | N/A | SPACE/M (skip) | 1-8 | N (3s), N+M (10s) |
+| **Game** | ↑↓←→/WASD | SPACE/M/N (game) | 1-8 | ❌ |
+| **Score 1-2** | N/A | SPACE/M | 1-8 | N (3s), N+M (10s) |
+| **Score 3** | ↑↓←→/WASD | SPACE/M | 1-8 | N (3s), N+M (10s) |
+| **Leaderboard** | ← → / A D | SPACE/M | 1-8 | N (3s), N+M (10s) |
+| **QR** | N/A | SPACE/M | 1-8 | N (3s), N+M (10s) |
 
 ### Key Priority
 
-When N is pressed:
-1. **If M is pressed** → Initiates/continues Hard Reset (10s)
-2. **If M is NOT pressed** → Advances screen
+When N is pressed (outside of games):
+1. **Always** → Initiates Soft Reset timer (3s)
+2. **If M is also pressed** → Switches to Hard Reset timer (10s)
 
-This allows N to have dual function without conflict.
+M is now purely an action/confirm key and does NOT trigger reset alone.
 
 ### Removed Keys
 
 - ❌ **Escape** → No longer works on any screen
 - ❌ **Enter** → No longer used
 - ❌ **Keys 1-4 in Gallery** → No longer select games (only theme)
+- ❌ **Z** → Removed from all games (was alternative shoot key)
 
 ### GameScreen Special Handling
 
 **InputManager is DISABLED during gameplay:**
 - `stopListening()` called when game starts (GameScreen.js:148)
-- `startListening()` called when game ends (GameScreen.js:229)
-- All game controls (WASD, arrows, space) go directly to iframe
+- `clear()` + `startListening()` called when game ends (GameScreen.js:232-233)
+- All game controls (WASD, arrows, space, M, N) go directly to iframe
 - Escape and theme keys (1-8) captured by game-wrapper.html via postMessage
-- Reset system (M/M+N) does NOT work in GameScreen
+- Reset system (N/N+M) does NOT work in GameScreen
+- **Ghost keys cleared** on game exit to prevent false key states
 
 **Communication Flow:**
 ```
@@ -893,18 +897,18 @@ GameScreen receives → exitToIdle()
 ### Implementation Files
 
 **Modified Screens:**
-- `src/screens/IdleScreen.js` (SPACE/N only)
-- `src/screens/WelcomeScreen.js` (SPACE/N only)
-- `src/screens/GalleryScreen.js` (+A/D, +N, -selección 1-4, -Escape)
-- `src/screens/CodeAnimationScreen.js` (+N, -Escape)
-- `src/screens/ScoreEntryScreen.js` (+A/D, +N, -Escape)
-- `src/screens/LeaderboardScreen.js` (+A/D, +N, -Escape)
-- `src/screens/QRCodeScreen.js` (+N, -Escape)
-- `src/screens/GameScreen.js` (handler documented, disabled)
+- `src/screens/IdleScreen.js` (SPACE/M only)
+- `src/screens/WelcomeScreen.js` (SPACE/M only)
+- `src/screens/GalleryScreen.js` (+A/D, +M, -selección 1-4, -Escape)
+- `src/screens/CodeAnimationScreen.js` (+M, -Escape)
+- `src/screens/ScoreEntryScreen.js` (+A/D, +M, -Escape)
+- `src/screens/LeaderboardScreen.js` (+A/D, +M, -Escape)
+- `src/screens/QRCodeScreen.js` (+M, -Escape)
+- `src/screens/GameScreen.js` (handler documented, disabled, ghost keys fix)
 
 **System Managers:**
 - `src/installation/InputManager.js` (keyboard event management)
-- `src/installation/ResetManager.js` (M/M+N reset logic)
+- `src/installation/ResetManager.js` (N/N+M reset logic)
 - `src/installation/ThemeManager.js` (keys 1-8 theme switching)
 - `public/games/game-wrapper.html` (iframe key capture)
 

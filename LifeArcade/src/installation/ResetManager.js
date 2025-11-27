@@ -2,8 +2,8 @@
  * ResetManager - Global reset system with visual feedback
  *
  * Two reset levels:
- * - Soft Reset (M for 3s): Clear session, keep localStorage
- * - Hard Reset (M+N for 10s): Clear localStorage completely + session
+ * - Soft Reset (N for 3s): Clear session, keep localStorage
+ * - Hard Reset (N+M for 10s): Clear localStorage completely + session
  *
  * @author Game of Life Arcade
  * @license ISC
@@ -18,8 +18,8 @@ export class ResetManager {
   static CONFIG = {
     SOFT_DURATION: 3000,   // 3 seconds
     HARD_DURATION: 10000,  // 10 seconds
-    KEY_M: 'm',
-    KEY_N: 'n'
+    KEY_N: 'n',  // Primary reset key (N for soft reset)
+    KEY_M: 'm'   // Secondary key (N+M for hard reset)
   }
 
   /**
@@ -89,32 +89,32 @@ export class ResetManager {
     const key = event.key
     const keyLower = key.toLowerCase()
 
-    // Only M or N keys can initiate reset
-    if (keyLower !== ResetManager.CONFIG.KEY_M && keyLower !== ResetManager.CONFIG.KEY_N) {
+    // Only N or M keys can initiate reset
+    if (keyLower !== ResetManager.CONFIG.KEY_N && keyLower !== ResetManager.CONFIG.KEY_M) {
       return
     }
 
-    // Check if M is pressed (check both InputManager and native event)
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M') ||
-                     keyLower === 'm'
+    // Check if N is pressed (check both InputManager and native event)
     const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N') ||
                      keyLower === 'n'
+    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M') ||
+                     keyLower === 'm'
 
     // Determine reset type
     let newResetType = null
 
-    if (mPressed && nPressed) {
-      // Hard reset: M + N (allowed on all screens except GameScreen)
+    if (nPressed && mPressed) {
+      // Hard reset: N + M (allowed on all screens except GameScreen)
       newResetType = 'hard'
-    } else if (mPressed && !nPressed) {
-      // Soft reset: M only (NOT allowed on IdleScreen)
+    } else if (nPressed && !mPressed) {
+      // Soft reset: N only (NOT allowed on IdleScreen)
       const currentScreen = this.appState.getState().currentScreen
       if (currentScreen === 'idle') {
         return // Ignore soft reset on IdleScreen
       }
       newResetType = 'soft'
     } else {
-      // N pressed first (without M) → ignore
+      // M pressed first (without N) → ignore (M is now action key)
       return
     }
 
@@ -141,8 +141,8 @@ export class ResetManager {
   handleKeyUp(event) {
     const key = event.key.toLowerCase()
 
-    // Only care about M or N
-    if (key !== ResetManager.CONFIG.KEY_M && key !== ResetManager.CONFIG.KEY_N) {
+    // Only care about N or M
+    if (key !== ResetManager.CONFIG.KEY_N && key !== ResetManager.CONFIG.KEY_M) {
       return
     }
 
@@ -152,19 +152,19 @@ export class ResetManager {
     }
 
     // Check if required keys are still pressed
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
     const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
+    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
 
-    // Soft reset: requires M only
-    if (this.resetType === 'soft' && !mPressed) {
-      debugLog('ResetManager: Soft reset canceled (M released)')
+    // Soft reset: requires N only
+    if (this.resetType === 'soft' && !nPressed) {
+      debugLog('ResetManager: Soft reset canceled (N released)')
       this.cancel()
       return
     }
 
-    // Hard reset: requires both M and N
-    if (this.resetType === 'hard' && (!mPressed || !nPressed)) {
-      debugLog('ResetManager: Hard reset canceled (M or N released)')
+    // Hard reset: requires both N and M
+    if (this.resetType === 'hard' && (!nPressed || !mPressed)) {
+      debugLog('ResetManager: Hard reset canceled (N or M released)')
       this.cancel()
       return
     }
@@ -200,18 +200,18 @@ export class ResetManager {
     }
 
     // Check if required keys are still pressed
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
     const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
+    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
 
     // Cancel if required keys released
-    if (this.resetType === 'soft' && !mPressed) {
-      debugLog('ResetManager: Soft reset canceled (M released)')
+    if (this.resetType === 'soft' && !nPressed) {
+      debugLog('ResetManager: Soft reset canceled (N released)')
       this.cancel()
       return
     }
 
-    if (this.resetType === 'hard' && (!mPressed || !nPressed)) {
-      debugLog('ResetManager: Hard reset canceled (M or N released)')
+    if (this.resetType === 'hard' && (!nPressed || !mPressed)) {
+      debugLog('ResetManager: Hard reset canceled (N or M released)')
       this.cancel()
       return
     }
