@@ -515,8 +515,8 @@ export class ScoreEntryScreen {
       this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
     }
 
-    // Space or M - Different behavior per screen
-    if (key === ' ' || key === 'm' || key === 'M') {
+    // Space or N - Different behavior per screen (INVERTED: N is now action key)
+    if (key === ' ' || key === 'n' || key === 'N') {
       if (this.currentScreen === 1) {
         // On screen 1 (Game Over), go to gallery (Play again)
         if (this.autoAdvanceTimeout) {

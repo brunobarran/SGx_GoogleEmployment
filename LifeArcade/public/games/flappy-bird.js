@@ -683,7 +683,7 @@ function renderGame() {
 // INPUT
 // ============================================
 function keyPressed() {
-  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'm' || key === 'M') && state.phase === 'GAMEOVER') {
     initGame()
   }
 }

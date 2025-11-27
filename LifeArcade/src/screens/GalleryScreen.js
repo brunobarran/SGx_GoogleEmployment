@@ -400,8 +400,8 @@ export class GalleryScreen {
     else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       this.navigate('right')
     }
-    // Space or M confirms selection
-    else if (key === ' ' || key === 'm' || key === 'M') {
+    // Space or N confirms selection (INVERTED: N is now confirm key)
+    else if (key === ' ' || key === 'n' || key === 'N') {
       this.confirmSelection()
     }
     // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)

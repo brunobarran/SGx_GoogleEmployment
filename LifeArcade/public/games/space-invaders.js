@@ -935,7 +935,7 @@ function spawnMiniExplosion(x, y) {
 // INPUT HANDLING
 // ============================================
 function keyPressed() {
-  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'm' || key === 'M') && state.phase === 'GAMEOVER') {
     // Only allow restart in standalone mode
     if (window.parent === window) {
       initGame()

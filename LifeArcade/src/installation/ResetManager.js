@@ -18,8 +18,8 @@ export class ResetManager {
   static CONFIG = {
     SOFT_DURATION: 3000,   // 3 seconds
     HARD_DURATION: 10000,  // 10 seconds
-    KEY_N: 'n',  // Primary reset key (N for soft reset)
-    KEY_M: 'm'   // Secondary key (N+M for hard reset)
+    KEY_N: 'm',  // Primary reset key (M for soft reset) - INVERTED
+    KEY_M: 'n'   // Secondary key (M+N for hard reset) - INVERTED
   }
 
   /**
@@ -94,11 +94,11 @@ export class ResetManager {
       return
     }
 
-    // Check if N is pressed (check both InputManager and native event)
-    const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N') ||
-                     keyLower === 'n'
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M') ||
+    // Check if M is pressed (INVERTED: M is now reset key)
+    const nPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M') ||
                      keyLower === 'm'
+    const mPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N') ||
+                     keyLower === 'n'
 
     // Determine reset type
     let newResetType = null
@@ -151,9 +151,9 @@ export class ResetManager {
       return
     }
 
-    // Check if required keys are still pressed
-    const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
+    // Check if required keys are still pressed (INVERTED)
+    const nPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
+    const mPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
 
     // Soft reset: requires N only
     if (this.resetType === 'soft' && !nPressed) {
@@ -199,9 +199,9 @@ export class ResetManager {
       return
     }
 
-    // Check if required keys are still pressed
-    const nPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
-    const mPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
+    // Check if required keys are still pressed (INVERTED)
+    const nPressed = this.inputManager.isPressed('m') || this.inputManager.isPressed('M')
+    const mPressed = this.inputManager.isPressed('n') || this.inputManager.isPressed('N')
 
     // Cancel if required keys released
     if (this.resetType === 'soft' && !nPressed) {

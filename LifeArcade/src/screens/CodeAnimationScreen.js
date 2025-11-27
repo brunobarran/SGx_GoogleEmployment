@@ -278,12 +278,12 @@ export class CodeAnimationScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Space or M skips animation
-    if (key === ' ' || key === 'm' || key === 'M') {
+    // Space or N skips animation (INVERTED: N is now action key)
+    if (key === ' ' || key === 'n' || key === 'N') {
       debugLog('CodeAnimationScreen: Key pressed - skipping animation')
       this.advanceToGame()
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
+    // Ignore other keys (theme 1-8 handled by ThemeManager, reset M/M+N handled by ResetManager)
   }
 
   /**
