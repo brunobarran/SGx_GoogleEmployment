@@ -250,7 +250,7 @@ export class LeaderboardScreen {
 
     this.playAgainLink = document.createElement('div')
     this.playAgainLink.className = 'footer-option'
-    this.playAgainLink.textContent = 'Play again'
+    this.playAgainLink.textContent = 'Main menu'
     this.playAgainLink.style.cssText = `
       color: #7D7D7D;
       font-size: clamp(18px, 2.08cqh, 40px);
