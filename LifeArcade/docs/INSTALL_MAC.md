@@ -496,8 +496,31 @@ sudo mv LifeArcade.app /Applications/
 
 - **Fullscreen solution:** `FULLSCREEN_SOLUTION.md`
 - **Fullscreen troubleshooting:** `TROUBLESHOOT_FULLSCREEN.md`
+- **Kiosk mode (unattended):** `KIOSK_SETUP.md`
 - **Scripts:** `scripts/README.md`
 - **Development:** `CLAUDE.md`
+
+---
+
+## Step 10: Kiosk Mode (Optional)
+
+For unattended operation where the Mac Mini:
+- Turns on automatically when power is restored
+- Restarts LifeArcade automatically if Chrome closes
+
+See **`KIOSK_SETUP.md`** for complete instructions.
+
+**Quick setup:**
+```bash
+# 1. Enable auto power-on
+sudo systemsetup -setrestartpowerfailure on
+
+# 2. Configure auto-login in System Settings
+
+# 3. Install watchdog service
+chmod +x scripts/*.sh
+./scripts/install-service.sh
+```
 
 ---
 

@@ -50,14 +50,5 @@ osascript -e 'tell application "Google Chrome" to activate' \
 # Wait for Chrome to close
 wait $CHROME_PID
 
-# Ask if user wants to stop Docker
-echo ""
-read -p "Stop Docker container? (y/N): " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Stopping Docker container..."
-    docker compose down
-    echo "Docker stopped."
-else
-    echo "Docker container still running."
-fi
+# Kiosk mode: Docker stays running for faster restart
+echo "Chrome closed. Docker container still running."
