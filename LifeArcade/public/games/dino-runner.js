@@ -732,7 +732,7 @@ function updateGame() {
 
 function updatePlayer() {
   // Read input states FIRST (before physics)
-  const isDuckPressed = keyIsDown(DOWN_ARROW)
+  const isDuckPressed = keyIsDown(DOWN_ARROW) || keyIsDown(83)  // DOWN or S
   const isJumpPressed = keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87) || keyIsDown(78)  // SPACE, UP, W, or N
 
   // Jump input (jump has priority over duck)
