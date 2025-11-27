@@ -409,7 +409,7 @@ function updateGame() {
 
 function updatePlayer() {
   // Jump input
-  if (keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87) || keyIsDown(78)) {  // SPACE, UP, W, or N
+  if (keyIsDown(32) || keyIsDown(UP_ARROW) || keyIsDown(87) || keyIsDown(77) || keyIsDown(78)) {  // SPACE, UP, W, M, or N
     player.vy = CONFIG.jumpForce
   }
 

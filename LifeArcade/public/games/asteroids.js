@@ -500,7 +500,7 @@ function updatePlayer() {
   wrapPosition(player)
 
   // Shooting
-  if (keyIsDown(32) || keyIsDown(90) || keyIsDown(78)) {  // SPACE, Z, or N
+  if (keyIsDown(32) || keyIsDown(77) || keyIsDown(78)) {  // SPACE, M, or N
     shootBullet()
   }
 

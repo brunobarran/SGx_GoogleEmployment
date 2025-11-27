@@ -362,7 +362,7 @@ function updateBall() {
     ball.y = paddle.y - ball.radius
 
     // Release on space or N
-    if (keyIsDown(32) || keyIsDown(78)) {  // SPACE or N
+    if (keyIsDown(32) || keyIsDown(77) || keyIsDown(78)) {  // SPACE, M, or N
       ball.stuck = false
       ball.vy = -CONFIG.ball.speed
       ball.vx = CONFIG.ball.speed * (Math.random() > 0.5 ? 1 : -1)

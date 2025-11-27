@@ -431,7 +431,7 @@ function updatePlayer() {
   player.x = Collision.clamp(player.x, 0, CONFIG.width - player.width)
 
   // Shoot
-  if ((keyIsDown(32) || keyIsDown(90) || keyIsDown(78)) && state.playerShootCooldown === 0) {  // SPACE, Z, or N
+  if ((keyIsDown(32) || keyIsDown(77) || keyIsDown(78)) && state.playerShootCooldown === 0) {  // SPACE, M, or N
     shootBullet()
     state.playerShootCooldown = CONFIG.player.shootCooldown
   }

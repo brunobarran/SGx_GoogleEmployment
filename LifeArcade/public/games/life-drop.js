@@ -521,7 +521,7 @@ function keyPressed() {
   }
 
   // Drop pattern (Space or N)
-  if (keyCode === 32 || keyCode === 78) { // Space or N
+  if (keyCode === 32 || keyCode === 77 || keyCode === 78) { // Space, M, or N
     if (state.phase === 'PLACEMENT') {
       dropPattern()
     }
