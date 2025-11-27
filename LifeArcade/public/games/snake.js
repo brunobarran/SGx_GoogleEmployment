@@ -12,7 +12,7 @@
 import { GoLEngine } from '/src/core/GoLEngine.js'
 import { VideoGradientRenderer } from '/src/rendering/VideoGradientRenderer.js'
 import { GRADIENT_PRESETS } from '/src/utils/GradientPresets.js'
-import { Patterns } from '/src/utils/Patterns.js'
+import { Patterns, stampPattern } from '/src/utils/Patterns.js'
 import { updateParticles, renderParticles } from '/src/utils/ParticleHelpers.js'
 import { renderGameOver } from '/src/utils/UIHelpers.js'
 import { updateLoopPattern } from '/src/utils/LoopPatternHelpers.js'
@@ -51,7 +51,21 @@ const CONFIG = createGameConfig({
   },
 
   food: {
-    spawnMargin: 2    // Distance from edges in cells
+    spawnMargin: 2,           // Distance from edges in cells
+    maxLifetime: 20 * 60,     // 20 seconds at 60fps
+    batchInterval: 20 * 60,   // Spawn batch every 30 seconds at 60fps
+    batchMin: 1,              // Minimum foods per batch
+    batchMax: 3,              // Maximum foods per batch
+    scoreValue: 100           // Points per food
+  },
+
+  // Spaceship configuration (real GoL movement)
+  spaceship: {
+    engineSize: 20,           // Grid size for spaceship engine (20x20 = 400 cells)
+    updateFps: 10,            // GoL updates per second
+    spawnPadding: 5,          // Margin from edges before despawn
+    scoreThreshold: 500,      // Spawn spaceship every ~500 points
+    scoreValue: 250           // Points per spaceship
   },
 
   // Loop pattern update rate (frames between phase changes)
@@ -65,45 +79,27 @@ const CONFIG = createGameConfig({
 let { scaleFactor, canvasWidth, canvasHeight } = calculateCanvasDimensions()
 
 // ============================================
-// FOOD PATTERNS (Small, recognizable GoL patterns)
+// FOOD PATTERNS (Normal food - still lifes and oscillators)
+// All food scores 100 points (CONFIG.food.scoreValue)
 // ============================================
 const FOOD_PATTERNS = [
-  {
-    name: PatternName.BLOCK,
-    isOscillator: false,
-    gradient: GRADIENT_PRESETS.ENEMY_HOT,
-    scoreValue: 100
-  },
-  {
-    name: PatternName.BEEHIVE,
-    isOscillator: false,
-    gradient: GRADIENT_PRESETS.ENEMY_COLD,
-    scoreValue: 100
-  },
-  {
-    name: PatternName.BLINKER,
-    isOscillator: true,
-    gradient: GRADIENT_PRESETS.BULLET,
-    scoreValue: 150
-  },
-  {
-    name: PatternName.TUB,
-    isOscillator: false,
-    gradient: GRADIENT_PRESETS.ENEMY_RAINBOW,
-    scoreValue: 100
-  },
-  {
-    name: PatternName.BOAT,
-    isOscillator: false,
-    gradient: GRADIENT_PRESETS.EXPLOSION,
-    scoreValue: 100
-  },
-  {
-    name: PatternName.BEACON,
-    isOscillator: true,
-    gradient: GRADIENT_PRESETS.PLAYER,
-    scoreValue: 150
-  }
+  // Still lifes (static)
+  { name: PatternName.BLOCK, isOscillator: false, gradient: GRADIENT_PRESETS.ENEMY_HOT },
+  { name: PatternName.BEEHIVE, isOscillator: false, gradient: GRADIENT_PRESETS.ENEMY_COLD },
+  { name: PatternName.TUB, isOscillator: false, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW },
+  { name: PatternName.BOAT, isOscillator: false, gradient: GRADIENT_PRESETS.EXPLOSION },
+  // Oscillators (animated)
+  { name: PatternName.BLINKER, isOscillator: true, gradient: GRADIENT_PRESETS.BULLET },
+  { name: PatternName.BEACON, isOscillator: true, gradient: GRADIENT_PRESETS.PLAYER }
+]
+
+// ============================================
+// SPACESHIP PATTERNS (Premium food - real GoL movement)
+// Spaceships score 500 points (CONFIG.spaceship.scoreValue)
+// ============================================
+const SPACESHIP_PATTERNS = [
+  { name: PatternName.GLIDER, gradient: GRADIENT_PRESETS.BULLET },
+  { name: PatternName.LIGHTWEIGHT_SPACESHIP, gradient: GRADIENT_PRESETS.ENEMY_RAINBOW }
 ]
 
 // ============================================
@@ -127,10 +123,19 @@ const state = createGameState({
 let snake = []
 // Each segment: { gridX, gridY, patternName, gol, gradient }
 
-let food = null
-// { gridX, gridY, patternName, gol, gradient, isOscillator, scoreValue }
+let foods = []
+// Array of food objects: { gridX, gridY, patternName, gol, gradient, isOscillator, isSpaceship, lifetime }
+
+let spaceship = null
+// Single spaceship: { gridX, gridY, patternName, engine, gradient, isSpaceship, lastCentroid }
 
 let particles = []
+
+// ============================================
+// SPAWN TRACKING STATE
+// ============================================
+let lastBatchSpawnFrame = 0     // Frame count when last batch was spawned
+let lastSpaceshipScoreCheck = 0 // Score at which last spaceship spawned
 
 // Theme state
 let currentTheme = 'day'
@@ -218,10 +223,18 @@ function initGame() {
   state.dyingTimer = 0
 
   snake = []
+  foods = []
+  spaceship = null
   particles = []
 
+  // Reset spawn tracking
+  lastBatchSpawnFrame = 0
+  lastSpaceshipScoreCheck = 0
+
   setupSnake()
-  spawnFood()
+
+  // Spawn initial food batch
+  spawnFoodBatch()
 }
 
 // ============================================
@@ -274,11 +287,30 @@ function createSegment(gridX, gridY, patternName, gradient) {
 // ============================================
 // FOOD SYSTEM
 // ============================================
-function spawnFood() {
+
+/**
+ * Spawn a batch of 1-3 normal foods.
+ * Called every 30 seconds and at game start.
+ */
+function spawnFoodBatch() {
+  const count = Math.floor(Math.random() * (CONFIG.food.batchMax - CONFIG.food.batchMin + 1)) + CONFIG.food.batchMin
+
+  for (let i = 0; i < count; i++) {
+    spawnSingleFood()
+  }
+
+  lastBatchSpawnFrame = state.frameCount
+}
+
+/**
+ * Spawn a single normal food item.
+ * Used when food is eaten or for batch spawning.
+ */
+function spawnSingleFood() {
   // Pick random pattern from available options
   const patternInfo = FOOD_PATTERNS[Math.floor(Math.random() * FOOD_PATTERNS.length)]
 
-  // Find valid position (not on snake)
+  // Find valid position (not on snake or other foods)
   let gridX, gridY
   let attempts = 0
   const maxAttempts = 100
@@ -287,9 +319,9 @@ function spawnFood() {
     gridX = Math.floor(Math.random() * (CONFIG.grid.cols - 2 * CONFIG.food.spawnMargin)) + CONFIG.food.spawnMargin
     gridY = Math.floor(Math.random() * (CONFIG.grid.rows - 2 * CONFIG.food.spawnMargin)) + CONFIG.food.spawnMargin
     attempts++
-  } while (isOnSnake(gridX, gridY) && attempts < maxAttempts)
+  } while ((isOnSnake(gridX, gridY) || isOnFood(gridX, gridY)) && attempts < maxAttempts)
 
-  // Create food with pattern
+  // Create food with PatternRenderer
   const renderer = createPatternRenderer({
     mode: patternInfo.isOscillator ? RenderMode.LOOP : RenderMode.STATIC,
     pattern: patternInfo.name,
@@ -297,15 +329,18 @@ function spawnFood() {
     loopUpdateRate: CONFIG.loopUpdateRate
   })
 
-  food = {
+  const food = {
     gridX,
     gridY,
     patternName: patternInfo.name,
     gol: renderer.gol,
     gradient: patternInfo.gradient,
     isOscillator: patternInfo.isOscillator,
-    scoreValue: patternInfo.scoreValue
+    isSpaceship: false,
+    lifetime: 0  // Frames since spawn
   }
+
+  foods.push(food)
 }
 
 /**
@@ -313,6 +348,272 @@ function spawnFood() {
  */
 function isOnSnake(gridX, gridY) {
   return snake.some(segment => segment.gridX === gridX && segment.gridY === gridY)
+}
+
+/**
+ * Check if position is occupied by existing food
+ */
+function isOnFood(gridX, gridY) {
+  return foods.some(f => f.gridX === gridX && f.gridY === gridY)
+}
+
+/**
+ * Update all food items - increment lifetime and remove expired ones.
+ */
+function updateFoods() {
+  // Increment lifetime and filter out expired foods
+  foods = foods.filter(food => {
+    food.lifetime++
+    return food.lifetime < CONFIG.food.maxLifetime
+  })
+}
+
+// ============================================
+// SPACESHIP SYSTEM (Real GoL Movement)
+// ============================================
+
+/**
+ * Check if spaceship should spawn based on score.
+ * Spawns every ~500 points (scoreThreshold).
+ */
+function checkSpaceshipSpawn() {
+  // Only spawn if no spaceship exists
+  if (spaceship) return
+
+  // Check if we've crossed a score threshold
+  const scoreThreshold = CONFIG.spaceship.scoreThreshold
+  const scoresSinceLastCheck = state.score - lastSpaceshipScoreCheck
+
+  if (scoresSinceLastCheck >= scoreThreshold) {
+    const spawned = spawnSpaceship()
+    if (spawned) {
+      lastSpaceshipScoreCheck = state.score
+    }
+  }
+}
+
+/**
+ * Spawn a spaceship with dedicated GoLEngine.
+ * The spaceship moves with authentic B3/S23 rules.
+ * Position is tracked in PIXELS for accurate collision detection.
+ */
+function spawnSpaceship() {
+  // Pick random spaceship pattern
+  const patternInfo = SPACESHIP_PATTERNS[Math.floor(Math.random() * SPACESHIP_PATTERNS.length)]
+
+  // Find valid position (not on snake or food) in GRID coordinates
+  let gridX, gridY
+  let attempts = 0
+  const maxAttempts = 100
+
+  do {
+    gridX = Math.floor(Math.random() * (CONFIG.grid.cols - 8)) + 4
+    gridY = Math.floor(Math.random() * (CONFIG.grid.rows - 8)) + 4
+    attempts++
+  } while ((isOnSnake(gridX, gridY) || isOnFood(gridX, gridY)) && attempts < maxAttempts)
+
+  // If we couldn't find a valid position, return false to retry next frame
+  if (attempts >= maxAttempts) {
+    return false
+  }
+
+  // Convert grid position to pixels
+  const pixelX = gridX * CONFIG.grid.cellSize
+  const pixelY = (gridY + 1) * CONFIG.grid.cellSize
+
+  const engineSize = CONFIG.spaceship.engineSize
+
+  // Create dedicated GoLEngine for this spaceship
+  const engine = new GoLEngine(engineSize, engineSize, CONFIG.spaceship.updateFps)
+
+  // Get pattern from Patterns library
+  const pattern = Patterns[patternInfo.name]
+
+  // Calculate center position to stamp pattern
+  const patternHeight = pattern.length
+  const patternWidth = pattern[0].length
+  const centerX = Math.floor((engineSize - patternHeight) / 2)
+  const centerY = Math.floor((engineSize - patternWidth) / 2)
+
+  // Stamp pattern onto engine grid
+  stampPattern(engine.current, pattern, centerX, centerY, engineSize, engineSize)
+
+  // Calculate initial centroid for tracking movement
+  const initialCentroid = calculateCentroid(engine)
+
+  // Engine size in pixels: 20 cells * 8 pixels = 160px
+  const sizeInPixels = engineSize * CONFIG.golCellSize
+
+  spaceship = {
+    pixelX,                          // Position in PIXELS (not grid)
+    pixelY,
+    width: sizeInPixels,             // 160 pixels
+    height: sizeInPixels,            // 160 pixels
+    patternName: patternInfo.name,
+    engine,                          // GoLEngine for real B3/S23 simulation
+    gradient: patternInfo.gradient,
+    lastCentroid: initialCentroid,   // Track centroid for movement detection
+    stallCounter: 0                  // Track frames without movement
+  }
+
+  return true
+}
+
+/**
+ * Update spaceship with real GoL simulation.
+ * Moves the spaceship position in PIXELS based on engine centroid movement.
+ */
+function updateSpaceship() {
+  if (!spaceship) return
+
+  // Throttle updates based on configured FPS
+  const framesPerUpdate = Math.floor(60 / CONFIG.spaceship.updateFps)
+  if (state.frameCount % framesPerUpdate !== 0) return
+
+  // Run one generation of GoL
+  spaceship.engine.update()
+
+  // Calculate new centroid
+  const newCentroid = calculateCentroid(spaceship.engine)
+
+  // If no cells alive (spaceship died), remove it
+  if (!newCentroid) {
+    spaceship = null
+    return
+  }
+
+  // Calculate movement delta in ENGINE coordinates (0-20)
+  const deltaX = newCentroid.x - spaceship.lastCentroid.x
+  const deltaY = newCentroid.y - spaceship.lastCentroid.y
+
+  // STALL DETECTION: If no movement, increment counter
+  if (deltaX === 0 && deltaY === 0) {
+    spaceship.stallCounter++
+    // If stalled for 0.5 seconds (30 frames at 60fps), remove it
+    if (spaceship.stallCounter >= 30) {
+      spaceship = null
+      return
+    }
+  } else {
+    spaceship.stallCounter = 0
+  }
+
+  // Convert engine delta to PIXEL delta
+  const pixelDeltaX = deltaX * CONFIG.golCellSize  // deltaX * 8px
+  const pixelDeltaY = deltaY * CONFIG.golCellSize  // deltaY * 8px
+
+  // Update spaceship position in PIXELS
+  spaceship.pixelX += pixelDeltaX
+  spaceship.pixelY += pixelDeltaY
+  spaceship.lastCentroid = newCentroid
+
+  // Check collision with snake head (in case spaceship moved into head)
+  if (snake.length > 0 && checkSpaceshipCollision(snake[0].gridX, snake[0].gridY)) {
+    onSpaceshipEaten()
+    return
+  }
+
+  // Check if spaceship left the screen (in pixels)
+  const margin = 200  // Allow some off-screen movement
+  if (spaceship.pixelX < -margin || spaceship.pixelX > GAME_DIMENSIONS.BASE_WIDTH + margin ||
+    spaceship.pixelY < -margin || spaceship.pixelY > GAME_DIMENSIONS.BASE_HEIGHT + margin) {
+    spaceship = null
+  }
+}
+
+/**
+ * Calculate centroid (center of mass) of alive cells in engine.
+ *
+ * @param {GoLEngine} engine - GoL engine to analyze
+ * @returns {{ x: number, y: number } | null} Centroid coordinates or null if no cells
+ *
+ * @example
+ * const centroid = calculateCentroid(food.engine)
+ * if (centroid) {
+ *   console.log(`Center at (${centroid.x}, ${centroid.y})`)
+ * }
+ */
+function calculateCentroid(engine) {
+  const grid = engine.current
+  let sumX = 0
+  let sumY = 0
+  let count = 0
+
+  for (let x = 0; x < engine.cols; x++) {
+    for (let y = 0; y < engine.rows; y++) {
+      if (grid[x][y] === 1) {
+        sumX += x
+        sumY += y
+        count++
+      }
+    }
+  }
+
+  if (count === 0) return null
+
+  return {
+    x: Math.floor(sumX / count),
+    y: Math.floor(sumY / count)
+  }
+}
+
+/**
+ * Check if food position is outside valid game bounds.
+ *
+ * @param {number} gridX - Grid X position
+ * @param {number} gridY - Grid Y position
+ * @returns {boolean} True if out of bounds
+ */
+function isOutOfBounds(gridX, gridY) {
+  const margin = CONFIG.spaceship.spawnPadding
+  return (
+    gridX < -margin ||
+    gridX >= CONFIG.grid.cols + margin ||
+    gridY < -margin ||
+    gridY >= CONFIG.grid.rows + margin
+  )
+}
+
+/**
+ * Check AABB (Axis-Aligned Bounding Box) collision between two rectangles.
+ * Used for spaceship collision detection.
+ *
+ * @param {number} x1 - First rectangle X position (pixels)
+ * @param {number} y1 - First rectangle Y position (pixels)
+ * @param {number} w1 - First rectangle width (pixels)
+ * @param {number} h1 - First rectangle height (pixels)
+ * @param {number} x2 - Second rectangle X position (pixels)
+ * @param {number} y2 - Second rectangle Y position (pixels)
+ * @param {number} w2 - Second rectangle width (pixels)
+ * @param {number} h2 - Second rectangle height (pixels)
+ * @returns {boolean} True if rectangles overlap
+ */
+function checkAABBCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+  return !(x1 + w1 < x2 || x1 > x2 + w2 ||
+    y1 + h1 < y2 || y1 > y2 + h2)
+}
+
+/**
+ * Check if a grid position collides with the spaceship.
+ * Uses AABB collision in pixel space.
+ *
+ * @param {number} gridX - Grid X position to check (snake head position)
+ * @param {number} gridY - Grid Y position to check (snake head position)
+ * @returns {boolean} True if the position collides with spaceship
+ */
+function checkSpaceshipCollision(gridX, gridY) {
+  if (!spaceship) return false
+
+  // Convert snake head position to pixels
+  const headPixelX = gridX * CONFIG.grid.cellSize
+  const headPixelY = (gridY + 1) * CONFIG.grid.cellSize
+  const headSize = CONFIG.grid.cellSize  // 30px
+
+  // Check AABB collision
+  return checkAABBCollision(
+    headPixelX, headPixelY, headSize, headSize,
+    spaceship.pixelX, spaceship.pixelY, spaceship.width, spaceship.height
+  )
 }
 
 // ============================================
@@ -380,6 +681,21 @@ function updateGame() {
     moveSnake()
   }
 
+  // Update food lifetimes and remove expired
+  updateFoods()
+
+  // Spawn batch every 30 seconds
+  const framesSinceLastBatch = state.frameCount - lastBatchSpawnFrame
+  if (framesSinceLastBatch >= CONFIG.food.batchInterval) {
+    spawnFoodBatch()
+  }
+
+  // Check if spaceship should spawn (every ~500 points)
+  checkSpaceshipSpawn()
+
+  // Update spaceship (real GoL movement)
+  updateSpaceship()
+
   // Update oscillating patterns
   updatePatterns()
 
@@ -429,11 +745,17 @@ function moveSnake() {
     return
   }
 
-  // Check food collision
-  const ateFood = (newX === food.gridX && newY === food.gridY)
+  // Check food collision (find which food was eaten, if any)
+  const eatenFoodIndex = foods.findIndex(f => f.gridX === newX && f.gridY === newY)
+  if (eatenFoodIndex >= 0) {
+    onFoodEaten(foods[eatenFoodIndex])
+    foods.splice(eatenFoodIndex, 1)  // Remove eaten food
+    spawnFoodBatch()                  // Spawn 1-3 new foods
+  }
 
-  if (ateFood) {
-    onFoodEaten()
+  // Check spaceship collision (area-based - checks all live cells in engine)
+  if (checkSpaceshipCollision(newX, newY)) {
+    onSpaceshipEaten()
   }
 
   // Create new head segment (always BLOCK with PLAYER gradient)
@@ -472,9 +794,13 @@ function checkSelfCollision(x, y) {
   })
 }
 
-function onFoodEaten() {
-  // Score
-  state.score += food.scoreValue * state.level
+/**
+ * Called when snake eats a normal food item.
+ * @param {Object} food - The food object that was eaten
+ */
+function onFoodEaten(food) {
+  // Score (food scores 100 points * level)
+  state.score += CONFIG.food.scoreValue * state.level
   state.foodEaten++
 
   // Queue growth (simple counter)
@@ -482,9 +808,24 @@ function onFoodEaten() {
 
   // Update difficulty
   updateDifficulty()
+}
 
-  // Spawn new food
-  spawnFood()
+/**
+ * Called when snake eats a spaceship.
+ */
+function onSpaceshipEaten() {
+  // Score (spaceship scores 500 points * level)
+  state.score += CONFIG.spaceship.scoreValue * state.level
+  state.foodEaten++
+
+  // Queue growth (extra growth for spaceship)
+  state.pendingGrowth += state.currentGrowth * 2
+
+  // Update difficulty
+  updateDifficulty()
+
+  // Remove spaceship
+  spaceship = null
 }
 
 function updateDifficulty() {
@@ -519,9 +860,11 @@ function updatePatterns() {
   // Snake segments are STATIC (frozen) - no updates needed
   // This creates a visual "trail" of different patterns
 
-  // Only food oscillates (BLINKER, BEACON animate to attract attention)
-  if (food && food.isOscillator && food.gol.isLoopPattern) {
-    updateLoopPattern(food.gol, CONFIG.loopUpdateRate, true)
+  // Update oscillating foods (BLINKER, BEACON animate to attract attention)
+  for (const food of foods) {
+    if (food.isOscillator && food.gol.isLoopPattern) {
+      updateLoopPattern(food.gol, CONFIG.loopUpdateRate, true)
+    }
   }
 }
 
@@ -566,9 +909,10 @@ function renderGame() {
   // Render grid lines (subtle, for debugging)
   // renderGridLines()
 
-  // Render food first (behind snake)
-  if (food && state.phase === 'PLAYING') {
-    renderFood()
+  // Render all foods (behind snake)
+  if (state.phase === 'PLAYING') {
+    renderFoods()
+    renderSpaceship()
   }
 
   // Render snake
@@ -605,22 +949,44 @@ function renderSnake() {
   }
 }
 
-function renderFood() {
-  const screenX = food.gridX * CONFIG.grid.cellSize
-  const screenY = (food.gridY + 1) * CONFIG.grid.cellSize // +1 for header offset
+/**
+ * Render all normal food items.
+ */
+function renderFoods() {
+  for (const food of foods) {
+    const screenX = food.gridX * CONFIG.grid.cellSize
+    const screenY = (food.gridY + 1) * CONFIG.grid.cellSize // +1 for header offset
 
-  // Center the GoL pattern within the grid cell
-  const patternWidth = food.gol.cols * CONFIG.golCellSize
-  const patternHeight = food.gol.rows * CONFIG.golCellSize
-  const offsetX = (CONFIG.grid.cellSize - patternWidth) / 2
-  const offsetY = (CONFIG.grid.cellSize - patternHeight) / 2
+    // Center the GoL pattern within the grid cell
+    const patternWidth = food.gol.cols * CONFIG.golCellSize
+    const patternHeight = food.gol.rows * CONFIG.golCellSize
+    const offsetX = (CONFIG.grid.cellSize - patternWidth) / 2
+    const offsetY = (CONFIG.grid.cellSize - patternHeight) / 2
 
+    maskedRenderer.renderMaskedGrid(
+      food.gol,
+      screenX + offsetX,
+      screenY + offsetY,
+      CONFIG.golCellSize,
+      food.gradient
+    )
+  }
+}
+
+/**
+ * Render the spaceship (if one exists).
+ * Uses pixel coordinates directly (no conversion needed).
+ */
+function renderSpaceship() {
+  if (!spaceship) return
+
+  // Spaceship position is already in pixels - render directly
   maskedRenderer.renderMaskedGrid(
-    food.gol,
-    screenX + offsetX,
-    screenY + offsetY,
+    spaceship.engine,
+    spaceship.pixelX,
+    spaceship.pixelY,
     CONFIG.golCellSize,
-    food.gradient
+    spaceship.gradient
   )
 }
 
@@ -645,7 +1011,7 @@ function renderGridLines() {
 // INPUT HANDLING
 // ============================================
 function keyPressed() {
-  if ((key === ' ' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
+  if ((key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') && state.phase === 'GAMEOVER') {
     if (window.parent === window) {
       initGame()
       state.phase = 'PLAYING'
