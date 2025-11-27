@@ -9,22 +9,22 @@
  * @license ISC
  */
 
-import { GoLEngine } from './lib/GoLEngine.js'
-import { SimpleGradientRenderer } from './lib/SimpleGradientRenderer.js'
-import { GRADIENT_PRESETS } from './lib/GradientPresets.js'
-import { Collision } from './lib/Collision.js'
-import { Patterns } from './lib/Patterns.js'
-import { seedRadialDensity, applyLifeForce, maintainDensity } from './lib/GoLHelpers.js'
-import { updateParticles, renderParticles } from './lib/ParticleHelpers.js'
-import { createPatternRenderer, RenderMode, PatternName } from './lib/PatternRenderer.js'
-import { initHitboxDebug, drawHitboxRect, drawHitboxes } from './lib/HitboxDebug.js'
+import { GoLEngine } from '../lib/GoLEngine.js'
+import { SimpleGradientRenderer } from '../lib/SimpleGradientRenderer.js'
+import { GRADIENT_PRESETS } from '../lib/GradientPresets.js'
+import { Collision } from '../lib/Collision.js'
+import { Patterns } from '../lib/Patterns.js'
+import { seedRadialDensity, applyLifeForce, maintainDensity } from '../lib/GoLHelpers.js'
+import { updateParticles, renderParticles } from '../lib/ParticleHelpers.js'
+import { createPatternRenderer, RenderMode, PatternName } from '../lib/PatternRenderer.js'
+import { initHitboxDebug, drawHitboxRect, drawHitboxes } from '../lib/HitboxDebug.js'
 import {
   GAME_DIMENSIONS,
   GAMEOVER_CONFIG,
   createGameState,
   calculateCanvasDimensions,
   createGameConfig
-} from './lib/GameBaseConfig.js'
+} from '../lib/GameBaseConfig.js'
 
 // ============================================
 // CONFIGURATION - BASE REFERENCE (10:16 ratio)
