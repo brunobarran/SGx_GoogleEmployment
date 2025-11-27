@@ -84,7 +84,7 @@ export class GalleryScreen {
     this.cardsContainer = document.createElement('div')
     this.cardsContainer.style.cssText = `
       position: absolute;
-      top: 58%;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
@@ -187,7 +187,7 @@ export class GalleryScreen {
     promptText.className = 'gallery-card-prompt'
     promptText.textContent = game.prompt
     promptText.style.cssText = `
-      text-align: justify;
+      text-align: left;
       color: var(--text-primary);
       font-size: clamp(20px, 2.34cqh, 45px);
       font-family: 'Google Sans Mono', monospace;
@@ -207,7 +207,8 @@ export class GalleryScreen {
       width: 70%;
       min-width: 350px;
       max-width: 840px;
-      padding: clamp(30px, 3.28cqh, 63px) clamp(30px, 3.65cqh, 70px) clamp(40px, 4.53cqh, 87px) clamp(30px, 3.65cqh, 70px);
+      padding: clamp(30px, 3.28cqh, 63px) 45px clamp(40px, 4.53cqh, 87px) 45px;
+      background: linear-gradient(180deg, var(--bg-card) 40%, transparent 100%);
       transition: all 0.3s ease;
       transform-style: preserve-3d;
     `
@@ -284,7 +285,7 @@ export class GalleryScreen {
       // Left card
       else if (offset === -1) {
         card.style.transform = 'translateX(-50%) scale(0.85) translateZ(-200px) rotateY(25deg)'
-        card.style.left = '-5%'
+        card.style.left = '-25%'
         card.style.opacity = '0.35'
         card.style.zIndex = '2'
         card.style.pointerEvents = 'none'
@@ -292,7 +293,7 @@ export class GalleryScreen {
       // Right card
       else if (offset === 1) {
         card.style.transform = 'translateX(-50%) scale(0.85) translateZ(-200px) rotateY(-25deg)'
-        card.style.left = '105%'
+        card.style.left = '125%'
         card.style.opacity = '0.35'
         card.style.zIndex = '2'
         card.style.pointerEvents = 'none'
