@@ -227,8 +227,11 @@ export class GameScreen {
     }
 
     // Re-enable InputManager for other screens
+    // CRITICAL: Clear any ghost keys before re-enabling
+    // (keys pressed in iframe that never got keyup in parent)
+    this.inputManager.clear()
     this.inputManager.startListening()
-    debugLog('GameScreen: InputManager re-enabled')
+    debugLog('GameScreen: InputManager re-enabled (ghost keys cleared)')
 
     // Remove game message listener (postMessage from iframe)
     if (this.gameMessageHandler) {
