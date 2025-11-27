@@ -39,8 +39,13 @@ export class ScoreEntryScreen {
     this.currentScreen = 1  // 1: Game Over, 2: Score, 3: Name Entry
     this.autoAdvanceTimeout = null
 
+    // Countdown animation state (for screen 1)
+    this.countdownStartTime = null
+    this.countdownAnimationId = null
+
     // Bind methods
     this.handleKeyPress = this.handleKeyPress.bind(this)
+    this.updateCountdown = this.updateCountdown.bind(this)
   }
 
   /**
@@ -115,6 +120,10 @@ export class ScoreEntryScreen {
           margin: 0;
           line-height: 1;
           text-align: center;
+        }
+
+        .score-entry-countdown-circle {
+          margin-top: clamp(40px, 5cqh, 96px);
         }
 
         .score-entry-container-score {
@@ -312,6 +321,20 @@ export class ScoreEntryScreen {
       this.element.innerHTML = `
         <div class="score-entry-container">
           <h1 class="score-entry-gameover">Game over</h1>
+          <div class="score-entry-countdown-circle" id="gameover-countdown">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle
+                cx="30" cy="30" r="26"
+                fill="none"
+                stroke="#FFBB00"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-dasharray="163.36"
+                stroke-dashoffset="163.36"
+                transform="rotate(-90 30 30)"
+              />
+            </svg>
+          </div>
         </div>
         <div class="score-entry-footer">
           <div class="score-entry-play-again">Play again</div>
@@ -324,6 +347,10 @@ export class ScoreEntryScreen {
           this.playAgain()
         })
       }
+
+      // Start countdown circle animation (5 seconds)
+      this.startCountdownAnimation()
+
       // Auto-advance after 5 seconds
       this.autoAdvanceTimeout = setTimeout(() => {
         this.advanceScreen()
@@ -374,9 +401,61 @@ export class ScoreEntryScreen {
   }
 
   /**
+   * Start countdown circle animation (screen 1 only)
+   * Duration: 5 seconds
+   * Uses inline SVG circle positioned between title and Play again
+   */
+  startCountdownAnimation() {
+    this.countdownStartTime = Date.now()
+    this.countdownAnimationId = requestAnimationFrame(this.updateCountdown)
+
+    debugLog('ScoreEntryScreen: Countdown animation started')
+  }
+
+  /**
+   * Update countdown progress (called via requestAnimationFrame)
+   * Updates the inline SVG circle stroke-dashoffset
+   */
+  updateCountdown() {
+    if (!this.countdownStartTime || !this.element) return
+
+    const circle = this.element.querySelector('#gameover-countdown circle')
+    if (!circle) return
+
+    const elapsed = Date.now() - this.countdownStartTime
+    const progress = Math.min(elapsed / 5000, 1)  // 5 seconds duration
+
+    // Calculate stroke-dashoffset: 163.36 (empty) → 0 (full)
+    const circumference = 163.36
+    const offset = circumference * (1 - progress)
+    circle.setAttribute('stroke-dashoffset', offset)
+
+    if (progress < 1) {
+      this.countdownAnimationId = requestAnimationFrame(this.updateCountdown)
+    }
+  }
+
+  /**
+   * Stop countdown animation
+   */
+  stopCountdownAnimation() {
+    if (this.countdownAnimationId) {
+      cancelAnimationFrame(this.countdownAnimationId)
+      this.countdownAnimationId = null
+    }
+
+    this.countdownStartTime = null
+  }
+
+  /**
    * Advance to next screen in sequence
    */
   advanceScreen() {
+    // Stop countdown animation when advancing from screen 1
+    if (this.currentScreen === 1) {
+      this.stopCountdownAnimation()
+    }
+
     if (this.currentScreen < 3) {
       this.currentScreen++
       this.showCurrentScreen()
@@ -388,6 +467,10 @@ export class ScoreEntryScreen {
    */
   playAgain() {
     debugLog('ScoreEntryScreen: Play again selected - restarting game')
+
+    // Stop countdown animation if active
+    this.stopCountdownAnimation()
+
     this.appState.transition('game')
   }
 
@@ -405,6 +488,9 @@ export class ScoreEntryScreen {
       clearTimeout(this.autoAdvanceTimeout)
       this.autoAdvanceTimeout = null
     }
+
+    // Stop countdown animation
+    this.stopCountdownAnimation()
 
     // Stop listening for keys
     this.inputManager.offKeyPress(this.handleKeyPress)
@@ -437,6 +523,7 @@ export class ScoreEntryScreen {
           clearTimeout(this.autoAdvanceTimeout)
           this.autoAdvanceTimeout = null
         }
+        this.stopCountdownAnimation()
         this.playAgain()
       } else if (this.currentScreen === 2) {
         // On screen 2 (Score), skip to next screen
