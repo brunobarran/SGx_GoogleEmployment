@@ -8,7 +8,7 @@
 # =============================================================================
 
 PROJECT_DIR="/Users/specialguestx/Documents/GitHub/SGx_GoogleEmployment/LifeArcade"
-CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+CHROME="/Applications/Chromium.app/Contents/MacOS/Chromium"
 
 # Change to project directory
 cd "$PROJECT_DIR" || exit 1
@@ -44,7 +44,7 @@ CHROME_PID=$!
 sleep 2
 
 # Force fullscreen with AppleScript (Cmd+Ctrl+F)
-osascript -e 'tell application "Google Chrome" to activate' \
+osascript -e 'tell application "Chromium" to activate' \
           -e 'tell application "System Events" to keystroke "f" using {control down, command down}'
 
 # Wait for Chrome to close

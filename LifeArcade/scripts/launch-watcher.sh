@@ -10,7 +10,7 @@
 # =============================================================================
 
 PROJECT_DIR="/Users/specialguestx/Documents/GitHub/SGx_GoogleEmployment/LifeArcade"
-CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+CHROME="/Applications/Chromium.app/Contents/MacOS/Chromium"
 
 # =============================================================================
 # Cleanup Function - Executed on SIGTERM/SIGINT/SIGHUP
@@ -136,7 +136,7 @@ while true; do
 
     # Force fullscreen with AppleScript
     echo "   Forcing fullscreen mode..."
-    osascript -e 'tell application "Google Chrome" to activate' \
+    osascript -e 'tell application "Chromium" to activate' \
               -e 'tell application "System Events" to keystroke "f" using {control down, command down}' \
               2>/dev/null
 
