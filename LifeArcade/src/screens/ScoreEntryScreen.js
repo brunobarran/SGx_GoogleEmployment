@@ -368,7 +368,7 @@ export class ScoreEntryScreen {
             <div class="score-entry-number">${score.toString()}</div>
             <div class="score-entry-game-name">${gameName}</div>
           </div>
-          <div class="score-entry-continue">Press Led[03] to continue</div>
+          <div class="score-entry-continue">Press any button to continue</div>
         </div>
       `
       // Auto-advance after 3 seconds
@@ -391,7 +391,7 @@ export class ScoreEntryScreen {
               </div>
             `).join('')}
           </div>
-          <div class="score-entry-continue">Press Led[03] to continue</div>
+          <div class="score-entry-continue">Press any button to continue</div>
         </div>
       `
 
