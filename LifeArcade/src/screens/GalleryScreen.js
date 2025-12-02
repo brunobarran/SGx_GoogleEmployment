@@ -388,9 +388,14 @@ export class GalleryScreen {
    * Handle key press
    */
   handleKeyPress(key) {
-    // Reset inactivity timer on any key press
-    this.appState.clearTimeout('gallery-inactivity')
-    this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
+    // Ignore theme keys (1-8) - handled by ThemeManager, sent constantly by Arduino
+    const isThemeKey = key >= '1' && key <= '8'
+
+    if (!isThemeKey) {
+      // Reset inactivity timer only on non-theme keys
+      this.appState.clearTimeout('gallery-inactivity')
+      this.appState.setTimeout(GalleryScreen.INACTIVITY_TIMEOUT, 'idle', 'gallery-inactivity')
+    }
 
     // Arrow navigation (LEFT: ArrowLeft or A)
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {

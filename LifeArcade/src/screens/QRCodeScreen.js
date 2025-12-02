@@ -294,15 +294,19 @@ export class QRCodeScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Reset inactivity timer on any key press
-    this.appState.clearTimeout('qr-inactivity')
-    this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
+    // Ignore theme keys (1-8) - handled by ThemeManager, sent constantly by Arduino
+    const isThemeKey = key >= '1' && key <= '8'
+
+    if (!isThemeKey) {
+      // Reset inactivity timer only on non-theme keys
+      this.appState.clearTimeout('qr-inactivity')
+      this.appState.setTimeout(QRCodeScreen.INACTIVITY_TIMEOUT, 'idle', 'qr-inactivity')
+    }
 
     // Space, M, or N returns to Idle (restart loop)
     if (key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') {
       debugLog('QRCodeScreen: Key pressed - returning to Idle')
       this.appState.reset()
     }
-    // Ignore other keys (theme 1-8 handled by ThemeManager, reset N/N+M handled by ResetManager)
   }
 }

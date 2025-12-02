@@ -509,8 +509,11 @@ export class ScoreEntryScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Reset inactivity timer on any key press (only if on screen 3)
-    if (this.currentScreen === 3) {
+    // Ignore theme keys (1-8) - handled by ThemeManager, sent constantly by Arduino
+    const isThemeKey = key >= '1' && key <= '8'
+
+    // Reset inactivity timer on non-theme key press (only if on screen 3)
+    if (!isThemeKey && this.currentScreen === 3) {
       this.appState.clearTimeout('score-entry-inactivity')
       this.appState.setTimeout(ScoreEntryScreen.INACTIVITY_TIMEOUT, 'idle', 'score-entry-inactivity')
     }

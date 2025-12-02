@@ -242,8 +242,13 @@ export class IdleScreen {
       return
     }
 
-    // Clear and restart showcase timer on user interaction
-    this.startShowcaseTimer()
+    // Ignore theme keys (1-8) - handled by ThemeManager, sent constantly by Arduino
+    const isThemeKey = key >= '1' && key <= '8'
+
+    if (!isThemeKey) {
+      // Clear and restart showcase timer only on non-theme keys
+      this.startShowcaseTimer()
+    }
 
     // SPACE, M, or N advances to Welcome screen
     if (key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') {

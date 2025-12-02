@@ -188,9 +188,14 @@ export class WelcomeScreen {
    * @param {string} key - Pressed key
    */
   handleKeyPress(key) {
-    // Reset inactivity timer on any key press
-    this.appState.clearTimeout('welcome-inactivity')
-    this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
+    // Ignore theme keys (1-8) - handled by ThemeManager, sent constantly by Arduino
+    const isThemeKey = key >= '1' && key <= '8'
+
+    if (!isThemeKey) {
+      // Reset inactivity timer only on non-theme keys
+      this.appState.clearTimeout('welcome-inactivity')
+      this.appState.setTimeout(WelcomeScreen.INACTIVITY_TIMEOUT, 'idle', 'welcome-inactivity')
+    }
 
     // SPACE, M, or N advances to Gallery screen
     if (key === ' ' || key === 'm' || key === 'M' || key === 'n' || key === 'N') {
